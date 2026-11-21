@@ -51,7 +51,7 @@ const _v = new THREE.Vector3();
  * Project each part's world position to the screen and stack labels in two clean columns
  * (left half of the parts -> left column) without overlaps. Call every frame.
  */
-export function layoutCallouts(parts: Part[], camera: THREE.Camera, w: number, h: number, opts = { margin: 16, gap: 30 }): CalloutLayout[] {
+export function layoutCallouts(parts: Part[], camera: THREE.Camera, w: number, h: number, opts = { margin: 16, gap: 30, span: 430 }): CalloutLayout[] {
   const pts = parts
     .filter((p) => p.label)
     .map((p) => {
@@ -67,8 +67,10 @@ export function layoutCallouts(parts: Part[], camera: THREE.Camera, w: number, h
     for (let i = 1; i < ly.length; i++) ly[i] = Math.max(ly[i], ly[i - 1] + opts.gap);
     const overflow = ly.length ? ly[ly.length - 1] - (h - opts.gap) : 0;
     if (overflow > 0) for (let i = 0; i < ly.length; i++) ly[i] -= overflow;
-    // Labels pin to the screen margins and sit ON their leader line, so they never overflow a phone.
-    ys.forEach((p, i) => out.push({ ...p, side, ly: ly[i], lx: side === "left" ? opts.margin : w - opts.margin }));
+    // Columns sit `span` px either side of centre, clamped to the screen margin; labels ride ON the
+    // leader line, so they never overflow a phone and never drift to the far edge of a monitor.
+    const lx = side === "left" ? Math.max(opts.margin, w / 2 - opts.span) : Math.min(w - opts.margin, w / 2 + opts.span);
+    ys.forEach((p, i) => out.push({ ...p, side, ly: ly[i], lx }));
   });
   return out;
 }

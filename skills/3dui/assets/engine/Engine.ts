@@ -39,6 +39,7 @@ export class Engine {
   private last = 0;
   private cursor = { x: 0, y: 0, tx: 0, ty: 0 };
   private blueprintOn = false;
+  private disposed = false;
 
   constructor(readonly canvas: HTMLCanvasElement, readonly opts: EngineOptions) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: "high-performance" }); // MSAA lives in the composer
@@ -64,6 +65,7 @@ export class Engine {
     this.resize();
     this.frame(performance.now(), true); // place camera + parts before compiling
     await this.renderer.compileAsync(this.scene, this.camera);
+    if (this.disposed) return; // React StrictMode mounts twice in dev: the first engine is disposed mid-compile
     document.documentElement.classList.add("is-ready"); // CSS hides the loader
     this.last = 0;
     this.raf = requestAnimationFrame((t) => this.frame(t));
@@ -100,6 +102,7 @@ export class Engine {
   }
 
   private frame(now: number, dryRun = false) {
+    if (this.disposed) return;
     if (!dryRun) this.raf = requestAnimationFrame((t) => this.frame(t));
     const dt = this.last ? Math.min((now - this.last) / 1000, 0.1) : 1 / 60;
     this.last = now;
@@ -128,6 +131,7 @@ export class Engine {
   }
 
   dispose() {
+    this.disposed = true;
     cancelAnimationFrame(this.raf);
     removeEventListener("resize", this.onResize);
     removeEventListener("pointermove", this.onPointer);

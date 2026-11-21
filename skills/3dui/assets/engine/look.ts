@@ -130,23 +130,45 @@ export function mirrorKey(polar: number, azimuth: number, offAxis = 30, dist = 3
  */
 export function createStudio(renderer: THREE.WebGLRenderer, opts: StudioOptions = {}): Studio {
   const studio = new THREE.Scene();
-  studio.background = new THREE.Color(opts.room ?? 0x030303);
+  studio.background = new THREE.Color(opts.room ?? 0x020202);
   const geos: THREE.BufferGeometry[] = [];
-  const panel = (w: number, h: number, power: number, pos: [number, number, number]) => {
-    const g = new THREE.PlaneGeometry(w, h);
+  // Lights are emissive meshes whose brightness is baked into HDR vertex colours (values above 1 are fine).
+  const lit = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide });
+  const _p = new THREE.Vector3();
+  const emit = (g: THREE.BufferGeometry, level: (p: THREE.Vector3) => number, pos?: [number, number, number]) => {
+    const at = g.attributes.position, col = new Float32Array(at.count * 3);
+    for (let i = 0; i < at.count; i++) col.fill(level(_p.fromBufferAttribute(at, i)), i * 3, i * 3 + 3);
+    g.setAttribute("color", new THREE.BufferAttribute(col, 3));
     geos.push(g);
-    const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 1, 1).multiplyScalar(power), side: THREE.DoubleSide }));
-    m.position.set(...pos);
-    m.lookAt(0, 0, 0);
+    const m = new THREE.Mesh(g, lit);
+    if (pos) {
+      m.position.set(...pos);
+      m.lookAt(0, 0, 0);
+    }
     studio.add(m);
   };
-  panel(22, 14, 3.2, opts.hero ? mirrorKey(opts.hero.polar, opts.hero.azimuth, opts.offAxis) : [-22, 20, 20]); // key softbox, off-axis
-  panel(2.4, 34, 7, [30, 4, 12]); //  strip -> right edge line
-  panel(2.4, 34, 7, [-30, 4, -14]); // strip -> left rim line
+  const smooth = (a: number, b: number, x: number) => {
+    const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+    return t * t * (3 - 2 * t);
+  };
+  // Softbox: bright centre falling off to the rim, so a flat face shows a gradient, not a white sheet.
+  const softbox = (w: number, h: number, peak: number, pos: [number, number, number]) =>
+    emit(new THREE.PlaneGeometry(w, h, 24, 16), (p) => peak * (0.08 + 0.92 * (1 - smooth(0.1, 1.05, Math.hypot(p.x / (w / 2), p.y / (h / 2))))), pos);
+  // Strip: a hard, very bright line with soft ends. This is what draws the edge highlights and the bloom glints.
+  const strip = (w: number, h: number, power: number, pos: [number, number, number]) =>
+    emit(new THREE.PlaneGeometry(w, h, 1, 16), (p) => power * (1 - smooth(0.7, 1, Math.abs(p.y) / (h / 2))), pos);
+
+  softbox(26, 16, 2.6, opts.hero ? mirrorKey(opts.hero.polar, opts.hero.azimuth, opts.offAxis) : [-22, 20, 20]); // key, off-axis
+  strip(2.4, 34, 7, [30, 4, 12]); //  right edge line
+  strip(2.4, 34, 7, [-30, 4, -14]); // left rim line
+  // Faint horizon glow: without it, faces seen edge-on in side views reflect pure black and vanish.
+  emit(new THREE.SphereGeometry(90, 32, 24), (p) => 0.004 + 0.09 * Math.exp(-(((p.y / 90 - 0.08) / 0.22) ** 2)));
+
   const pmrem = new THREE.PMREMGenerator(renderer);
   const target = pmrem.fromScene(studio, opts.blur ?? 0.02);
   pmrem.dispose();
   geos.forEach((g) => g.dispose());
+  lit.dispose();
   return {
     env: target.texture,
     aim: (scene, x, y) => scene.environmentRotation.set(y * 0.45, -x * 0.8, 0),
