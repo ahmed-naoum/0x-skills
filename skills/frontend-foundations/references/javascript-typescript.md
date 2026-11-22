@@ -66,12 +66,13 @@ Turning strictness on later means fixing hundreds of errors at once; starting st
 - Config files, build scripts, seed scripts and tests are code: keep them `.ts` and inside
   `include` (or a second `tsconfig` that covers them). Run scripts with a TypeScript runner (`tsx`)
   or Node's built-in type stripping where the installed Node supports it; stripping only erases
-  types, so `enum`, `namespace` and constructor parameter properties need a real transform.
-  Prefer `as const` objects over `enum` anyway.
+  types, so `enum`, `namespace` and constructor parameter properties fail there (the
+  `erasableSyntaxOnly` compiler option rejects them up front). Prefer `as const` objects to `enum`.
 - Bundlers and runners strip types without checking them. The only type check is `tsc --noEmit`;
   it must run in CI (`0x:code-quality` owns that policy).
-- Compiler defaults change between TypeScript majors. State the options explicitly instead of
-  relying on defaults.
+- Compiler defaults change between TypeScript majors: 6.0 turned `strict` on and stopped loading
+  every `@types` package automatically (Node globals now need `"types": ["node"]`). State options
+  explicitly and read the release notes before bumping the major.
 - Never fix an error with `// @ts-ignore`. If suppression is truly needed use
   `// @ts-expect-error` with a reason: it fails when the error disappears.
 
@@ -118,6 +119,7 @@ into the program is `unknown` until parsed: `JSON.parse`, `response.json()`, `lo
 columns, and the `e` in `catch (e)`.
 
 ```ts
+// Zod 4; on Zod 3 the email check is z.string().email(). Follow the installed major.
 const User = z.object({ id: z.string(), email: z.email(), plan: z.enum(['free', 'pro']) });
 type User = z.infer<typeof User>;               // the type comes from the schema, not the reverse
 
@@ -193,8 +195,6 @@ Rules that keep type-level code maintainable in an application:
 - Stop rule: when a type needs recursion, more than one `infer`, or a template-literal parser,
   and it is not library code, write two overloads or duplicate a few lines instead. The test is
   whether the hover tooltip at the call site is something a person can read.
-- Prefer `interface` for object shapes that are extended, `type` for unions and everything else;
-  consistency within the project matters more than the choice.
 
 ## Modules: ESM, `exports` and CommonJS interop
 

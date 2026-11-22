@@ -90,6 +90,8 @@ save the user a round trip.
 | On submit | Validate everything; keep all values; move focus to the first invalid field; for long forms also show a summary at the top linking to each field |
 | Server responds with field errors | Render them through the same per-field slots; never as a single toast |
 
+- Stage: at Prototype, native constraints plus server validation are enough. From Launch, sign-up,
+  checkout and anything that charges need blur validation, preserved values and idempotency.
 - Do not disable the submit button until the form is valid. A disabled button cannot say what is
   wrong; let the user submit and show the errors.
 - Each error sits next to its field, is linked with `aria-describedby`, sets
@@ -130,7 +132,8 @@ const parsed = ProfileSchema.safeParse(Object.fromEntries(formData));
 if (!parsed.success) return { fieldErrors: z.flattenError(parsed.error).fieldErrors };
 ```
 
-- `FormData` values are strings or files. Coerce numbers and dates explicitly; a checkbox is
+- `FormData` values are strings or files. Coerce numbers and dates explicitly (`z.coerce.number()`
+  turns `''` into `0`, so pair it with a `min` or the empty-string mapping below); a checkbox is
   `'on'` or absent; an empty optional text field arrives as `''`, not `undefined`, so map empty
   strings to `undefined` before optional rules. `Object.fromEntries` keeps only the last value of
   a repeated name: use `formData.getAll('tags')` for multi-selects and checkbox groups.
@@ -156,8 +159,10 @@ retry after a timeout, the back button and a flaky network all resubmit.
 1. In the `submit` handler (not the button's `click` handler, where disabling can cancel the
    submission), set a pending flag synchronously and ignore further submits while it is set.
 2. Show pending on the button itself: disabled or `aria-disabled`, label changed ("Saving…"),
-   width unchanged. React exposes this as `useFormStatus().pending` or the pending value from
-   `useActionState`.
+   width unchanged. React exposes this as the pending value from `useActionState`, or
+   `useFormStatus().pending` read in a component rendered inside the form. When the browser
+   itself sends the form, do not set `disabled` on fields or the submitter in the handler:
+   disabled controls are left out of the request.
 3. Clear pending in `finally`. On error the form is usable again with values intact.
 4. For anything that creates or charges, make the server idempotent: render a hidden field with
    a UUID generated when the form is first shown, and have the server return the original result
@@ -175,7 +180,7 @@ progress or move the work to a background job and report completion.
 | Reload, or back to the page | Browsers restore field values for fields present in the initial HTML with stable `name`/`id` | Do not set `autocomplete="off"` on the form; in React, controlled inputs initialized from state overwrite the restored value on hydration, so use `defaultValue`/uncontrolled inputs or read the DOM value on mount |
 | Back/forward cache restore | The whole page comes back as it was, JS state included | Avoid `unload` handlers, which disable it; refresh stale data on `pageshow` when `event.persisted` |
 | Phone switches apps (to read an SMS code or copy a password) | The OS may discard the tab; returning reloads the page | Write a draft to `sessionStorage` on input (debounced) and on `visibilitychange`; restore on load; clear on success |
-| Server-side validation error | A full-page response re-renders the form | Return the submitted values and render them back |
+| Server-side validation error | A full-page response re-renders the form empty; React form actions also reset uncontrolled fields when the action finishes, returned errors included | Return the submitted values from the server and render them back (in React, as `defaultValue` from the action state) |
 | Session expired on submit | 401; naive handling redirects to login and drops the data | Keep the form mounted, re-authenticate in a dialog or new tab, resubmit; or stash the draft and restore after login |
 | Filters and search inputs | Lost on navigation | Keep them in the URL query string |
 
@@ -239,8 +244,9 @@ answers, or when partial completion has value. Otherwise one page is faster.
 
 - Date picker, combobox and listbox are the most expensive widgets to build correctly: focus
   management, typeahead, screen-reader announcements, IME composition, virtual keyboards, and
-  positioning. Take them from an accessible headless library (React Aria, Radix-family
-  primitives, Base UI, Ariakit) and style them with the project's tokens. Do not hand-roll.
+  positioning. Take them from an accessible headless library (React Aria, Base UI, Ariakit,
+  Radix-family primitives) and style them with the project's tokens. Check that the library has
+  the widget: not every primitive set ships a combobox or a date picker. Do not hand-roll.
 - Custom pickers must still submit: render a hidden input with the `name` and a canonical value
   (ISO date, option id). Dates and time zones: `internationalization.md`.
 - File drop zone: the file input stays the foundation (keyboard, screen readers, phone camera

@@ -122,15 +122,17 @@ Systematic approach:
 - Safe areas (notch, home indicator, rounded corners): insets are zero unless the viewport meta has `viewport-fit=cover`. Then
   pad fixed bars and full-bleed containers: `padding-bottom: max(1rem, env(safe-area-inset-bottom))`, and the left/right insets
   for landscape. Check an installed PWA and landscape orientation, where the insets are largest.
-- The on-screen keyboard: on iOS it does not resize the layout viewport, only the *visual* viewport, so `position: fixed;
-  bottom: 0` bars and the lower part of a full-height sheet sit under the keyboard, and `dvh` does not react. Options, in order:
-  design so the focused field and its submit button are in normal flow and can scroll into view; use `<meta name="viewport"
-  content="..., interactive-widget=resizes-content">` where supported (not Safari at the time of writing; verify); or listen to
-  `window.visualViewport` `resize` and set a CSS variable with its height for the element that must stay above the keyboard.
+- The on-screen keyboard: on iOS, and by default in Chrome on Android, it resizes only the *visual* viewport, not the layout
+  viewport, so `position: fixed; bottom: 0` bars and the lower part of a full-height sheet sit under the keyboard, and `dvh`
+  does not react. Options, in order: design so the focused field and its submit button are in normal flow and can scroll into
+  view; listen to `window.visualViewport` `resize` and set a CSS variable with its height for the element that must stay above
+  the keyboard; add `interactive-widget=resizes-content` to the viewport meta as an extra for Chromium and Firefox (Safari on
+  iOS had not shipped it at the time of writing, so it cannot be the only fix).
 - Inputs with a computed font size under 16px make iOS Safari zoom the page on focus. Keep form controls at 16px or larger
   rather than disabling zoom.
-- Touch targets at least 44×44 CSS px with spacing; hover styles inside `@media (hover: hover)` so they do not stick after a
-  tap; `overscroll-behavior: contain` on scrollable panels and modals so the page behind does not scroll or pull-to-refresh.
+- Touch targets about 44×44 CSS px with spacing (WCAG 2.2 AA sets a 24×24 floor; `0x:accessibility`); hover styles inside
+  `@media (hover: hover)` so they do not stick after a tap; `overscroll-behavior: contain` on scrollable panels and modals so
+  the page behind does not scroll or pull-to-refresh.
 - Device emulation does not reproduce browser bars, the keyboard or safe areas. Verify on a real phone (remote debugging is in
   `browser-dom.md`).
 
@@ -148,6 +150,9 @@ alternative for teams that prefer authored CSS. Do not run both as equals in one
 }
 ```
 
+- The block is Tailwind v4 syntax: `@theme` variables generate utilities (`bg-surface`, `p-gutter`). A v3 project keeps tokens
+  in `tailwind.config` under `theme.extend`, pointing at CSS variables; follow the installed major and do not upgrade it as a
+  side effect of a styling task.
 - Tokens are layered: raw values → semantic names (`surface`, `text-muted`, `danger`) → occasionally component tokens.
   Components reference semantic names only. Which values to choose belongs to `0x:ui-ux-design`.
 - An arbitrary value (`p-[13px]`, `text-[#3a3a3a]`) appearing twice is a missing token.
@@ -191,7 +196,7 @@ Nesting, layers and `:has()` are Baseline; a new project needs no Sass.
 h1 { font-size: clamp(1.75rem, 1.2rem + 2.4vw, 3rem); }
 ```
 
-- Derive the middle term: slope = (max − min) / (maxViewport − minViewport), expressed in `vw`; intercept = min − slope ×
+- Derive the middle term: slope = (max − min) / (maxViewport − minViewport), times 100 to give `vw`; intercept = min − slope ×
   minViewport, in `rem`. Two or three fluid steps replace a ladder of breakpoint overrides.
 - The preferred value must include a `rem` term. Pure `vw` font sizes do not respond to browser zoom or the user's font-size
   setting, which fails accessibility requirements. As a rule of thumb keep the max no more than 2.5× the min so zoom can still
@@ -226,13 +231,14 @@ h1 { font-size: clamp(1.75rem, 1.2rem + 2.4vw, 3rem); }
 :root {
   --surface: light-dark(oklch(99% 0 0), oklch(18% 0.01 260));
   --text:    light-dark(oklch(22% 0.01 260), oklch(94% 0.01 260));
-  --brand-hover: oklch(from var(--color-brand) calc(l - 0.08) c h);
+  --brand:   oklch(62% 0.19 255);
+  --brand-hover: oklch(from var(--brand) calc(l - 0.08) c h);
 }
 ```
 
 - `color-scheme` also themes form controls, scrollbars and the default canvas. `light-dark()` follows the element's
   `color-scheme`, so one declaration per token serves both themes and a subtree can be forced (`.promo { color-scheme: dark }`).
-  It accepts colors only.
+  It takes colors; switch images and other values on the attribute or `prefers-color-scheme`.
 - OKLCH: lightness is perceptually even, so a scale built by stepping `l` looks even, and hue stays stable as lightness changes.
   Derive hover, border and subtle variants with relative color syntax or `color-mix(in oklch, ...)` rather than storing every
   shade. Contrast must still be measured per theme (`0x:accessibility`).
@@ -250,6 +256,7 @@ h1 { font-size: clamp(1.75rem, 1.2rem + 2.4vw, 3rem); }
   or store the choice in a cookie and render the attribute on the server (this makes the page vary per user, which costs static
   caching). In React the server and client `<html>` attributes then differ; mark that element to suppress the hydration warning,
   or use a theme library that does exactly this.
+- Under a Content-Security-Policy that inline script needs a nonce or hash (`0x:web-security`).
 - Offer three states: System, Light, Dark. "System" removes the attribute.
 
 ## Keeping a stylesheet maintainable

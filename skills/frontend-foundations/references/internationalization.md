@@ -51,9 +51,9 @@ new Intl.ListFormat(locale, { type: 'conjunction' }).format(names);
 
 ## Layouts that survive translation
 
-- English is compact. Budget for other languages running about a third longer in sentences and
-  two to three times longer in short labels (a five-letter button label is the worst case).
-  Chinese, Japanese and Korean are shorter but need taller lines.
+- English is compact. As a rule of thumb, budget for other languages running about a third
+  longer in sentences and two to three times longer in short labels (a five-letter button label
+  is the worst case). Chinese, Japanese and Korean are shorter but need taller lines.
 - No fixed widths or heights on anything containing text. Buttons, tabs, table headers and nav
   items size to content, wrap, or scroll; `min-width`, never `width`.
 - Decide per element what happens when text does not fit: wrap (default), then scroll
@@ -97,8 +97,8 @@ new Intl.ListFormat(locale, { type: 'conjunction' }).format(names);
   rendering allows. Make keys and placeholder names type-checked.
 - Library defaults: `next-intl` for the Next.js App Router; FormatJS (`react-intl`) or a compiled
   catalog approach (Lingui, Paraglide) elsewhere. Keep the library the project has; the
-  principles hold for all of them. Note that some popular libraries use their own plural syntax
-  rather than ICU; follow their format consistently instead of mixing.
+  principles hold for all of them. Not every library speaks ICU by default: i18next uses plural
+  key suffixes (`_one`, `_other`) unless its ICU plugin is added. Follow one format, never a mix.
 - Text produced outside the UI also needs a locale: emails, PDFs, push notifications, error
   messages. The API returns error *codes*; the client translates them. Emails use the
   recipient's stored language, not the sender's request (`0x:email-notifications`).
@@ -126,7 +126,7 @@ a technical need.
   breaks links. Prefixing all locales is simpler to reason about.
 - Emit `<html lang>` (and `dir`) per locale, and alternate-language links between translations
   (`<link rel="alternate" hreflang="de" href="...">`, plus `x-default`), each page listing all
-  its versions including itself.
+  its versions including itself; links that are not reciprocal are ignored by search engines.
 - Country detection by IP is acceptable for *suggesting* a region or currency ("Shopping from
   Canada?"), never for silently switching language.
 
@@ -139,7 +139,7 @@ alignment then mirror automatically, provided the CSS speaks in logical directio
 |---|---|---|
 | `margin-left` / `margin-right` | `margin-inline-start` / `-end` | `ms-*` / `me-*` |
 | `padding-left` / `padding-right` | `padding-inline-start` / `-end` | `ps-*` / `pe-*` |
-| `left` / `right` | `inset-inline-start` / `-end` | `start-*` / `end-*` |
+| `left` / `right` | `inset-inline-start` / `-end` | `inset-s-*` / `inset-e-*` (`start-*` / `end-*` before Tailwind 4.2) |
 | `text-align: left` | `text-align: start` | `text-start` |
 | `border-left`, `border-top-left-radius` | `border-inline-start`, `border-start-start-radius` | `border-s`, `rounded-ss-*` |
 
@@ -172,8 +172,9 @@ alignment then mirror automatically, provided the CSS speaks in logical directio
 4. **Human review, risk-ranked.** A native speaker reviews marketing pages, onboarding,
    checkout and payment, error messages that guide recovery, and anything legal. Long-tail
    settings screens can ship on reviewed-by-sample drafts with a "report a translation issue"
-   link. Legal documents need review for the jurisdiction, not just the language
-   (`0x:privacy-compliance`).
+   link. Legal documents need review for the jurisdiction, not just the language, and some
+   jurisdictions require consumer terms, invoices or support in the local language once you sell
+   there: check before announcing a locale (`0x:privacy-compliance`).
 5. **Check in CI.** Every locale has every key; messages parse as valid ICU; placeholders and
    tags match the source; each plural message has the categories its locale requires.
 6. **Handle change.** When the meaning of a source string changes, change its key (or mark the

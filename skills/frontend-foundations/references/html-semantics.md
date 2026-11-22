@@ -14,7 +14,7 @@ brings none, and re-creating them is where bugs and audit findings come from.
 |---|---|---|---|
 | Goes to a URL (new page, anchor, download) | `<a href>` | `<button onClick={router.push}>` | No middle-click, no "copy link", no prefetch, nothing before JS loads |
 | Does something on this page | `<button type="button">` | `<a href="#">`, `<div onClick>` | Inside a `<form>`, a button without `type` is `submit` |
-| Show/hide a block | `<details><summary>` | Custom accordion | Same `name` on several `<details>` gives an exclusive accordion; content is found by find-in-page |
+| Show/hide a block | `<details><summary>` | Custom accordion | Same `name` on several `<details>` gives an exclusive accordion (a newer feature: without support each opens independently, which is acceptable) |
 | Modal that blocks the page | `<dialog>` + `showModal()` | `div` + focus-trap library | Setting the `open` attribute yourself gives a non-modal dialog: no backdrop, no inertness |
 | Menu, tooltip, toast, picker panel | `popover` attribute | Absolutely positioned div + z-index | A popover is not modal: the rest of the page stays interactive |
 | One choice of a short fixed list | `<select>` or radio group | Custom dropdown | A custom listbox is weeks of keyboard and mobile work |
@@ -68,11 +68,13 @@ reason portals and z-index scales existed for overlays.
 Rules that are easy to get wrong:
 
 - Close a dialog with `<form method="dialog">` or `dialog.close(value)`; read `dialog.returnValue`
-  in the `close` event. The `cancel` event fires on Esc and can be prevented while saving.
+  in the `close` event. The `cancel` event fires on Esc and can be prevented while saving, but
+  browsers may let a repeated Esc close it anyway: never rely on it to keep a dialog open.
 - Outside-click-to-close for a modal dialog is not default behavior. The `closedby="any"`
-  attribute provides it where supported; otherwise listen for `click` on the dialog and close
-  when `event.target === dialog` (the backdrop reports the dialog itself as target), with the
-  content in an inner wrapper that carries the padding.
+  attribute provides it, but at least one engine lacked it at the time of writing. Until it is
+  Baseline, listen for `click` on the dialog and close when `event.target === dialog` (the
+  backdrop reports the dialog itself as target), with the content in an inner wrapper that
+  carries the padding; the listener is harmless where `closedby` also works.
 - A modal dialog does not lock page scroll. Add
   `html:has(dialog:modal) { overflow: hidden; scrollbar-gutter: stable; }`.
 - Put `autofocus` on the element that should receive focus (the least destructive action in a
@@ -92,9 +94,10 @@ Rules that are easy to get wrong:
 }
 ```
 
-- Anchor positioning reached all engines recently. Check its Baseline status; where the audience
-  includes older browsers, guard with `@supports (anchor-name: --a)` and fall back to a
-  positioning library (Floating UI) or to a centered popover, which is acceptable on phones.
+- Anchor positioning reached its last major engine only in early 2026, so it is Baseline Newly
+  available at best and missing on many phones still in use. Guard with
+  `@supports (anchor-name: --a)` and fall back to a positioning library (Floating UI) or to a
+  centered popover, which is acceptable on phones.
 - An element cannot be both a dialog opened modally and a popover at once; pick by whether the
   page behind must be blocked.
 
@@ -146,7 +149,8 @@ and anything that must work before hydration.
   before any CSS arrives; pair it with the CSS in `css-layout.md`.
 - In Next.js these come from the Metadata API (`metadata` export, `generateMetadata`, file
   conventions such as `app/icon.svg` and `opengraph-image`), not hand-written tags; see
-  `0x:react-nextjs`. Search-specific tags and structured data belong to `0x:growth-marketing`.
+  `0x:react-nextjs`. What to target in search is a `0x:growth-marketing` question; structured
+  data, when used, is JSON-LD in the server-rendered HTML that matches the visible content.
 
 Check: `curl -s https://site/page | grep -iE '<title|og:|canonical|viewport'` shows the tags
 without running JavaScript.
@@ -185,13 +189,14 @@ Baseline answers "can this be used?" per feature, which a list of browser versio
 - Detect features, never browsers: `@supports (anchor-name: --a) { ... }`,
   `CSS.supports('selector(:has(a))')`, `'popover' in HTMLElement.prototype`,
   `if (!document.startViewTransition) { update(); return; }`.
-- Make the build agree with the policy: Browserslist accepts Baseline queries, and linters can
-  flag CSS and HTML features outside the chosen Baseline target. Set the target once in the
-  project config rather than per file.
+- Make the build agree with the policy: a current Browserslist accepts Baseline queries
+  (`"browserslist": "baseline widely available"` in `package.json`; a year such as
+  `baseline 2024` pins a fixed target), and `use-baseline` lint rules for CSS and HTML flag
+  features outside the target. Set the target once in the project config rather than per file.
 - Shift the default only on evidence: check the product's own analytics for the browser and OS
   mix. B2B desktop tools can usually sit at Newly available; consumer products with a long tail of
-  old phones should stay at Widely available. iOS browsers are all WebKit and update with the OS,
-  so old iPhones pin old Safari.
+  old phones should stay at Widely available. Browsers on iOS are in practice all WebKit, which
+  updates with the OS, so old iPhones pin old Safari.
 - Polyfill only what blocks core function. A missing animation or anchor placement is a degraded
   experience, not a bug.
 

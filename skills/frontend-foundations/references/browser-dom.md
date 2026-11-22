@@ -14,7 +14,7 @@ Work in the browser first and change the source only once the live edit proves t
 | Why is this box this size? | Box model diagram; `flex`/`grid`/`scroll` badges in the DOM tree draw overlays |
 | What does it look like hovered, focused, invalid? | Styles → `:hov` to force element state |
 | What changed this node? | Right-click the node → Break on → subtree modifications / attribute modifications |
-| Which handler runs on click? | Event Listeners pane (untick "Ancestors" to narrow); `monitorEvents($0, 'pointer')` in the console |
+| Which handler runs on click? | Event Listeners pane (untick "Ancestors" to narrow); `monitorEvents($0, ['pointerdown', 'click'])` in the console |
 | The menu closes when DevTools is clicked | Rendering → Emulate a focused page; or run `setTimeout(() => { debugger }, 3000)`, open the menu, wait for the pause |
 | What did I change while experimenting? | Changes drawer shows a diff of live edits |
 | Does it work with reduced motion, dark mode, no hover? | Rendering → emulate CSS media features |
@@ -40,8 +40,9 @@ tab. Full DevTools, including Performance, runs against the phone. To reach a de
 computer, either use the port-forwarding dialog on that page or run `adb reverse tcp:3000 tcp:3000`
 and open `http://localhost:3000` on the phone; `localhost` also keeps secure-context APIs working.
 
-**iPhone (Safari):** on the phone, Settings → Apps → Safari → Advanced → Web Inspector. On the
-Mac, Safari → Settings → Advanced → show features for web developers; connect the phone, then
+**iPhone (Safari):** on the phone, Settings → Apps → Safari → Advanced → Web Inspector (older iOS
+versions: Settings → Safari → Advanced). On the Mac, Safari → Settings → Advanced → show
+features for web developers; connect the phone, then
 Develop menu → the device → the page. This needs a Mac. Without one: a cloud real-device service,
 or as a last resort an in-page console injected for the session. Xcode's iOS Simulator is
 inspected the same way and covers most layout and engine bugs, but not real-keyboard, camera,
@@ -55,7 +56,9 @@ Facts that save time:
   web view must be marked inspectable). In-app browsers of social apps are not inspectable at
   all; see `pwa-mobile.md`.
 - Reaching the dev server over Wi-Fi: bind it to all interfaces (for example
-  `next dev -H 0.0.0.0`) and open the computer's LAN IP. Service workers, clipboard, camera,
+  `next dev -H 0.0.0.0`) and open the computer's LAN IP. Current Next.js blocks dev-only assets
+  requested from another host until that host is listed in `allowedDevOrigins` (symptom: blocked
+  `/_next/` requests, a page that never becomes interactive). Service workers, clipboard, camera,
   geolocation and `crypto.randomUUID` need a secure context, and a LAN IP over HTTP is not one;
   use a tunnel that provides HTTPS, or the dev server's HTTPS option.
 - Mobile-only classics to check first: `100vh` cut off by browser bars; zoom on focusing an
@@ -85,7 +88,7 @@ Rules:
 - **Passive listeners.** A `touchstart`, `touchmove` or `wheel` listener that might call
   `preventDefault()` forces the browser to wait for JavaScript before scrolling. Register them
   with `{ passive: true }` unless the handler really must block scrolling; then say
-  `{ passive: false }` explicitly, because browsers treat such listeners on `window`, `document`
+  `{ passive: false }` explicitly, because most browsers treat such listeners on `window`, `document`
   and `body` as passive by default and silently ignore `preventDefault()`. Prefer CSS
   (`touch-action`, `overscroll-behavior`) to blocking scroll in JS.
 - **Delegation.** One listener on a stable container instead of one per row:
@@ -127,9 +130,11 @@ list.addEventListener('click', (e) => {
 | OPFS (origin private file system) | Files; fast synchronous handles inside workers | Large binary or database files (SQLite compiled to WebAssembly), in-browser editors | Ordinary app state |
 
 - The server is the source of truth; client storage is a cache or a queue. Browsers may evict an
-  origin's storage under pressure, and Safari deletes script-writable storage for sites the user
-  has not interacted with for a period of days. `navigator.storage.persist()` requests exemption;
-  `navigator.storage.estimate()` reports usage and quota.
+  origin's storage under pressure, and Safari's tracking prevention deletes script-writable
+  storage (`localStorage`, IndexedDB, caches, service worker registrations) after about a week
+  of browser use without interaction with the site; installed home-screen web apps are exempt.
+  `navigator.storage.persist()` requests protection from eviction; `navigator.storage.estimate()`
+  reports usage and quota.
 - Wrap `localStorage` access in `try/catch`: it throws when storage is disabled or full, and it
   does not exist during server rendering.
 - Version every stored shape (`{ v: 2, ... }`) and parse it with a schema on read; data written

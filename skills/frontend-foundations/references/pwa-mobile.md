@@ -10,6 +10,7 @@ in-app purchase or app release needs handling.
 |---|---|---|
 | Responsive web app | Default at Prototype and for most products at Launch. Users arrive by link or search; use is occasional or desktop-heavy | Nothing extra |
 | Installable PWA | Frequent repeat use, a home-screen icon and offline tolerance matter, and store presence does not | Manifest, service worker and its update discipline. On iOS: installation only via Share → Add to Home Screen, no install prompt, push only after installation |
+| The PWA listed on Google Play through a Trusted Web Activity | A Play listing is wanted, the PWA is already good and no native capability is missing. Android only; Apple has no equivalent | A Play account and review, Digital Asset Links verification of the domain, and Play's billing rules for digital goods |
 | Web app wrapped with Capacitor | A store listing is required (discovery, customer expectation, enterprise device management) or a native capability is missing on the web, and the web app already exists | Store accounts and review, a statically built client talking to the API, native build tooling, releases that cannot be rolled back |
 | React Native with Expo | The mobile app *is* the product, or needs native-feeling navigation, gestures, long lists and deep offline use | A second UI codebase (logic, types and API client are shared; components are not) |
 | Fully native (Swift, Kotlin) | Platform-deep features: widgets, heavy background work, AR, games, wearables | Two more codebases and people who specialize in them |
@@ -69,7 +70,7 @@ them.
    `apple-touch-icon` in the HTML for iOS.
 2. **HTTPS** everywhere, and a `start_url` that responds when offline.
 3. **Service worker** at the site root (`/sw.js`): a worker controls only paths at or below its own location. Generate it with a
-   maintained toolkit (Workbox, or a framework wrapper around it) instead of hand-writing cache logic.
+   maintained toolkit (Workbox, Serwist, or a framework plugin built on one) instead of hand-writing cache logic.
 4. **Offline shell.** Precache the application shell and a dedicated offline page.
 
 | Request | Strategy |
@@ -119,7 +120,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     for (const key of await caches.keys()) await caches.delete(key);
     await self.registration.unregister();
-    for (const client of await self.clients.matchAll({ type: 'window' })) client.navigate(client.url);
+    for (const client of await self.clients.matchAll({ type: 'window' })) client.navigate(client.url).catch(() => {});
   })());
 });
 ```
@@ -147,8 +148,8 @@ self.addEventListener('activate', (event) => {
 
 - Share in a monorepo: the typed API client, validation schemas, types and pure business logic. Do not try to share components
   between Next.js and React Native at Launch stage.
-- Use the managed workflow and its cloud build and submission service, so local native toolchains are not a prerequisite for
-  shipping.
+- Let Expo generate the native projects from config (prebuild) and use its cloud build and submission service, so local native
+  toolchains are not a prerequisite for shipping. Store developer accounts are still required.
 - Over-the-air updates can replace the JavaScript layer between store releases for fixes. Store rules do not allow using them to
   change what the app fundamentally is, and anything touching native code still needs a store build.
 
@@ -213,8 +214,9 @@ What reviewers and policies check, on both stores unless noted:
 - **Privacy declarations** (Apple's privacy labels, Google's Data safety form) must match what the app and every embedded SDK
   actually collect. Inventory analytics, crash and advertising SDKs first. A privacy policy URL is mandatory
   (`0x:privacy-compliance`, `terms-policies.md`).
-- **Sign-in.** Apple requires that apps offering third-party social login also offer an equivalent privacy-preserving option;
-  Sign in with Apple satisfies it. Supply a working demo account in the review notes; a reviewer who cannot log in rejects.
+- **Sign-in.** When a third-party or social login sets up the user's primary account, Apple requires an equivalent
+  privacy-preserving option beside it (Sign in with Apple satisfies it; the guideline lists exceptions, such as apps that use
+  only their own account system). Supply a working demo account in the review notes; a reviewer who cannot log in rejects.
 - **Permission prompts** must explain the specific use ("to scan receipts"), and the app must work when permission is refused.
 - **Tracking** across apps and sites requires Apple's tracking permission prompt.
 - **Minimum functionality.** A thin wrapper around a website, placeholder content, broken links and crashes on launch are
@@ -224,6 +226,7 @@ What reviewers and policies check, on both stores unless noted:
 - **Google-specific.** A current target API level, a content rating questionnaire, and for new personal developer accounts a
   closed testing period with a minimum number of testers before production access. Check the current requirements when planning
   dates.
+- **Apple-specific.** Builds need a recent Xcode and SDK; the minimum rises about yearly, so an old toolchain can block a fix.
 
 Rejections: read the cited guideline and the reviewer's note exactly. If the reviewer misunderstood, reply in the review thread
 with specifics, steps and a screen recording before changing anything. If the finding is real, fix and resubmit with a note
@@ -251,8 +254,10 @@ goods and real-world services** (deliveries, rides, bookings) use ordinary payme
 - Store-billed customers cancel and get refunds through the store, not through your support team; the app must link to the
   store's subscription management, include "Restore purchases", and handle grace-period, billing-retry, refunded and revoked
   states.
-- Prices come from store price tiers per country, and the store acts as seller for tax purposes on those sales; keep that
-  revenue separate in reporting (`0x:pricing-monetization`).
+- Prices come from store price tiers per country. In many countries, not all, the store collects and remits consumer tax (VAT,
+  GST, sales tax) on those sales as the seller or marketplace; each store publishes the list, and where it does not, the duty
+  stays with you. How to book proceeds and commission is a question for an accountant; keep store revenue separate in reporting
+  (`0x:pricing-monetization`, `0x:startup-finance`).
 
 ## Rollouts, crashes and forced upgrades
 
@@ -289,5 +294,6 @@ exposure.
   releases, or six months, whichever is longer, with forced-upgrade capability from the first release.
 - **Is paid social a main acquisition channel?** If so, in-app browser compatibility of sign-up and checkout is launch-blocking.
   Default: test in the top two social apps before spending.
-- **Who owns the store accounts and release approvals?** Accounts should belong to the company with more than one admin, not to
-  a contractor's personal identity.
+- **Who owns the store accounts and release approvals?** Losing access to an account means losing the app. Default: enroll as
+  the company (legal-entity verification can take weeks, so start early) with more than one admin, never under a contractor's
+  identity. Stores publish a seller's contact details in some regions, including the EU: use a business address.

@@ -47,7 +47,7 @@ anything that affects geometry runs layout every frame.
 | Long choreographed sequences, scroll-pinned storytelling | A timeline library (GSAP), or scroll-driven CSS for simple cases |
 | Illustrations animated by a designer | Lottie or Rive player, loaded lazily |
 
-Default: CSS until it stops being enough. Bring in a library when the effect needs two or more of: interruption that preserves
+Default: CSS until it stops being enough, and CSS only at Prototype. Bring in a library when the effect needs two or more of: interruption that preserves
 velocity, exit animations of unmounting components, layout animation, gestures, or orchestration across many elements. One
 library per project; check its bundle cost and whether it can be loaded only on the routes that use it (`0x:web-performance`).
 Check the license terms of commercial animation libraries before adopting them in a product.
@@ -63,7 +63,8 @@ await anim.finished;      // rejects with AbortError if cancelled
 ```
 
 Avoid leaving animations parked with `fill: 'forwards'`: they keep overriding the element's styles and accumulate. Set the final
-style in CSS or a class and let the animation end, or call `anim.commitStyles()` followed by `anim.cancel()`.
+style in CSS or a class and let the animation end, or use `fill: 'forwards'` only until `finished`, then call
+`anim.commitStyles()` and `anim.cancel()` (without a fill there is nothing left to commit).
 `el.getAnimations()` lists what is running; cancel them on teardown.
 
 ## Reduced motion
@@ -114,9 +115,10 @@ function navigate(update) {
 }
 ```
 
-- Same-document transitions (`document.startViewTransition`) work across current engines. Cross-document transitions for
-  ordinary multi-page navigation are opt-in from CSS on both pages (`@view-transition { navigation: auto; }`), same-origin only;
-  check Baseline status and treat them as an enhancement, since unsupported browsers simply navigate.
+- Same-document transitions (`document.startViewTransition`) are Baseline Newly available, not Widely: keep the feature check
+  above. Cross-document transitions for ordinary multi-page navigation are opt-in from CSS on both pages
+  (`@view-transition { navigation: auto; }`), same-origin only, and were missing from at least one engine at the time of
+  writing; treat them as an enhancement, since unsupported browsers simply navigate.
 - Each `view-transition-name` must be unique among rendered elements at capture time, or the whole transition is skipped. For
   lists, set the name only on the item being opened (inline style at click time), not on every card.
 - The page does not respond to input while the transition runs, and rendering is paused while the update callback is pending.
@@ -127,7 +129,8 @@ function navigate(update) {
 - In React, a state update is not synchronous: wrap it with `flushSync` inside the callback, or use the framework's built-in
   view-transition support if the installed version provides it as stable (`0x:react-nextjs`).
 - Direction-aware transitions: pass `types` (`startViewTransition({ update, types: ['back'] })`) and style with
-  `:active-view-transition-type(back)`.
+  `:active-view-transition-type(back)`. Types shipped later than the base API, and an engine without them rejects the object
+  argument: test `CSS.supports('selector(:active-view-transition-type(x))')` and fall back to the plain callback form.
 
 ## Scroll-driven animation
 
@@ -151,9 +154,10 @@ that measures and writes styles every frame.
 - `scroll()` ties progress to a scroller's position (reading-progress bars, shrinking headers); `view()` ties it to an element's
   passage through the viewport (reveals, parallax).
 - `animation-timeline` must come after the `animation` shorthand, which resets it.
-- Support is not universal; check Baseline. Because the animation's keyframes define the hidden state, an unsupported browser
-  shows the element in its normal, visible state. Never put `opacity: 0` in the base style waiting for an animation to reveal
-  it: without support, or with JavaScript failing, the content stays invisible.
+- Support reached the last major engine only recently (Baseline Newly available at best), so many browsers in use lack it:
+  keep the `@supports` guard. Because the animation's keyframes define the hidden state, an unsupported browser shows the
+  element in its normal, visible state. Never put `opacity: 0` in the base style waiting for an animation to reveal it:
+  without support, or with JavaScript failing, the content stays invisible.
 - For "animate once when it enters" (not scrubbed with scroll), use an `IntersectionObserver` that adds a class and unobserves;
   with the visible state as default and the hidden start state applied only once JS has run.
 - Carousels: CSS scroll snap (`scroll-snap-type`, `scroll-snap-align`) on a native scroller, not transform-based sliders that
@@ -260,7 +264,7 @@ development machine.
   simple sprites; WebGL or WebGPU handles far more and anything shader-based (`0x:3dui` owns 3D scenes).
 - What canvas costs: no accessibility tree, text selection, layout, responsive reflow or find-in-page. Keep text and controls in
   the DOM above a decorative canvas marked `aria-hidden="true"`, with a static fallback for reduced motion.
-- Canvas hygiene: size the backing store to `cssSize × devicePixelRatio` (capped at 2), stop the loop when the canvas is
+- Canvas hygiene: size the backing store to `cssSize × devicePixelRatio` (capped at about 2, a rule of thumb), stop the loop when the canvas is
   off-screen (`IntersectionObserver`) or the tab is hidden, and consider `OffscreenCanvas` in a worker for heavy drawing.
 - A pre-rendered video is often the right answer for a complex non-interactive hero animation.
 

@@ -1,6 +1,6 @@
 ---
 name: frontend-foundations
-description: "Builds and debugs on the web platform itself: semantic HTML, CSS layout and responsive design, JavaScript and TypeScript, DOM events and browser storage, forms, animation, translation and right-to-left support, offline PWAs and app-store packaging. Use when a layout breaks on mobile, z-index or specificity misbehaves, async code races, TypeScript rejects types, or the question is native app versus PWA."
+description: "Builds and debugs on the web platform: semantic HTML, CSS layout, TypeScript and async JavaScript, DOM events and storage, forms, animation, translation and right-to-left, offline PWAs and app-store packaging. Use when a layout breaks on mobile, z-index or specificity misbehaves, async code races, TypeScript rejects types, a form needs validation, a bug shows only on a real iPhone, or choosing native app versus PWA."
 ---
 
 # Frontend foundations: HTML, CSS, TypeScript and the browser
@@ -30,7 +30,7 @@ the model says the platform cannot do it, and prove fixes in a real browser.
    with a misleading stack trace.
 6. **After every `await`, the world may have changed.** Async code needs cancellation, a
    timeout and a re-check of what it captured, or it races.
-7. **Feature-detect against Baseline, never sniff browsers.** Support data is the
+7. **Feature-detect against Baseline; do not sniff browsers.** Support data is the
    fastest-changing fact in this area: look it up at the time of use and ship new features as
    enhancements with a working fallback.
 8. **Animate only what the compositor can move, and respect reduced motion.** Transform and
@@ -69,7 +69,7 @@ Follow what the project already uses; these apply to greenfield choices.
 | Network calls | `res.ok` check, `AbortSignal.timeout`, abort on supersede or unmount | — |
 | Client storage | Server is truth; cookie for session, `localStorage` for small preferences, IndexedDB for offline data | Offline-first product: local store with sync |
 | Forms | Real `<form>`, labels, `autocomplete` on every field, one shared schema, errors beside fields, idempotent creates | — |
-| Motion | CSS transitions on transform and opacity, 150–300 ms, reduced-motion alternative per component | Gestures, exits or layout animation: one motion library |
+| Motion | CSS transitions on transform and opacity, 100–300 ms, reduced-motion alternative per component | Gestures, exits or layout animation: one motion library |
 | i18n | `Intl` formatting, logical CSS properties and externalizable strings from day one; locale in the URL path; ICU messages | — |
 | Mobile | Prototype: responsive web. Launch: add PWA installability if repeat use is proven. Stores only for a named capability or channel | The app is the product: Expo |
 
