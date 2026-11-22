@@ -47,7 +47,10 @@ endpoints fail; tools designed like the buttons a new support hire would be give
   tool arguments. The model must not be able to pass `tenant_id`.
 - **Idempotent writes.** The loop will retry after timeouts, and the model will sometimes
   repeat a call. Derive an idempotency key from run ID plus tool-call ID and make the handler
-  return the first result on repeats (`0x:api-design`, `idempotency-rate-limits.md`).
+  return the first result on repeats (`0x:api-design`, `idempotency-rate-limits.md`). That key
+  covers a retried step only: a model that issues the same action again gets a new tool-call
+  ID, so for effects that must happen once per run (send, charge, refund) key on run ID, tool
+  name and a hash of the arguments.
 - **Typed, instructive errors.** Return errors as tool results the model can act on, not as
   exceptions that kill the run: `{"error":"not_found","message":"No order 8841 for this
   customer. Use search_orders to find the ID."}`. Mark the result as an error in the API's
@@ -64,12 +67,21 @@ the values can still be wrong, out of range or hostile.
 
 ```ts
 for (let step = 0; step < MAX_STEPS; step++) {
-  if (signal.aborted || spent > BUDGET) return stop("cancelled_or_budget");
+  if (signal.aborted) return stop("cancelled");
+  if (spent > BUDGET) return stop("budget");
   const res = await callModel(messages, tools, { signal });
+  spent += cost(res.usage);
   messages.push({ role: "assistant", content: res.content });
-  if (res.stop_reason !== "tool_use") return finish(res);
-  const results = await runTools(res.content, ctx);   // validate, authorize, approve, execute
-  messages.push({ role: "user", content: results });  // one result per tool call, matched by id
+  switch (res.stop_reason) {
+    case "tool_use": {
+      const results = await runTools(res.content, ctx); // validate, authorize, approve, execute
+      messages.push({ role: "user", content: results }); // one result per tool call, matched by id
+      break;
+    }
+    case "pause_turn": break;              // provider-run tool paused: send the history back as is
+    case "end_turn": return finish(res);
+    default: return stop(res.stop_reason); // max_tokens, refusal, context window full: not an answer
+  }
 }
 return stop("step_limit");
 ```
@@ -84,9 +96,11 @@ Limits every loop needs, each with a designed outcome when it trips:
 | Repetition | Same tool with same arguments 3 times | Inject a notice or stop; the model is stuck |
 | Consecutive tool errors | 3 | Stop and surface the error |
 
-Other rules: handle every stop reason, not only "tool use" and "done" (token limit, refusal and
-paused turns all occur); return a result for every tool call in the turn or the next request is
-rejected; run independent read calls in parallel and writes in order; keep the context from
+Other rules: treat only a normal end of turn as an answer; a token-limit stop, a refusal or a
+full context window is an unfinished run and must not be parsed as the result (the stop-reason
+names above are Anthropic's; see `claude-api`). Return a result for every tool call in the
+turn, all in the one message that directly follows, or the next request is rejected; an error
+result counts. Run independent read calls in parallel and writes in order; keep the context from
 growing without bound by dropping or summarizing old tool results; make "done" explicit, for
 example a `finish` tool carrying the structured result, so completion is validated instead of
 inferred from prose. Trace every step with the run ID (`evals.md`).
@@ -122,7 +136,10 @@ How to build approval so that it holds:
 
 MCP standardizes how a model-driven application (the host, through clients) connects to servers
 that expose tools, resources and prompts. Transports are stdio for local servers and streamable
-HTTP for remote ones; remote servers authorize with OAuth.
+HTTP for remote ones; remote servers authorize with OAuth. The specification ships dated
+revisions that are not always compatible with each other (the mid-2026 revision removed
+protocol-level sessions), so check which revision each SDK and server speaks before upgrading
+one side.
 
 | Situation | Choice |
 |---|---|
@@ -142,6 +159,10 @@ Rules when consuming MCP servers:
   scoped to that user. One shared admin token turns every user into an admin through the agent.
 - Tool annotations such as "read-only" are hints from the server, not guarantees. Classify
   tools for approval locally.
+- A model API that connects to a remote MCP server itself (a hosted MCP connector) calls the
+  tools without passing through the product's tool executor, so approval, argument binding and
+  per-call authorization in code never run. Use that only with an explicit tool allowlist on
+  read-only, low-risk servers; anything that writes goes through an MCP client in the backend.
 - Do not combine a server that reads untrusted content with tools that can send data out
   without the controls in `guardrails.md`.
 

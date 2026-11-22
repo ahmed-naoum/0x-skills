@@ -56,7 +56,7 @@ error`. Most streaming bugs are missing transitions.
 | Mid-stream failure | Keep what arrived, mark it incomplete, offer Retry (replace) and, for long outputs, Continue. Never wipe a half-read answer |
 | Truncation at the token limit | Detect the stop reason and say so, with Continue; do not present a cut-off answer as complete |
 | Retry | Idempotent on the server: same message ID replaces the failed attempt, no duplicate user message, no repeated side effects |
-| Persistence | Save the assistant message server-side when the stream ends or is stopped, including partial text and its status, so a reload shows the same thing |
+| Persistence | Save the assistant message server-side when the stream ends or is stopped, including partial text and its status, so a reload shows the same thing. On serverless hosts the function can be frozen once the response closes or the client disconnects: do the save in the platform's post-response hook (`after` in Next.js, `waitUntil` elsewhere) and test it by closing the tab mid-stream |
 | Reload or network drop mid-stream | For short answers, show the saved partial plus Retry. For long or agent runs, the work continues server-side as a job and the client re-attaches to its event stream |
 | Navigation away | Decide explicitly: abort (cheap, most chats) or continue in the background and notify (long tasks) |
 
@@ -67,9 +67,11 @@ error`. Most streaming bugs are missing transitions.
   common complaint about streaming UIs.
 - Avoid layout shift: reserve space, do not re-flow earlier content, and batch DOM updates
   (per animation frame or every few tens of milliseconds), not one render per token.
-- Accessibility: do not announce every token. Mark the region busy while streaming and announce
-  completion once (a polite live region with a short status such as "Answer ready"); make stop
-  reachable by keyboard; respect reduced-motion for typing effects (`0x:accessibility`).
+- Accessibility: do not make the streaming container a live region, or screen readers announce
+  every fragment. Set `aria-busy` on it while streaming and announce completion once through a
+  separate polite status element (`role="status"`, text such as "Answer ready"); `aria-busy`
+  alone is honored unevenly. Make stop reachable by keyboard; respect reduced-motion for typing
+  effects (`0x:accessibility`).
 - Do not add fake typing delays. Speed is the point.
 
 **Structured results while streaming.** If the UI needs fields, either stream prose first and
@@ -87,7 +89,7 @@ copy, a next action, and a trace ID behind it.
 | Empty retrieval: nothing relevant found | "I couldn't find this in [the named sources]." Say what was searched | Rephrase, widen the sources, contact support. Do not let the model answer from general knowledge without saying so |
 | Low confidence: weak retrieval score, failed verification, conflicting sources | The answer with a visible caution and the sources, or a clarifying question | Check the sources; refine the question |
 | Ambiguous request | One clarifying question with tappable options | Choose an option |
-| Refusal or safety stop | A neutral, non-accusing message that this request cannot be helped with here, and what the feature is for | Rephrase, or a human channel. No automatic retry |
+| Refusal or safety stop | A neutral, non-accusing message that this request cannot be helped with here, and what the feature is for | Rephrase, or a human channel. No automatic resend of the same request; any provider-documented fallback has already run server-side (`cost-latency.md`) |
 | Out of scope | What the assistant can do, with examples | Example prompts |
 | Timeout or provider error | Plain statement that the AI service is slow or unavailable; the partial output if any | Retry; the manual path |
 | Rate or quota limit | What limit was reached and when it resets | Upgrade or wait |
@@ -170,12 +172,15 @@ Model output is untrusted content (`guardrails.md` has the security reasoning). 
 
 - **Markdown**: render with a maintained renderer in its safe configuration: raw HTML disabled,
   or passed through a sanitizer with a strict allowlist. In React, `react-markdown` does not
-  render raw HTML unless a raw-HTML plugin is added; do not add it for model output. Never pass
-  model output to `dangerouslySetInnerHTML`.
+  render raw HTML unless a raw-HTML plugin (`rehype-raw`) is added; do not add it for model
+  output, or pair it with `rehype-sanitize`. Never pass model output to
+  `dangerouslySetInnerHTML`.
 - **Links**: allow `http`, `https` and, if needed, `mailto`; open external links with
   `rel="noopener noreferrer"`; make the destination visible.
 - **Images**: do not load arbitrary remote images from model output; allowlist hosts or drop
-  them. This closes the main zero-click data-exfiltration channel.
+  them. This closes the main zero-click data-exfiltration channel. Safe-by-default renderers
+  still render images: in `react-markdown`, remove `img` with `disallowedElements` or override
+  the `img` component with a host allowlist check.
 - **Incomplete markdown during streaming**: an unclosed code fence, half a table or a dangling
   link is normal mid-stream. Use a renderer built to tolerate partial input, or close open
   constructs before rendering each frame, so the layout does not flash between states.

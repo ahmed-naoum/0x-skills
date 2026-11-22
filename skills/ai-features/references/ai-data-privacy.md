@@ -40,7 +40,7 @@ Decide by data class, per provider, and write the result down as a table the cod
 | Public content, the product's own docs | Any contracted provider |
 | Customer business content (documents, tickets, messages) | Providers under a commercial agreement with a data processing agreement, no training on inputs, and a listed subprocessor entry; only for features the customer has enabled |
 | Personal data of the customers' end users | As above, minimized to what the task needs; check that the customer's agreement covers AI processing |
-| Special categories and regulated data (health, biometrics, children's data, financial account data, government IDs) | Not without a specific legal basis and the matching contract (for US health data, a business associate agreement with the provider and every vendor in the path); otherwise block or redact |
+| Special categories and regulated data (health, biometrics, children's data, financial account data, government IDs) | Not without a specific legal basis and the matching contract; otherwise block or redact. One example of the mechanism: in the US, a product that handles protected health information for a HIPAA-covered customer needs a business associate agreement with the model provider and with every other vendor that receives the data, signed before the first request, and providers limit which products and features such an agreement covers. Health data outside HIPAA still falls under consumer-protection and state health-privacy laws, and other countries use different regimes: confirm with a professional |
 | Secrets (passwords, API keys, tokens), full card numbers | Never. Strip in code before any prompt or log |
 | Another tenant's data | Never in the same request context |
 
@@ -205,8 +205,9 @@ Requests take three forms; find out which one is being asked before building any
 Engineering facts that decide feasibility:
 
 - Not every model is offered in every region, new models reach regions at different times, and
-  regional or pinned-region routing may be priced differently. Check current availability per
-  model before promising.
+  regional or pinned-region routing may be priced differently (a per-request geography setting
+  on a first-party API, or a regional endpoint on a cloud platform, can carry a premium over
+  global routing). Check current availability and price per model before promising.
 - "Global" or cross-region routing options on cloud platforms improve capacity by letting the
   request run anywhere; they defeat a processing-location commitment. Choose the routing mode
   deliberately.

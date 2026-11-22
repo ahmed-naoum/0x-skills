@@ -1,6 +1,6 @@
 ---
 name: ai-features
-description: "Designs LLM-powered product features that are useful, safe and affordable: whether to use a model, prompts and context, RAG, agents and tools, evals, guardrails, cost, latency, streaming UX and data handling. Use when adding an AI assistant, chat or summarization feature, building retrieval or an agent, or fixing wrong answers, prompt injection, LLM cost or slow responses."
+description: "Designs LLM-powered product features that are useful, safe and affordable: whether to use a model, prompts and context, RAG, agents and tools, evals, guardrails, cost, latency, streaming UX and data handling. Use when adding an AI assistant, chat or summarization feature, building retrieval or an agent, or fixing wrong answers, prompt injection, LLM cost, slow responses or what data may go to a model provider."
 ---
 
 # AI features in the product
@@ -92,7 +92,8 @@ By stage:
 ## Before you call it done
 
 1. Every model call goes through one server-side module; no provider key or direct provider
-   call exists in client code (`grep` the client bundle sources for the SDK import and key name).
+   call exists in client code: the key's variable has no `NEXT_PUBLIC_` prefix, and
+   `grep -rnE "sk-ant-|dangerouslyAllowBrowser" src .next/static` returns nothing.
 2. Each call site has a typed input with size caps, an output schema validated in code, an
    explicit `max_tokens`, and handling for invalid output, truncation, refusal, timeout and
    rate limit.
@@ -114,7 +115,8 @@ By stage:
 10. Usage is recorded per user, tenant and feature from the API's token counts; quotas are
     checked before the call; a hard spend limit and an anomaly alert exist.
 11. First-token, idle and total timeouts are set; client disconnect aborts the provider call;
-    the product works with the provider unavailable.
+    the product works with the provider unavailable (test with the provider base URL pointed
+    at an unreachable host).
 12. The UI has designed states for empty retrieval, refusal, timeout, quota and partial output;
     stop works; a reload shows the saved result.
 13. AI-generated content is labeled, citations link to sources built from stored metadata, and

@@ -86,9 +86,10 @@ Order that works for most calls:
 3. **Rules and constraints**: scope, tone, length, what to do when information is missing.
 4. **Examples**: three to five, covering the hard and boundary cases, not five easy ones.
    Examples outweigh instructions: a rule contradicted by an example loses.
-5. **Reference material**: documents, records, retrieved chunks, each in its own delimited block.
-6. **The specific request**, last.
-7. **Output format**: schema or exact shape.
+5. **Output format**: schema or exact shape, kept with the other stable parts so it stays in
+   the cached prefix.
+6. **Reference material**: documents, records, retrieved chunks, each in its own delimited block.
+7. **The specific request**, last.
 
 Practices that change results:
 
@@ -104,9 +105,13 @@ Practices that change results:
 - Put system-level instructions in the system prompt and user-supplied text in the user turn.
   Never interpolate user text into the system prompt: that hands the user the instruction channel.
 - For long documents, place them before the question and ask the model to quote the relevant
-  passages before answering; this raises accuracy on long inputs.
+  passages before answering; this usually raises accuracy on long inputs (confirm on the eval
+  set).
 - Avoid shouting (capitals, "CRITICAL"). Current models follow plain instructions; overemphasis
   makes them over-apply one rule at the expense of the rest.
+- Do not lean on temperature 0 for repeatable output: results still vary run to run, and some
+  current models reject non-default sampling parameters. Get consistency from examples, a
+  schema and validation in code.
 
 ## The call's contract
 
@@ -128,19 +133,24 @@ const Triage = z.object({
 const res = await client.messages.create({
   model: MODELS.triage, max_tokens: 512, system: TRIAGE_PROMPT,
   tools: [{ name: "record_triage", description: "Record the triage result.",
-            input_schema: z.toJSONSchema(Triage) }],          // Zod 4
-  tool_choice: { type: "tool", name: "record_triage" },
+            input_schema: z.toJSONSchema(Triage) as Anthropic.Tool.InputSchema }], // Zod 4
+  tool_choice: { type: "tool", name: "record_triage" }, // not combinable with extended thinking
   messages: [{ role: "user", content: `<ticket>${ticket}</ticket>` }],
 });
 const block = res.content.find((b) => b.type === "tool_use");
 const parsed = Triage.safeParse(block?.input);
 ```
 
+The Anthropic TypeScript SDK also ships Zod helpers for native structured output (the schema is
+passed as the output format and a parsed result comes back); take the current syntax from
+`claude-api`. Schema-constrained output guarantees the shape but supports only a subset of JSON
+Schema, so limits such as string length can be dropped or rejected: keep the `safeParse`.
+
 | Failure | Detect | Handle |
 |---|---|---|
 | Schema invalid | `safeParse` fails | Retry once with the validation error appended; then fall back |
 | Truncated | stop reason is the token limit | Raise the limit or shorten the task; never parse partial JSON as final |
-| Refusal or safety stop | stop reason or refusal text | Show a designed state (`ai-ux.md`); do not retry in a loop |
+| Refusal or safety stop | The stop reason, not a text match on "I can't" | Never resend the same request to the same model. Use the provider's documented refusal fallback if it has one (`cost-latency.md`); otherwise show a designed state (`ai-ux.md`) |
 | Timeout, rate limit, overload | HTTP error or deadline | Backoff, fallback model, or degrade (`cost-latency.md`) |
 | Plausible but wrong | Only evals and checks catch it | Add semantic checks: IDs exist, totals add up, quotes appear in the source |
 
@@ -214,13 +224,20 @@ burden a solo founder rarely has time to carry.
 | Fine-tuning a small model | A narrow, stable task at high volume; hundreds to thousands of quality-checked examples exist; a prompted small model is measurably short | The tuned model is frozen while base models improve; every data or base change means retraining and re-evaluating. Does not add fresh knowledge: that is retrieval's job |
 | Self-hosting open weights on GPUs | Contract or law forbids any third-party processor; or steady volume high enough that reserved GPUs beat API cost after counting engineering time | Idle GPUs cost the same as busy ones; capacity planning, upgrades and security patching become the team's job. A cloud provider's hosted model service inside the customer's cloud often satisfies the same requirement |
 | Local model on the user's machine | Data must not leave the device; offline use; desktop app | Quality well below hosted frontier models; hardware varies wildly |
-| In-browser (WebGPU or WASM) | Small tasks: embeddings, classification, autocomplete, redaction before upload | Model download of hundreds of megabytes to gigabytes; no WebGPU on many devices; a server fallback is still required |
+| In-browser (WebGPU or WASM) | Small tasks: embeddings, classification, autocomplete, redaction before upload | Weights are a large download (tens of megabytes for a small embedding model, gigabytes for a chat model): load on demand, cache them, run in a Web Worker. WebGPU has shipped in the major browsers but is still missing or slow on older OS versions, some Linux and Android setups and weak GPUs: feature-detect (`navigator.gpu`, then a non-null adapter) and keep a server fallback |
 
 Tooling that is stable enough to name: Ollama or llama.cpp for local development and desktop,
 vLLM for serving on GPUs, transformers.js or WebLLM in the browser. Before any of these, run the
 open model against the eval set; "almost as good" on a leaderboard is often far worse on the
-product's own cases. A cheap middle path: keep the hosted model for generation and run only a
-small local model for the privacy-sensitive step (PII redaction, on-device embeddings).
+product's own cases. Read the model's license before shipping: "open weights" covers everything
+from permissive licenses to non-commercial and restricted-use terms, and the license of the
+exact checkpoint is the one that binds. A cheap middle path: keep the hosted model for
+generation and run only a small local model for the privacy-sensitive step (PII redaction,
+on-device embeddings).
+
+By stage: skip all four rows at Prototype and Launch unless a signed customer requirement forces
+one. Fine-tuning and self-hosting are Scale decisions, made with the eval set and a cost model
+that includes the engineering time.
 
 ## Ask the user
 

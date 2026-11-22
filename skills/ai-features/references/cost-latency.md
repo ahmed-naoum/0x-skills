@@ -15,8 +15,9 @@ Prices, rate limits, cache rules and model lifetimes change. Take current values
 - **Cost** is input tokens, output tokens (priced several times higher per token than input)
   and, for agents, the same context re-sent at every step. In RAG and agent features input
   volume usually dominates the bill; in drafting features output does.
-- An agent run of N steps re-reads its growing history N times. Cost grows roughly with the
-  square of the number of steps unless the prefix is cached or the history compacted.
+- An agent run of N steps re-reads its growing history N times, so input cost grows roughly
+  with the square of the number of steps. Caching the prefix cuts the price of each re-read;
+  only compacting or trimming the history bounds the growth.
 
 Measure before optimizing: from traces, get tokens in, cached tokens, tokens out, time to first
 token and total time per call site, at p50 and p95.
@@ -47,6 +48,10 @@ reasoning moves in the other direction: use it only where evals show it pays.
 | Idle | Gap between stream chunks | 15 to 30 s, then abort and keep the partial |
 | Total | Whole call | From the budget above; long calls belong in a job |
 
+Start the first-token clock at the request and stop it at the first stream event of any kind.
+With extended reasoning on, visible text can start many seconds after that event: show a
+working state and budget for it instead of timing out a healthy call.
+
 A single total timeout either kills healthy long generations or waits a minute on a dead
 connection. Long non-streamed requests are also cut by proxies and platform function limits:
 stream, or run as a background job. Pass an abort signal from the client disconnect through to
@@ -59,8 +64,12 @@ Every model call must be attributable to a user and tenant, and limited, before 
 heavy or abusive account can otherwise erase the margin of a hundred normal ones.
 
 - **Record per call**: tenant, user, feature, model, input, cached and output tokens, computed
-  cost, trace ID. Take token counts from the API response's usage data, never from estimates,
-  and write the record even when the stream is cancelled or fails partway.
+  cost, trace ID. Take token counts from the API response's usage data, never from estimates.
+  Sum every counter: cache writes and cache reads are reported separately from plain input and
+  priced differently (Anthropic's input count excludes them), reasoning tokens bill as output,
+  and provider-run tools such as web search carry per-use fees. Write the record even when the
+  stream is cancelled or fails partway, from the last usage figures the stream delivered,
+  flagged as partial.
 - **Check before, settle after.** Before the call, verify remaining allowance and reserve an
   estimate (input tokens plus the output cap); after it, settle to actual usage. A check only
   after the call lets parallel requests overshoot without bound.
@@ -105,9 +114,11 @@ In order of return for effort:
    every prompt as stable content first (tool definitions, system prompt, examples, shared
    documents), volatile content last. Anything that varies per request (a timestamp, a user
    name, a request ID, reordered tools) placed early invalidates everything after it. Cache
-   entries expire after a short idle time and writes may cost a premium, so caching pays when
-   the same prefix recurs within that window. Verify with the cached-token counts in the usage
-   data: a hit rate near zero means the prefix is not stable.
+   entries expire after a short idle time (minutes by default; a longer lifetime may be sold at
+   a higher write price) and writes may cost a premium, so caching pays when the same prefix
+   recurs within that window. Caches are per model, and a prefix under a minimum token length
+   is not cached at all. Verify with the cached-token counts in the usage data: a hit rate near
+   zero means the prefix is not stable, too short, or too rarely reused.
 2. **Trim the context.** Fewer and better retrieved chunks (rerank, then cut), bounded history
    with summarization, tool results reduced to needed fields, stale tool results dropped, no
    documents "just in case". This often improves quality as well.
@@ -116,7 +127,8 @@ In order of return for effort:
 4. **Right-size the model** per call site (routing, below).
 5. **Batch the non-urgent.** Work that can wait hours (enrichment, classification backfills,
    evals, nightly summaries) goes through the provider's asynchronous batch interface, which is
-   billed at a substantial discount. Design for results arriving later and partially failing.
+   billed at a substantial discount (about half price at the major providers when this was
+   written; check). Design for results arriving up to a day later and partially failing.
 6. **Do not call.** Deterministic pre-checks (empty input, exact duplicates, known answers),
    response caching and precomputation, below.
 
@@ -144,11 +156,11 @@ failing its share.
 | Failure | Response |
 |---|---|
 | Rate limited (HTTP 429) | Honor the retry-after header; exponential backoff with jitter; queue non-interactive work. Shape traffic with a client-side concurrency limit so bursts do not start |
-| Provider overloaded or 5xx | Retry two or three times with backoff, then fall back |
+| Provider overloaded or 5xx (Anthropic signals overload with 529) | Retry two or three times with backoff, then fall back |
 | Timeout before first token | One retry, then fall back |
 | Stream dies midway | Keep the partial, offer continue or retry; do not silently restart and duplicate side effects |
 | Invalid request (4xx other than 429) | Do not retry; it is a bug or an oversized input |
-| Content refusal | Do not retry on another model to get around it; show the designed state |
+| Content refusal (a stop reason on a successful response, not an HTTP error) | Do not resend the same request to the same model. If the provider documents a fallback model for refusals (Anthropic does; details in `claude-api`), make that one attempt; if it also declines, show the designed state. Track the refusal rate on legitimate traffic: a rising rate is a prompt or scope bug |
 
 Fallback order for interactive features: retry, then a second model from the same provider
 (different capacity pool), then the same model family through another platform (a cloud
@@ -169,8 +181,9 @@ is disabled with a clear message while the rest of the product works.
 
 ## Model deprecation
 
-Hosted models are retired on a published schedule, typically with months of notice, and aliases
-that track "latest" change behavior without a deploy.
+Hosted models are retired on a published schedule. The notice period is set by the provider's
+policy and can be as short as about two months, cloud platforms that resell a model set their
+own dates, and aliases that track "latest" change behavior without a deploy.
 
 - Pin a dated or explicit version identifier in configuration for each call site. Do not use a
   floating alias in production: behavior should change when the team changes it.

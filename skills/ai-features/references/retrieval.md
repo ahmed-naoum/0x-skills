@@ -8,7 +8,7 @@ must respect who is allowed to see what.
 
 | Situation | Use | Why |
 |---|---|---|
-| Corpus fits comfortably in the window (a rule of thumb: under roughly 100 pages) and is shared by all users | Put it all in the prompt, cached | No pipeline, no retrieval misses; caching makes repeat reads cheap |
+| Corpus fits comfortably in the window (a rule of thumb: up to roughly 100 pages) and is shared by all users | Put it all in the prompt, cached | No pipeline, no retrieval misses. Do the arithmetic first: corpus tokens times the cached-read price times requests. At low traffic the cache expires between requests, and each one then pays full input price and waits for the whole corpus to be read |
 | Corpus is large, or differs per user or tenant | Retrieval | Only the relevant slice can enter the window |
 | The answer is a fact in a database (order status, usage, balance) | Tool call running a query | Embedding rows of structured data gives stale, approximate answers to exact questions |
 | The answer needs an aggregate ("how many", "top five", "total") | Tool call (SQL, analytics API) | Top-k retrieval sees k chunks, never the whole set |
@@ -17,8 +17,10 @@ must respect who is allowed to see what.
 | Open question across many documents, multi-hop | Retrieval exposed as a search tool the model may call several times | One fixed query misses follow-up needs |
 
 Default at Prototype: whole-document context if it fits, otherwise Postgres with `pgvector` and
-full-text search in the existing database. A dedicated vector database is a Scale decision; index
-types and tuning belong to `0x:data-stores` (`search.md`).
+full-text search in the existing database. Before Launch: hybrid search, the permission filter
+with its cross-tenant test, delete propagation and the reconciliation job; add a reranker and a
+labeled retrieval set as soon as answers miss. A dedicated vector database is a Scale decision;
+index types and tuning belong to `0x:data-stores` (`search.md`).
 
 ## The pipeline, with the decisions that matter
 
@@ -44,8 +46,10 @@ location (page, heading anchor), title, last-modified time, content hash, embedd
 The first three are security; the rest make citation, freshness and re-indexing possible.
 
 **Embeddings.** Use one model for documents and queries; if it has separate document and query
-modes, use each for its side. Anthropic does not provide an embedding model; pick a dedicated
-embedding provider and check current options. Record the model and version per row: changing the
+modes, use each for its side. Anthropic does not offer its own embedding model (its
+documentation points to Voyage AI); pick a dedicated embedding provider, check current options,
+and treat it as one more vendor that receives customer text (`ai-data-privacy.md`). Record the
+model and version per row: changing the
 model means re-embedding everything, because vectors from different models are not comparable.
 Check multilingual support if users write in more than one language.
 
@@ -65,10 +69,17 @@ generation, or instructing the model "do not reveal other customers' data", is n
 - Apply tenant and access filters **in the search query**, as a mandatory `WHERE` clause or
   filter derived from the server-side session, never from model output or client input.
 - With Postgres, enforce it twice: the filter in the query and row-level security on the chunks
-  table, so a forgotten filter returns nothing instead of everything.
+  table, so a forgotten filter returns nothing instead of everything. Trap: the table owner,
+  superusers and roles with `BYPASSRLS` skip policies, so an application that connects as the
+  owner gets no protection unless the table has `FORCE ROW LEVEL SECURITY`. Connect as a
+  separate non-owner role and prove it with the test below (`0x:backend-architecture`,
+  `multi-tenancy.md`).
 - Filter before the top-k cut. Fetching the top 20 globally and then discarding forbidden rows
-  leaks nothing but silently returns too few results; with an approximate vector index and a
-  selective filter, check the index's filtered-search behavior and recall.
+  leaks nothing but silently returns too few results. Approximate vector indexes do the same
+  thing internally: with a `pgvector` HNSW index the `WHERE` clause is applied after the index
+  scan, so a small tenant can get three rows back when twenty were asked for. Turn on iterative
+  index scans (`hnsw.iterative_scan`, pgvector 0.8 and later), or partition or partially index
+  by tenant, and measure filtered recall.
 - Document-level sharing that changes often (folders, per-user grants): store the access-control
   list on the chunk and update it when sharing changes, or check candidates against the
   authorization service at query time. A revoked share must take effect on the next query, not
@@ -110,8 +121,8 @@ rare terms. Keyword search (BM25 or Postgres full-text) does the opposite. Run b
   `1 / (k + rank)` over the result lists, with `k` around 60, and sort by the sum.
 - **Rerank**: retrieve a wide candidate set (50 to 150), score each candidate against the query
   with a reranking model, keep the best 5 to 20. A reranker reads query and passage together and
-  is the largest single precision gain for most pipelines. It adds latency in the low hundreds of
-  milliseconds; measure it against the budget.
+  is usually the largest single precision gain. It adds a network hop and a model pass per
+  query, with latency that grows with the candidate count; measure it against the budget.
 - **Order of investment**: fix parsing and chunk context, add keyword search and fusion, add a
   reranker, then consider query rewriting or multiple query variants. Changing the embedding model
   comes late; it rarely fixes what the earlier steps did not.
@@ -162,7 +173,9 @@ Layers, since the prompt alone is not enough:
    threshold tuned on the eval set, skip the model and show the empty-retrieval state
    (`ai-ux.md`). This is the most reliable way to decline and the cheapest.
 2. **In generation**: require citations per claim. Where the provider offers a native citations
-   feature that returns the quoted span, use it; quotes are checkable, bracket IDs are not.
+   feature that returns the quoted span (Anthropic's API does), use it: a quote can be checked
+   against the source in code, a bracket ID only for existence. Check whether it combines with
+   schema-constrained output on the same call before designing around both.
 3. **After generation**: verify in code that every cited ID was in the provided set and, for
    quoted spans, that the quote occurs in the source. Drop or flag answers with no valid citation.
 

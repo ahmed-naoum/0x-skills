@@ -69,8 +69,9 @@ Rules for LLM judges:
   1 to 10 scales produce noise nobody can interpret.
 - Give the judge the input, the output, the relevant sources and the criterion with examples of
   pass and fail. Ask for the reasoning first, then the verdict, as structured output.
-- Use a strong model for judging, and where possible not the same prompt family that produced
-  the output. Pin the judge model version; a judge change is a measurement change.
+- Use a strong model for judging, and where practical a different model from the one being
+  judged: models tend to rate their own output favorably. Pin the judge model version; a judge
+  change is a measurement change.
 - Grade outcomes, not paths: for agents, check the final state (was the right record changed,
   was the forbidden tool never called), not a required sequence of steps, unless the sequence
   itself is the requirement.
@@ -84,11 +85,13 @@ tokens and wall time. A change that keeps success and halves steps is a win the 
 - **Compare per case**, not only the aggregate: list cases that flipped pass to fail and fail to
   pass. A flat total often hides ten fixes and ten new breaks. Read the flips.
 - **Know the noise.** With 100 pass/fail cases the 95% interval on a pass rate near the middle
-  is about plus or minus 10 points; a 3-point move on a small set is not a result. Either grow
-  the set, or use the paired view: among cases where the two versions disagree, is the split
-  clearly lopsided?
+  is about plus or minus 10 points (about 18 points with 30 cases; narrower near 0% or 100%);
+  a 3-point move on a small set is not a result. Either grow the set, or use the paired view
+  (a sign test): among cases where the two versions disagree, is the split clearly lopsided?
+  Ten against two is about the weakest split worth believing; six against four is noise.
 - **Handle nondeterminism.** Run each case several times (three to five) where outputs vary,
-  and report the pass fraction. Treat a case that passes two times in three as failing for
+  and report the pass fraction. Setting temperature to 0 does not make outputs repeatable, and
+  some models do not accept it. Treat a case that passes two times in three as failing for
   anything safety-related.
 - **Tiers in CI**: unit tests without a model on every commit; a smoke set of 10 to 30 cases
   with cheap graders on pull requests that touch prompts, tools, schema, model ID or retrieval
@@ -103,7 +106,10 @@ tokens and wall time. A change that keeps success and halves steps is a win the 
 Tooling: at Prototype a script that loops over a JSONL file and writes a results table is
 enough. Adopt an eval framework or platform (Promptfoo, Braintrust, Langfuse, Inspect and
 similar) when the set, the graders or the number of people outgrow the script; the method
-matters more than the tool.
+matters more than the tool. Ownership in this market moves (in 2026 OpenAI announced the
+purchase of Promptfoo and ClickHouse bought Langfuse; both stayed open source), so keep cases
+and graders in portable files, and treat any hosted platform that stores prompts and outputs as
+a vendor receiving customer data (`ai-data-privacy.md`).
 
 ## Tracing
 
@@ -112,17 +118,18 @@ something wrong" cannot be investigated.
 
 Use the OpenTelemetry GenAI semantic conventions so traces work with any backend and sit in the
 same trace as the HTTP request and database spans (`0x:site-reliability` owns the telemetry
-pipeline). The conventions are still evolving; check the current attribute names in the
-specification and prefer the provider SDK's or framework's instrumentation over hand-rolled
-names. The stable core:
+pipeline). The conventions still carry "Development" status, moved to their own repository in
+2026, and have renamed attributes before (`gen_ai.system` became `gen_ai.provider.name`). So
+prefer a maintained instrumentation library over hand-written names, pin its version, and read
+the current specification before building dashboards on an attribute. The core that has held:
 
 | What | Convention |
 |---|---|
-| Span per model call | Named by operation and model; attributes for operation name, provider, requested and responding model |
-| Token usage | `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens` (record cached-token counts as well) |
-| Outcome | Finish reason, error type |
-| Tool execution | A child span per tool call with the tool name |
-| Agent run | A parent span for the whole run; conversation or run ID on every span |
+| Span per model call | Named by operation and model (`chat` plus the model name); `gen_ai.operation.name`, `gen_ai.provider.name`, `gen_ai.request.model`, `gen_ai.response.model` |
+| Token usage | `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`; record cache-read and cache-write token counts as well, under the names the current specification gives |
+| Outcome | `gen_ai.response.finish_reasons`, `error.type` |
+| Tool execution | A child span per tool call (`execute_tool` plus the tool name) with `gen_ai.tool.name` |
+| Agent run | A parent span for the whole run; `gen_ai.conversation.id` or the product's run ID on every span |
 
 Add the product's own attributes on every span: prompt version, feature name, tenant ID, user
 ID (or a pseudonym), eval-relevant flags (retrieval empty, fallback used, guardrail tripped) and
