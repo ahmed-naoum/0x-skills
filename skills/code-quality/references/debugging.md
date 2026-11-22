@@ -3,6 +3,10 @@
 Read this when: a bug is reported or its cause is unknown, a failure cannot be reproduced, a bug
 appears only in production, a server process leaks memory, or a failure is intermittent.
 
+Contents: order of work · bug report and triage · reproduce · read the error · bisecting ·
+debugger and logpoints · regression test · production error to local reproduction · debugging
+in production safely · memory leak in a Node server · intermittent concurrency failures.
+
 ## The order of work
 
 1. Capture the report in a reproducible form and set severity.

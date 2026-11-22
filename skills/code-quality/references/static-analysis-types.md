@@ -168,15 +168,6 @@ protects nothing. Budget: under about 3 seconds for a typical commit.
   agent sessions run without them.
 - CI repeats every hook check. Hooks are optional by design; CI is the gate.
 
-```json
-{
-  "lint-staged": {
-    "*.{ts,tsx,js,jsx}": ["eslint --fix", "prettier --write"],
-    "*.{json,md,css,yml}": "prettier --write"
-  }
-}
-```
-
 ## Tightening strictness in a legacy codebase
 
 Turning on `strict` in an old codebase produces hundreds or thousands of errors. Fixing them
@@ -212,8 +203,6 @@ modules first, and type the module boundaries before the insides.
   conventions it does not know, names used only from templates or the database. Add those as
   entries or ignores with a comment; do not delete on the tool's word alone for anything
   reachable from outside the repository.
-- **Unused dependencies** are attack surface and install time for no benefit; remove them.
-  Check type-only and CLI-only packages before removing.
 - **Circular imports:** `pnpm dlx madge --circular --extensions ts,tsx src`, or
   dependency-cruiser, or a lint rule such as `import/no-cycle` (accurate but slow; run it in
   CI only). Symptoms of a cycle at run time: an import that is `undefined` at module
@@ -306,5 +295,3 @@ Prove each rule works by writing a violating import once and seeing the error.
   with rollback as the emergency path instead of bypass.
 - **Who else consumes the API or database schema (mobile app, partners, analytics)?** Decides
   where generated types and drift checks are needed. Assume only this repository.
-- **Are local hooks acceptable, or does the user commit through tools that skip them?** Assume
-  a fast format-and-lint hook plus full enforcement in CI.
