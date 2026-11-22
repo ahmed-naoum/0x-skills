@@ -1,0 +1,403 @@
+{
+  "name": "backend-architecture",
+  "layer": 4,
+  "order": 1,
+  "title": "Backend architecture and server-side patterns",
+  "summary": "Structure the server side of a product: runtime choice, monolith and service boundaries, consistency under concurrency, multi-tenancy, background jobs, realtime features, file uploads and resilient third-party integrations.",
+  "useWhen": [
+    "How should I structure the backend: monolith, modules or services?",
+    "Which backend language or runtime should I use: Node, Bun, Deno, Go or Python?",
+    "Move this slow work to a background job, or add a scheduled job",
+    "Jobs are running twice, getting stuck or piling up in the queue",
+    "Make this app multi-tenant and keep tenants' data apart",
+    "Let customers use their own domain, or keep their data in a chosen region",
+    "Add live updates, chat, presence or collaborative editing",
+    "Handle file uploads, image processing or CSV import and export",
+    "A third-party API being slow or down takes our whole app down",
+    "The server stalls or leaks memory under load"
+  ],
+  "notFor": [
+    {
+      "topic": "Endpoint contracts, pagination, API rate limits and generic webhooks",
+      "use": "api-design"
+    },
+    {
+      "topic": "Schema design, transactions, locks and query tuning",
+      "use": "postgres-database"
+    },
+    {
+      "topic": "Choosing and running Redis, search, object storage or streams",
+      "use": "data-stores"
+    },
+    {
+      "topic": "Roles, permissions and per-object access checks",
+      "use": "auth-identity"
+    },
+    {
+      "topic": "Sending email, SMS and push notifications",
+      "use": "email-notifications"
+    },
+    {
+      "topic": "Profiling slow endpoints and load testing",
+      "use": "web-performance"
+    }
+  ],
+  "references": [
+    {
+      "file": "runtime-language.md",
+      "title": "Language, runtime and process model",
+      "purpose": "Read when choosing a backend language or runtime, or when a server process blocks, leaks, or shuts down badly.",
+      "leaves": [
+        {
+          "topic": "Choose a backend language and runtime by workload and team skill",
+          "level": "core"
+        },
+        {
+          "topic": "Choose and pin a JavaScript runtime: Node.js, Bun or Deno",
+          "level": "core"
+        },
+        {
+          "topic": "Keep the event loop unblocked under load",
+          "level": "core"
+        },
+        {
+          "topic": "Prefer runtime built-ins (fetch, crypto, watch mode, env files) over extra dependencies",
+          "level": "core"
+        },
+        {
+          "topic": "Finish in-flight requests and jobs on SIGTERM before exiting",
+          "level": "core"
+        },
+        {
+          "topic": "Size workers, threads and pools to CPU, memory and downstream limits",
+          "level": "pro"
+        },
+        {
+          "topic": "Move CPU-heavy work to worker threads, a job or another runtime",
+          "level": "pro"
+        },
+        {
+          "topic": "Run TypeScript natively in Node with type stripping and ESM-only modules",
+          "level": "pro"
+        },
+        {
+          "topic": "Propagate deadlines and cancel work when the client disconnects",
+          "level": "expert"
+        },
+        {
+          "topic": "Tune garbage collection and memory limits to stop latency spikes",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "architecture-shape.md",
+      "title": "Monolith, modules, services and events",
+      "purpose": "Read when laying out a new backend, choosing between the framework's server and a separate API service, drawing module boundaries, or deciding whether to extract a service or introduce events.",
+      "leaves": [
+        {
+          "topic": "Start as a modular monolith and extract services only on proven need",
+          "level": "core"
+        },
+        {
+          "topic": "Choose between the meta-framework's server and a separate API service with its own framework",
+          "level": "core"
+        },
+        {
+          "topic": "Draw module boundaries around business capabilities with explicit interfaces",
+          "level": "core"
+        },
+        {
+          "topic": "Keep business logic out of transport code so API, jobs and CLI share it",
+          "level": "core"
+        },
+        {
+          "topic": "Handle errors by kind: expected failures, bugs and what the user sees",
+          "level": "core"
+        },
+        {
+          "topic": "Scale horizontally with stateless app servers and external session state",
+          "level": "pro"
+        },
+        {
+          "topic": "Decouple modules with events without creating a distributed monolith",
+          "level": "expert"
+        },
+        {
+          "topic": "Decide when to extract a service and define its contract and owner",
+          "level": "expert"
+        },
+        {
+          "topic": "Apply event sourcing or CQRS only where audit or read scale demands it",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "consistency-concurrency.md",
+      "title": "Consistency and concurrency across systems",
+      "purpose": "Read when a workflow spans several steps or systems and must stay correct under retries, races and partial failure.",
+      "leaves": [
+        {
+          "topic": "Model workflows as explicit state machines with guarded transitions",
+          "level": "core"
+        },
+        {
+          "topic": "Choose where strong consistency is required and where eventual is acceptable",
+          "level": "pro"
+        },
+        {
+          "topic": "Publish events atomically with the write using a transactional outbox",
+          "level": "pro"
+        },
+        {
+          "topic": "Avoid dual writes between the database and external systems",
+          "level": "pro"
+        },
+        {
+          "topic": "Write consumers that tolerate duplicate, reordered and delayed messages",
+          "level": "pro"
+        },
+        {
+          "topic": "Give users read-your-writes when reads lag behind writes",
+          "level": "expert"
+        },
+        {
+          "topic": "Orchestrate multi-step processes as a saga with compensations",
+          "level": "expert"
+        },
+        {
+          "topic": "Use distributed locks correctly, with expiry and fencing tokens",
+          "level": "expert"
+        },
+        {
+          "topic": "Write reconciliation jobs that check invariants across tables and systems",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "multi-tenancy.md",
+      "title": "Multi-tenancy",
+      "purpose": "Read when one deployment serves many customer organizations and their data and load must be kept apart, or tenants need their own settings, domain or region.",
+      "leaves": [
+        {
+          "topic": "Choose row, schema or database isolation for multi-tenancy",
+          "level": "core"
+        },
+        {
+          "topic": "Model accounts, workspaces and users so one user can join many tenants",
+          "level": "core"
+        },
+        {
+          "topic": "Scope every query, cache key, job and file path by tenant",
+          "level": "core"
+        },
+        {
+          "topic": "Write tests proving cross-tenant reads and writes fail",
+          "level": "core"
+        },
+        {
+          "topic": "Enforce tenant isolation with row-level security policies",
+          "level": "pro"
+        },
+        {
+          "topic": "Support per-tenant settings and overrides without forking the codebase",
+          "level": "pro"
+        },
+        {
+          "topic": "Limit noisy tenants with per-tenant quotas and fair scheduling",
+          "level": "expert"
+        },
+        {
+          "topic": "Serve customer custom domains with ownership verification and on-demand TLS certificates",
+          "level": "expert"
+        },
+        {
+          "topic": "Pin each tenant to a home region with isolated regional stacks and global routing",
+          "level": "expert"
+        },
+        {
+          "topic": "Move a large tenant to dedicated infrastructure without downtime",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "background-jobs.md",
+      "title": "Background, scheduled and durable jobs",
+      "purpose": "Read when work should happen outside the request: queues, retries, cron, long workflows, and stuck or duplicated jobs.",
+      "leaves": [
+        {
+          "topic": "Move slow work off the request path into background jobs",
+          "level": "core"
+        },
+        {
+          "topic": "Write idempotent job handlers for at-least-once delivery",
+          "level": "core"
+        },
+        {
+          "topic": "Start with a Postgres-backed queue and know when to outgrow it",
+          "level": "core"
+        },
+        {
+          "topic": "Configure retries with backoff, jitter and a dead-letter queue",
+          "level": "core"
+        },
+        {
+          "topic": "Run scheduled jobs exactly once across multiple instances",
+          "level": "pro"
+        },
+        {
+          "topic": "Set timeouts, concurrency limits and priorities per queue",
+          "level": "pro"
+        },
+        {
+          "topic": "Pass IDs, not payloads, and version job arguments across deploys",
+          "level": "pro"
+        },
+        {
+          "topic": "Alert on queue depth and age and scale workers to match",
+          "level": "pro"
+        },
+        {
+          "topic": "Orchestrate multi-step workflows with a durable execution engine",
+          "level": "expert"
+        },
+        {
+          "topic": "Drain or replay a poisoned queue without duplicating side effects",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "realtime.md",
+      "title": "Realtime features",
+      "purpose": "Read when the UI must update without a refresh: live status, chat, presence, collaboration or peer media.",
+      "leaves": [
+        {
+          "topic": "Choose polling, SSE, WebSockets or WebRTC for a realtime feature",
+          "level": "core"
+        },
+        {
+          "topic": "Handle reconnects, missed messages and ordering on the client",
+          "level": "core"
+        },
+        {
+          "topic": "Authenticate, authorize and rate-limit long-lived connections",
+          "level": "core"
+        },
+        {
+          "topic": "Stream with Server-Sent Events, including reconnect and resume",
+          "level": "pro"
+        },
+        {
+          "topic": "Build presence, typing indicators and live cursors without flooding the server",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide between a hosted realtime service and running your own",
+          "level": "pro"
+        },
+        {
+          "topic": "Scale WebSocket connections across instances with pub/sub",
+          "level": "expert"
+        },
+        {
+          "topic": "Build collaborative or offline-first features with a sync engine or CRDTs",
+          "level": "expert"
+        },
+        {
+          "topic": "Use WebRTC with STUN, TURN and a managed media server",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "file-uploads.md",
+      "title": "File uploads and document processing",
+      "purpose": "Read when users upload, import or export files, or the server must process images, video, CSV or PDFs.",
+      "leaves": [
+        {
+          "topic": "Upload directly to storage with presigned, size-limited requests",
+          "level": "core"
+        },
+        {
+          "topic": "Restrict upload type and size and verify content, not the extension",
+          "level": "core"
+        },
+        {
+          "topic": "Serve user files from a separate origin with safe content headers",
+          "level": "pro"
+        },
+        {
+          "topic": "Process images, video and documents in background jobs",
+          "level": "pro"
+        },
+        {
+          "topic": "Support resumable multipart uploads for large files and flaky networks",
+          "level": "pro"
+        },
+        {
+          "topic": "Import and export CSV with streaming, validation and row-level error reports",
+          "level": "pro"
+        },
+        {
+          "topic": "Generate PDFs and other documents server-side reliably",
+          "level": "pro"
+        },
+        {
+          "topic": "Scan uploads for malware and quarantine them before use",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "integrations-resilience.md",
+      "title": "Third-party integrations and resilience",
+      "purpose": "Read when calling an external API or another service, or when a dependency's failure spreads into your own outage.",
+      "leaves": [
+        {
+          "topic": "Set a timeout on every outbound call",
+          "level": "core"
+        },
+        {
+          "topic": "Add jittered retries and circuit breakers to outbound calls",
+          "level": "pro"
+        },
+        {
+          "topic": "Degrade features gracefully when a third-party API is down",
+          "level": "pro"
+        },
+        {
+          "topic": "Wrap critical vendors behind an interface you can reimplement",
+          "level": "pro"
+        },
+        {
+          "topic": "Pin third-party API versions and test upgrades in a sandbox",
+          "level": "pro"
+        },
+        {
+          "topic": "Respect third-party rate limits with queues and token buckets",
+          "level": "pro"
+        },
+        {
+          "topic": "Store third-party OAuth tokens encrypted and refresh them before expiry",
+          "level": "pro"
+        },
+        {
+          "topic": "Shed load and apply backpressure so overload degrades gracefully",
+          "level": "expert"
+        },
+        {
+          "topic": "Stop retry storms with retry budgets and hedging limits",
+          "level": "expert"
+        },
+        {
+          "topic": "Build two-way syncs with external systems and resolve conflicts",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}

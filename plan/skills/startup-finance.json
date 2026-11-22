@@ -1,0 +1,273 @@
+{
+  "name": "startup-finance",
+  "layer": 12,
+  "order": 2,
+  "title": "Startup finance, fundraising and exit",
+  "summary": "Run the company's money: bookkeeping and tax, cash and runway forecasting, funding strategy, the fundraising process, equity and the cap table, and exit and due diligence.",
+  "useWhen": [
+    "How much runway do I have? Build a cash-flow forecast",
+    "Set up bookkeeping and work out which taxes I need to file",
+    "Should I bootstrap or raise money?",
+    "Build a financial model or a pitch deck",
+    "Explain this term sheet or SAFE and what it does to my ownership",
+    "How much equity should I give a co-founder, hire or advisor?",
+    "Write the monthly investor update",
+    "We are burning too fast; what do I cut?",
+    "Someone wants to buy the company; what now?",
+    "We are out of runway; how do I shut the company down properly?"
+  ],
+  "notFor": [
+    {
+      "topic": "Prices, plans, CAC, LTV and margin per customer",
+      "use": "pricing-monetization"
+    },
+    {
+      "topic": "Sales tax and VAT collection, invoices and payment reconciliation",
+      "use": "payments-billing"
+    },
+    {
+      "topic": "Incorporation, founder agreements, the board, hiring and payroll setup",
+      "use": "company-building"
+    },
+    {
+      "topic": "Cloud bills and infrastructure cost reduction",
+      "use": "cloud-infrastructure"
+    },
+    {
+      "topic": "Technical due diligence on the codebase",
+      "use": "engineering-leadership"
+    },
+    {
+      "topic": "Analyzing financial data with SQL or statistics",
+      "use": "data"
+    }
+  ],
+  "references": [
+    {
+      "file": "bookkeeping-tax.md",
+      "title": "Bookkeeping and tax",
+      "purpose": "Read when setting up the company's books, reading financial statements, or working out tax filings and who should do them.",
+      "leaves": [
+        {
+          "topic": "Open business banking and keep business money separate from personal",
+          "level": "core"
+        },
+        {
+          "topic": "Keep monthly books in accounting software",
+          "level": "core"
+        },
+        {
+          "topic": "File and pay corporate, payroll and sales taxes on time",
+          "level": "core"
+        },
+        {
+          "topic": "Read a profit and loss statement, balance sheet and cash-flow statement",
+          "level": "core"
+        },
+        {
+          "topic": "Choose an accountant and decide which tasks to delegate",
+          "level": "core"
+        },
+        {
+          "topic": "Close the books monthly with a checklist",
+          "level": "pro"
+        },
+        {
+          "topic": "Claim R&D credits and startup tax reliefs where available",
+          "level": "pro"
+        },
+        {
+          "topic": "Recognize revenue correctly and reconcile billing to the books",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "runway-forecasting.md",
+      "title": "Cash, runway and financial planning",
+      "purpose": "Read when forecasting cash, tracking financial health monthly, deciding how to extend runway, or reducing dependence on one bank, processor or customer.",
+      "leaves": [
+        {
+          "topic": "Maintain a cash-flow forecast and know runway in months",
+          "level": "core"
+        },
+        {
+          "topic": "Set a personal runway budget and a kill date for the idea",
+          "level": "core"
+        },
+        {
+          "topic": "Calculate MRR, expansion and churn correctly from billing data",
+          "level": "core"
+        },
+        {
+          "topic": "Review burn, margin, CAC payback and runway in a monthly finance pack",
+          "level": "pro"
+        },
+        {
+          "topic": "Build an 18-month financial model with scenario cases",
+          "level": "pro"
+        },
+        {
+          "topic": "Manage cash using burn multiple and default-alive calculations",
+          "level": "pro"
+        },
+        {
+          "topic": "Spread deposits and hold reserves so one bank or processor cannot sink you",
+          "level": "pro"
+        },
+        {
+          "topic": "Reduce reliance on any single customer for most revenue",
+          "level": "pro"
+        },
+        {
+          "topic": "Cut burn decisively: reprioritize, renegotiate contracts, reduce headcount lawfully",
+          "level": "expert"
+        },
+        {
+          "topic": "Bring in a fractional CFO when reporting, audits or fundraising demand it",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "funding-strategy.md",
+      "title": "Funding strategy and investor communication",
+      "purpose": "Read when deciding whether and how to fund the company, and how to keep investors and stakeholders informed.",
+      "leaves": [
+        {
+          "topic": "Decide bootstrapped niche versus venture-scale before raising",
+          "level": "core"
+        },
+        {
+          "topic": "Choose between bootstrapping, angels, venture capital and revenue-based financing",
+          "level": "core"
+        },
+        {
+          "topic": "Use grants, cloud credits and other non-dilutive funding",
+          "level": "pro"
+        },
+        {
+          "topic": "Know the milestones investors expect at each stage",
+          "level": "pro"
+        },
+        {
+          "topic": "Pitch the company in two minutes to customers, hires and investors",
+          "level": "pro"
+        },
+        {
+          "topic": "Send a monthly stakeholder update with real numbers",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "fundraising-process.md",
+      "title": "Running a fundraise",
+      "purpose": "Read when preparing for or running a funding round: materials, process, terms and closing.",
+      "leaves": [
+        {
+          "topic": "Write a pitch deck and data room that survive investor scrutiny",
+          "level": "pro"
+        },
+        {
+          "topic": "Read a term sheet and spot the terms that matter",
+          "level": "pro"
+        },
+        {
+          "topic": "Vet investors through founder references before taking their money",
+          "level": "pro"
+        },
+        {
+          "topic": "Run a fundraising process with a target list and parallel conversations",
+          "level": "expert"
+        },
+        {
+          "topic": "Negotiate a SAFE or priced round: valuation, dilution, preferences, board seats",
+          "level": "expert"
+        },
+        {
+          "topic": "Close a round: legal documents, filings and funds received",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "equity-cap-table.md",
+      "title": "Equity and the cap table",
+      "purpose": "Read when splitting or granting equity, modeling dilution, or handling shares when someone leaves.",
+      "leaves": [
+        {
+          "topic": "Vest founder equity with a cliff and file required tax elections on time",
+          "level": "core"
+        },
+        {
+          "topic": "Maintain a cap table and model dilution through future rounds",
+          "level": "pro"
+        },
+        {
+          "topic": "Size equity grants with vesting for hires and advisors",
+          "level": "pro"
+        },
+        {
+          "topic": "Explain an equity offer to a candidate honestly",
+          "level": "pro"
+        },
+        {
+          "topic": "Set up an option pool with a defensible fair-market valuation",
+          "level": "expert"
+        },
+        {
+          "topic": "Handle a departure: repurchase, exercise window and acceleration",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "exit-due-diligence.md",
+      "title": "Exit and due diligence",
+      "purpose": "Read when an acquirer or investor wants to look inside the company, or when selling, merging or shutting down.",
+      "leaves": [
+        {
+          "topic": "Document systems so the business runs without the founder",
+          "level": "pro"
+        },
+        {
+          "topic": "Value a small software business and sell it through a marketplace or broker",
+          "level": "pro"
+        },
+        {
+          "topic": "Sunset a product gracefully with notice, refunds and customer data export",
+          "level": "pro"
+        },
+        {
+          "topic": "Wind down the company: settle debts, notify customers and staff, dissolve, file final returns",
+          "level": "pro"
+        },
+        {
+          "topic": "Keep a standing data room: contracts, IP, financials, policies and cap table",
+          "level": "expert"
+        },
+        {
+          "topic": "Prepare quality-of-earnings-ready financials and cohort metrics",
+          "level": "expert"
+        },
+        {
+          "topic": "Decide sell, merge, raise or keep running from offers and personal goals",
+          "level": "expert"
+        },
+        {
+          "topic": "Run a competitive sale process with advisors and multiple bidders",
+          "level": "expert"
+        },
+        {
+          "topic": "Negotiate deal terms: price, earn-out, escrow, representations and warranties",
+          "level": "expert"
+        },
+        {
+          "topic": "Plan post-acquisition integration, customer communication and team retention",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}

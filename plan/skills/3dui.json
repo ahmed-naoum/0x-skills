@@ -1,0 +1,84 @@
+{
+  "name": "3dui",
+  "existing": true,
+  "layer": 6,
+  "order": 3,
+  "title": "Live 3D product sites",
+  "summary": "Build live 3D product websites with three.js and Next.js: the object is code, lit like a photo studio and directed by the scroll.",
+  "useWhen": [
+    "Build a 3D product page or hero where the product is rendered live",
+    "Model a product in code instead of importing a mesh file",
+    "Make metal and glass look real in three.js",
+    "Drive the camera through the product as the user scrolls",
+    "Add an exploded view with labeled callouts, or a blueprint mode",
+    "The 3D scene stutters or overheats phones",
+    "Add synthesized sound or a hold-to-act interaction to the scene"
+  ],
+  "notFor": [
+    {
+      "topic": "CSS, View Transitions and scroll-driven animation without WebGL",
+      "use": "frontend-foundations"
+    },
+    {
+      "topic": "Next.js routing, data and rendering around the scene",
+      "use": "react-nextjs"
+    },
+    {
+      "topic": "Core Web Vitals and loading performance of the page as a whole",
+      "use": "web-performance"
+    },
+    {
+      "topic": "Layout, typography and visual design of the surrounding page",
+      "use": "ui-ux-design"
+    }
+  ],
+  "references": [
+    {
+      "file": "SKILL.md",
+      "title": "Live 3D product sites",
+      "purpose": "Read when building or changing a scroll-directed, studio-lit three.js product scene inside a Next.js site.",
+      "leaves": [
+        {
+          "topic": "Drive all motion from one shared clock",
+          "level": "core"
+        },
+        {
+          "topic": "Adapt render quality to phones to hold frame rate",
+          "level": "core"
+        },
+        {
+          "topic": "Lathe-turn round parts from a profile curve",
+          "level": "pro"
+        },
+        {
+          "topic": "Author physical metal and glass materials with brushed anisotropic finishes",
+          "level": "pro"
+        },
+        {
+          "topic": "Light the product with a PMREM studio environment rotated by the cursor",
+          "level": "pro"
+        },
+        {
+          "topic": "Direct a scroll-driven camera cue list that frames objects by size",
+          "level": "pro"
+        },
+        {
+          "topic": "Stagger exploded views with two-column callouts and a blueprint edges-only mode",
+          "level": "pro"
+        },
+        {
+          "topic": "Apply film-style post: MSAA HDR, bloom, ACES tone mapping and grain",
+          "level": "pro"
+        },
+        {
+          "topic": "Build procedural geometry in millimeters: SDF shapes, marching-squares trace, beveled extrude",
+          "level": "expert"
+        },
+        {
+          "topic": "Synthesize sound with Web Audio; unlock audio and tilt with one hold-to-act gesture",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}

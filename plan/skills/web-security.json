@@ -1,0 +1,379 @@
+{
+  "name": "web-security",
+  "layer": 5,
+  "order": 2,
+  "title": "Web application and infrastructure security",
+  "summary": "Build and run the product so it resists attack: threat modeling, vulnerability classes, browser security headers, secrets and cryptographic choices, the software supply chain, hardening of company accounts and admin tools, security logging and breach response, and security testing.",
+  "useWhen": [
+    "Is this feature secure? What could an attacker do with it?",
+    "Add a Content Security Policy, fix a CORS error or set security headers",
+    "A secret or API key was committed or leaked",
+    "Where should secrets live and how do I rotate them?",
+    "Which primitive fits here: a random token, a hash, an HMAC, encryption or a signature?",
+    "Harden our admin panel, staff accounts and SaaS logins before launch",
+    "A dependency was compromised or has a critical vulnerability",
+    "We think we have been breached; what do we do now?",
+    "Prepare for a penetration test or set up a vulnerability disclosure policy",
+    "Render user-supplied HTML, markdown, SVG or URLs safely"
+  ],
+  "notFor": [
+    {
+      "topic": "Reviewing the current diff or pending changes for vulnerabilities",
+      "use": "security-review"
+    },
+    {
+      "topic": "Login, sessions, MFA, permission checks and signup abuse",
+      "use": "auth-identity"
+    },
+    {
+      "topic": "TLS configuration, HSTS, WAF and DDoS protection",
+      "use": "web-networking"
+    },
+    {
+      "topic": "SOC 2, ISO 27001, PCI scope and breach-notification law",
+      "use": "privacy-compliance"
+    },
+    {
+      "topic": "Hardening a single Linux host and SSH",
+      "use": "linux-server"
+    },
+    {
+      "topic": "Prompt injection and LLM-specific guardrails",
+      "use": "ai-features"
+    }
+  ],
+  "references": [
+    {
+      "file": "threat-modeling.md",
+      "title": "Threat modeling and security priorities",
+      "purpose": "Read when starting a feature or product and deciding what could go wrong, what matters most and what to accept.",
+      "leaves": [
+        {
+          "topic": "Draw trust boundaries and data flows for the system",
+          "level": "core"
+        },
+        {
+          "topic": "Identify the crown-jewel data and the shortest paths to it",
+          "level": "core"
+        },
+        {
+          "topic": "Apply a security baseline checklist before a product launches",
+          "level": "core"
+        },
+        {
+          "topic": "Threat-model a feature and list abuse cases before building it",
+          "level": "pro"
+        },
+        {
+          "topic": "Rank risks by likelihood and impact and decide what to accept",
+          "level": "pro"
+        },
+        {
+          "topic": "Treat third-party scripts and vendors as part of the attack surface",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide between a fractional CISO, a security hire and a managed service",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "vulnerability-classes.md",
+      "title": "Vulnerability classes and safe input and output handling",
+      "purpose": "Read when writing or reviewing code that touches untrusted input: queries, HTML output, URLs, files, redirects and business rules.",
+      "leaves": [
+        {
+          "topic": "Use parameterized queries everywhere and ban string-built SQL",
+          "level": "core"
+        },
+        {
+          "topic": "Escape output by context to prevent cross-site scripting",
+          "level": "core"
+        },
+        {
+          "topic": "Prevent path traversal, command injection and unsafe deserialization",
+          "level": "core"
+        },
+        {
+          "topic": "Reject mass assignment by allow-listing writable fields",
+          "level": "core"
+        },
+        {
+          "topic": "Sanitize untrusted HTML, markdown and SVG before rendering",
+          "level": "core"
+        },
+        {
+          "topic": "Block SSRF by allow-listing outbound destinations and guarding metadata endpoints",
+          "level": "pro"
+        },
+        {
+          "topic": "Prevent open redirects and unsafe URL handling",
+          "level": "pro"
+        },
+        {
+          "topic": "Close business-logic flaws: coupon reuse, negative amounts, race-condition double spends",
+          "level": "pro"
+        },
+        {
+          "topic": "Bound attacker-sized inputs to prevent ReDoS and resource exhaustion",
+          "level": "pro"
+        },
+        {
+          "topic": "Sandbox user-supplied code, HTML and custom domains",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "browser-security.md",
+      "title": "CSP, CORS and browser security headers",
+      "purpose": "Read when configuring what the browser may load, embed or call: CSP, CORS, framing, isolation and third-party scripts.",
+      "leaves": [
+        {
+          "topic": "Configure CORS precisely, without wildcard origins on credentialed requests",
+          "level": "core"
+        },
+        {
+          "topic": "Block clickjacking with frame-ancestors",
+          "level": "core"
+        },
+        {
+          "topic": "Set Referrer-Policy, Permissions-Policy and nosniff headers",
+          "level": "core"
+        },
+        {
+          "topic": "Deploy a strict nonce-based Content Security Policy",
+          "level": "pro"
+        },
+        {
+          "topic": "Roll out CSP in report-only mode and fix violations before enforcing",
+          "level": "pro"
+        },
+        {
+          "topic": "Inventory third-party scripts and pin them with Subresource Integrity",
+          "level": "pro"
+        },
+        {
+          "topic": "Validate postMessage origins and sandbox embedded iframes",
+          "level": "pro"
+        },
+        {
+          "topic": "Enforce Trusted Types to remove DOM XSS sinks",
+          "level": "expert"
+        },
+        {
+          "topic": "Apply cross-origin isolation headers (COOP, COEP, CORP) where needed",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "secrets.md",
+      "title": "Secrets, key management and cryptographic primitives",
+      "purpose": "Read when storing, sharing, rotating or recovering credentials and keys, responding to a leaked secret, or choosing a cryptographic primitive.",
+      "leaves": [
+        {
+          "topic": "Keep secrets in a secrets manager, never in repositories, images or client bundles",
+          "level": "core"
+        },
+        {
+          "topic": "Enable secret scanning with push protection on all repositories",
+          "level": "core"
+        },
+        {
+          "topic": "Rotate a leaked key, audit its use and purge it from history",
+          "level": "core"
+        },
+        {
+          "topic": "Share credentials through a team password manager with role-based access",
+          "level": "core"
+        },
+        {
+          "topic": "Turn on provider-managed encryption at rest for databases, disks, buckets and backups",
+          "level": "core"
+        },
+        {
+          "topic": "Pick the right primitive: random tokens, hashes, HMAC, authenticated encryption or signatures",
+          "level": "core"
+        },
+        {
+          "topic": "Issue short-lived, scoped credentials instead of static keys",
+          "level": "pro"
+        },
+        {
+          "topic": "Rotate secrets on a schedule without downtime",
+          "level": "pro"
+        },
+        {
+          "topic": "Store recovery codes and break-glass credentials where a second person can reach them",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "supply-chain.md",
+      "title": "Dependencies and software supply chain",
+      "purpose": "Read when adding, updating or auditing dependencies, or responding to a compromised or abandoned package.",
+      "leaves": [
+        {
+          "topic": "Commit lockfiles and install in frozen mode everywhere",
+          "level": "core"
+        },
+        {
+          "topic": "Evaluate a library's maintenance, license and bus factor before depending on it",
+          "level": "core"
+        },
+        {
+          "topic": "Scan dependencies and images in CI and patch within a deadline",
+          "level": "core"
+        },
+        {
+          "topic": "Automate dependency updates with a release cooldown window",
+          "level": "pro"
+        },
+        {
+          "topic": "Disable install scripts and vet packages against typosquatting and slopsquatting",
+          "level": "pro"
+        },
+        {
+          "topic": "Upgrade dependencies and runtimes on a cadence, ahead of end-of-life dates",
+          "level": "pro"
+        },
+        {
+          "topic": "Generate an SBOM for each release",
+          "level": "expert"
+        },
+        {
+          "topic": "Establish a compromised package's blast radius and rotate everything exposed",
+          "level": "expert"
+        },
+        {
+          "topic": "Fork, vendor or replace an abandoned dependency",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "infrastructure-hardening.md",
+      "title": "Hardening company accounts, staff access and admin tools",
+      "purpose": "Read when locking down the company's own accounts, staff devices, internal tools and admin panels.",
+      "leaves": [
+        {
+          "topic": "Enforce MFA and least privilege on registrar, repository, payment and SaaS accounts",
+          "level": "core"
+        },
+        {
+          "topic": "Hold domains, cloud, code and payment accounts in company-owned identities",
+          "level": "core"
+        },
+        {
+          "topic": "Remove default credentials, debug routes and unused endpoints and ports",
+          "level": "core"
+        },
+        {
+          "topic": "Enforce SSO, phishing-resistant MFA and same-day offboarding for staff",
+          "level": "pro"
+        },
+        {
+          "topic": "Put internal tools behind zero-trust access instead of a VPN",
+          "level": "pro"
+        },
+        {
+          "topic": "Harden admin panels with separate authentication, access restrictions and audit",
+          "level": "pro"
+        },
+        {
+          "topic": "Secure staff devices with disk encryption, updates and screen locks",
+          "level": "pro"
+        },
+        {
+          "topic": "Limit who can read production data and log every access",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "logging-breach-response.md",
+      "title": "Security logging, detection and breach response",
+      "purpose": "Read when deciding what to audit-log, setting up detection, or handling a suspected intrusion.",
+      "leaves": [
+        {
+          "topic": "Decide which security events to log and how long to keep them",
+          "level": "core"
+        },
+        {
+          "topic": "Record security-relevant actions in an append-only audit log",
+          "level": "pro"
+        },
+        {
+          "topic": "Log every internal admin action and customer impersonation",
+          "level": "pro"
+        },
+        {
+          "topic": "Ship audit logs off-host and alert on anomalous cloud API calls",
+          "level": "pro"
+        },
+        {
+          "topic": "Write a security incident plan before you need it: roles, contacts, decisions",
+          "level": "pro"
+        },
+        {
+          "topic": "Contain an intrusion: isolate hosts, revoke sessions, rotate credentials, preserve evidence",
+          "level": "pro"
+        },
+        {
+          "topic": "Give customers exportable audit logs of account activity",
+          "level": "expert"
+        },
+        {
+          "topic": "Reconstruct from logs what an attacker accessed and when",
+          "level": "expert"
+        },
+        {
+          "topic": "Detect anomalies: export spikes, privilege changes and new credentials",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "security-testing.md",
+      "title": "Security testing and disclosure",
+      "purpose": "Read when testing your own product for vulnerabilities, commissioning a penetration test, or receiving a security report.",
+      "leaves": [
+        {
+          "topic": "Test endpoints for broken access control using two accounts",
+          "level": "core"
+        },
+        {
+          "topic": "Verify security headers, TLS and cookie flags with external scanners",
+          "level": "core"
+        },
+        {
+          "topic": "Probe your own app against the OWASP Top 10 with an intercepting proxy",
+          "level": "pro"
+        },
+        {
+          "topic": "Run automated security scanners in CI and triage their findings",
+          "level": "pro"
+        },
+        {
+          "topic": "Commission a penetration test and triage findings by exploitability",
+          "level": "pro"
+        },
+        {
+          "topic": "Fix findings by severity with deadlines and regression tests",
+          "level": "pro"
+        },
+        {
+          "topic": "Publish a security.txt and run a vulnerability disclosure program",
+          "level": "pro"
+        },
+        {
+          "topic": "Run a tabletop exercise for a breach scenario",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}

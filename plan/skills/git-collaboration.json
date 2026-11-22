@@ -1,0 +1,220 @@
+{
+  "name": "git-collaboration",
+  "layer": 8,
+  "order": 1,
+  "title": "Git and collaboration",
+  "summary": "Use git and the repository as a team tool: the git model and recovery, branching workflow, pull requests and code-review practice, monorepos, and versioning, changelogs and release notes.",
+  "useWhen": [
+    "I messed up my git history; help me recover",
+    "Resolve this merge or rebase conflict",
+    "Should we squash, merge or rebase? What branching model should we use?",
+    "Write the pull request description, or split this change into reviewable parts",
+    "Set up review rules, CODEOWNERS and a pull request template",
+    "Should this be a monorepo? Set up workspaces and shared packages",
+    "How should we version releases and write the changelog?",
+    "Find out when and why this line of code changed"
+  ],
+  "notFor": [
+    {
+      "topic": "Finding bugs in the current diff",
+      "use": "code-review"
+    },
+    {
+      "topic": "CI checks, branch protection in the pipeline and deploys",
+      "use": "ci-cd-release"
+    },
+    {
+      "topic": "Removing a leaked secret from history and rotating it",
+      "use": "web-security"
+    },
+    {
+      "topic": "Git worktrees and review habits for AI coding agents",
+      "use": "ai-coding-agents"
+    },
+    {
+      "topic": "API versioning and deprecation policy",
+      "use": "api-design"
+    },
+    {
+      "topic": "README, architecture and developer documentation",
+      "use": "code-quality"
+    }
+  ],
+  "references": [
+    {
+      "file": "git-model.md",
+      "title": "The git model and recovery",
+      "purpose": "Read when a git command did something unexpected, history needs fixing, or you need to dig through the past.",
+      "leaves": [
+        {
+          "topic": "Predict what a git command does to commits, refs, index and working tree",
+          "level": "core"
+        },
+        {
+          "topic": "Recover lost work with reflog, reset and revert",
+          "level": "core"
+        },
+        {
+          "topic": "Resolve merge and rebase conflicts correctly",
+          "level": "core"
+        },
+        {
+          "topic": "Write .gitignore and .gitattributes files that keep the repository clean",
+          "level": "core"
+        },
+        {
+          "topic": "Search history with log, blame and pickaxe to learn why code exists",
+          "level": "core"
+        },
+        {
+          "topic": "Clean up local history with interactive rebase and fixup before sharing",
+          "level": "pro"
+        },
+        {
+          "topic": "Juggle parallel work with stash, worktrees and sparse checkout",
+          "level": "pro"
+        },
+        {
+          "topic": "Remove large files from history and keep binaries out with LFS",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "branching-workflow.md",
+      "title": "Branching and commit workflow",
+      "purpose": "Read when choosing or changing how work flows into main: branches, commits, merge policy and release branches.",
+      "leaves": [
+        {
+          "topic": "Work trunk-based with short-lived branches",
+          "level": "core"
+        },
+        {
+          "topic": "Write small commits with messages that explain why",
+          "level": "core"
+        },
+        {
+          "topic": "Choose merge, squash or rebase as the integration policy",
+          "level": "core"
+        },
+        {
+          "topic": "Keep long-running work mergeable with stacked changes and frequent rebases",
+          "level": "pro"
+        },
+        {
+          "topic": "Adopt a commit-message convention that tooling can read",
+          "level": "pro"
+        },
+        {
+          "topic": "Maintain release branches and backport fixes only when needed",
+          "level": "expert"
+        },
+        {
+          "topic": "Sign commits and verify authorship on protected branches",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "pull-requests-review.md",
+      "title": "Pull requests and code-review practice",
+      "purpose": "Read when opening, splitting or reviewing pull requests, or setting the team's review conventions.",
+      "leaves": [
+        {
+          "topic": "Open small pull requests describing what, why and how to test",
+          "level": "core"
+        },
+        {
+          "topic": "Self-review your diff before requesting review, even when solo",
+          "level": "core"
+        },
+        {
+          "topic": "Review for correctness, design and risk before style",
+          "level": "core"
+        },
+        {
+          "topic": "Give review feedback that is specific, kind and prioritized",
+          "level": "pro"
+        },
+        {
+          "topic": "Split a large change into a reviewable sequence",
+          "level": "pro"
+        },
+        {
+          "topic": "Set written review conventions: turnaround, approvals and ownership",
+          "level": "pro"
+        },
+        {
+          "topic": "Route and standardize reviews with CODEOWNERS and templates",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide what needs human review and what automated checks can cover",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "monorepos.md",
+      "title": "Monorepos and shared code",
+      "purpose": "Read when deciding between one repository and several, or setting up workspaces, shared packages and affected-only builds.",
+      "leaves": [
+        {
+          "topic": "Decide between one repository and many",
+          "level": "core"
+        },
+        {
+          "topic": "Manage a monorepo with pnpm workspaces and Turborepo remote caching",
+          "level": "pro"
+        },
+        {
+          "topic": "Share code through internal packages with clear boundaries",
+          "level": "pro"
+        },
+        {
+          "topic": "Build and test only what a change affects",
+          "level": "pro"
+        },
+        {
+          "topic": "Version and publish packages from a monorepo",
+          "level": "expert"
+        },
+        {
+          "topic": "Split or merge repositories while preserving history",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "versioning-releases.md",
+      "title": "Versioning, changelogs and release notes",
+      "purpose": "Read when numbering releases, tagging, writing a changelog or release notes, or announcing a breaking change.",
+      "leaves": [
+        {
+          "topic": "Tag releases and tie every deploy to a commit",
+          "level": "core"
+        },
+        {
+          "topic": "Apply semantic versioning to libraries and APIs",
+          "level": "pro"
+        },
+        {
+          "topic": "Write changelogs and release notes customers can act on",
+          "level": "pro"
+        },
+        {
+          "topic": "Automate version bumps and changelogs from commit conventions",
+          "level": "pro"
+        },
+        {
+          "topic": "Communicate breaking changes with migration guides",
+          "level": "pro"
+        },
+        {
+          "topic": "Publish a supported-versions policy with end-of-life dates",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}

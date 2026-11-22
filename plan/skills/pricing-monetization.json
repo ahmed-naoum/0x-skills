@@ -1,0 +1,209 @@
+{
+  "name": "pricing-monetization",
+  "layer": 11,
+  "order": 2,
+  "title": "Pricing, packaging and unit economics",
+  "summary": "Decide how the product makes money: revenue model and value metric, price setting, plans and packaging, discounts and price changes, and the unit economics that show whether it works.",
+  "useWhen": [
+    "How much should I charge for this?",
+    "Should it be subscription, usage-based, per seat or one-time?",
+    "Design our pricing tiers and what goes in each plan",
+    "Free trial, freemium or paid only?",
+    "Design the pricing page",
+    "How do I price the AI features without losing money on heavy users?",
+    "Raise prices without losing existing customers",
+    "A customer wants a discount; what should our policy be?",
+    "Do our unit economics work? Calculate CAC, LTV and payback"
+  ],
+  "notFor": [
+    {
+      "topic": "Implementing checkout, subscriptions, metering and invoices",
+      "use": "payments-billing"
+    },
+    {
+      "topic": "Cash-flow forecasts, runway, bookkeeping and fundraising",
+      "use": "startup-finance"
+    },
+    {
+      "topic": "A/B test design and statistics for a pricing experiment",
+      "use": "product-analytics"
+    },
+    {
+      "topic": "Negotiating a specific enterprise deal",
+      "use": "sales-support"
+    },
+    {
+      "topic": "Legal rules on price display, auto-renewal and cancellation",
+      "use": "privacy-compliance"
+    },
+    {
+      "topic": "Reducing the infrastructure and inference costs themselves",
+      "use": "cloud-infrastructure"
+    }
+  ],
+  "references": [
+    {
+      "file": "revenue-model.md",
+      "title": "Revenue model and value metric",
+      "purpose": "Read when choosing how the product charges at all: model, value metric, entry point and sales motion.",
+      "leaves": [
+        {
+          "topic": "Choose the revenue model: subscription, usage, transaction fee or marketplace take",
+          "level": "core"
+        },
+        {
+          "topic": "Pick a value metric that scales price with customer value",
+          "level": "core"
+        },
+        {
+          "topic": "Decide free trial, freemium, reverse trial or paid-only entry",
+          "level": "core"
+        },
+        {
+          "topic": "Decide self-serve, sales-assisted or enterprise motion from the price point",
+          "level": "core"
+        },
+        {
+          "topic": "Price AI features against inference cost with credits, caps or bundling",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide whether to offer one-time or lifetime deals",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "price-setting.md",
+      "title": "Setting the price",
+      "purpose": "Read when choosing actual numbers: research, anchors, margin floor, regional pricing and whether to publish prices.",
+      "leaves": [
+        {
+          "topic": "Set initial prices from customer value and alternatives, not cost",
+          "level": "core"
+        },
+        {
+          "topic": "Anchor against competitors and the cost of the status quo",
+          "level": "core"
+        },
+        {
+          "topic": "Price so gross margin covers infrastructure, support and acquisition",
+          "level": "core"
+        },
+        {
+          "topic": "Research willingness to pay with interviews and structured price questions",
+          "level": "pro"
+        },
+        {
+          "topic": "Test a price with real offers rather than surveys alone",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide whether to publish enterprise prices or sell by quote",
+          "level": "pro"
+        },
+        {
+          "topic": "Set regional prices, currencies and purchasing-power discounts",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "packaging-tiers.md",
+      "title": "Plans, packaging and the pricing page",
+      "purpose": "Read when deciding how many plans, what each includes, where limits sit and how the pricing page presents them.",
+      "leaves": [
+        {
+          "topic": "Keep plans few and comparable, with one recommended",
+          "level": "core"
+        },
+        {
+          "topic": "Design a pricing page that makes the right plan obvious",
+          "level": "core"
+        },
+        {
+          "topic": "Design tiered packaging with a clear upgrade trigger",
+          "level": "core"
+        },
+        {
+          "topic": "Decide which features and limits fence each tier",
+          "level": "pro"
+        },
+        {
+          "topic": "Set free-plan limits that show value yet leave a reason to pay",
+          "level": "pro"
+        },
+        {
+          "topic": "Build expansion paths: seats, usage tiers, add-ons and annual prepay",
+          "level": "pro"
+        },
+        {
+          "topic": "Package an enterprise tier: SSO, audit logs, SLA and support",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "discounts-price-changes.md",
+      "title": "Discounts and price changes",
+      "purpose": "Read when someone asks for a discount, or when raising, restructuring or retiring prices and plans.",
+      "leaves": [
+        {
+          "topic": "Set a discount policy: who, how much and in exchange for what",
+          "level": "core"
+        },
+        {
+          "topic": "Offer annual plans with incentives that improve cash flow",
+          "level": "core"
+        },
+        {
+          "topic": "Run a price increase with grandfathering and measure churn impact",
+          "level": "pro"
+        },
+        {
+          "topic": "Announce pricing changes with notice that protects trust",
+          "level": "pro"
+        },
+        {
+          "topic": "Run promotions and coupons without training customers to wait",
+          "level": "pro"
+        },
+        {
+          "topic": "Review pricing on a schedule using win/loss, usage and margin data",
+          "level": "pro"
+        },
+        {
+          "topic": "Migrate customers off legacy plans and retire old prices",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "unit-economics.md",
+      "title": "Unit economics",
+      "purpose": "Read when checking whether the business model works per customer, plan or channel.",
+      "leaves": [
+        {
+          "topic": "Calculate break-even: customers needed to cover fixed costs",
+          "level": "core"
+        },
+        {
+          "topic": "Model CAC, gross margin, payback and LTV on one sheet",
+          "level": "pro"
+        },
+        {
+          "topic": "Calculate cost to serve and gross margin per plan, including AI inference",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide whether a segment or channel is profitable enough to pursue",
+          "level": "pro"
+        },
+        {
+          "topic": "Find and fix customers or plans that lose money",
+          "level": "pro"
+        }
+      ]
+    }
+  ]
+}

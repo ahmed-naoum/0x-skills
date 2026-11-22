@@ -1,0 +1,276 @@
+{
+  "name": "product-discovery",
+  "layer": 10,
+  "order": 1,
+  "title": "Product discovery and management",
+  "summary": "Decide what to build and why: customer interviews, problem validation, jobs-to-be-done, MVP scoping, specs, prioritization and roadmaps, and the feedback loops that tell you whether it worked.",
+  "useWhen": [
+    "Is this idea worth building? How do I validate it?",
+    "Help me plan and run customer interviews",
+    "Turn these interview notes into what to build",
+    "Scope the MVP; what can I cut?",
+    "Write a spec or PRD for this feature",
+    "Prioritize this backlog or these feature requests",
+    "Build a roadmap for the next quarter",
+    "Do we have product-market fit? Should we pivot?",
+    "A customer keeps asking for a feature; should I build it?"
+  ],
+  "notFor": [
+    {
+      "topic": "Event tracking, funnels, retention analysis and A/B tests",
+      "use": "product-analytics"
+    },
+    {
+      "topic": "Wireframes, flows, usability tests and interface copy",
+      "use": "ui-ux-design"
+    },
+    {
+      "topic": "Positioning, launch and acquisition channels",
+      "use": "growth-marketing"
+    },
+    {
+      "topic": "Price points, plans and packaging",
+      "use": "pricing-monetization"
+    },
+    {
+      "topic": "Engineering estimates, technical planning and build-versus-buy",
+      "use": "engineering-leadership"
+    },
+    {
+      "topic": "Briefing a coding agent to implement the spec",
+      "use": "ai-coding-agents"
+    }
+  ],
+  "references": [
+    {
+      "file": "customer-interviews.md",
+      "title": "Customer interviews and research",
+      "purpose": "Read when planning, running or synthesizing conversations and surveys with customers and prospects.",
+      "leaves": [
+        {
+          "topic": "Recruit target-customer interviews through cold outreach and communities",
+          "level": "core"
+        },
+        {
+          "topic": "Run a non-leading interview about past behavior, not hypothetical futures",
+          "level": "core"
+        },
+        {
+          "topic": "Extract jobs-to-be-done, triggers and current spend from interview notes",
+          "level": "core"
+        },
+        {
+          "topic": "Synthesize interviews into ranked problems with evidence counts",
+          "level": "core"
+        },
+        {
+          "topic": "Pick the research method that fits the decision and deadline",
+          "level": "pro"
+        },
+        {
+          "topic": "Write a survey without leading questions and interpret results cautiously",
+          "level": "pro"
+        },
+        {
+          "topic": "Keep a weekly habit of customer conversations after launch",
+          "level": "pro"
+        },
+        {
+          "topic": "Maintain a research repository that links every insight to evidence",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "problem-validation.md",
+      "title": "Problem and demand validation",
+      "purpose": "Read before committing to build an idea or a large feature: who has the problem, how badly, and will they pay.",
+      "leaves": [
+        {
+          "topic": "Write a one-sentence problem statement naming who suffers and how often",
+          "level": "core"
+        },
+        {
+          "topic": "Define an ideal customer profile narrow enough to list 100 named prospects",
+          "level": "core"
+        },
+        {
+          "topic": "Map existing alternatives, including spreadsheets and doing nothing",
+          "level": "core"
+        },
+        {
+          "topic": "Score ideas on pain, payer clarity, reachability and founder advantage",
+          "level": "core"
+        },
+        {
+          "topic": "Test demand with a landing page, fake door or concierge test",
+          "level": "core"
+        },
+        {
+          "topic": "Set a falsifiable validation threshold and decide pivot, persevere or kill",
+          "level": "core"
+        },
+        {
+          "topic": "Collect pre-orders or letters of intent to prove willingness to pay",
+          "level": "pro"
+        },
+        {
+          "topic": "Sign design partners who commit time and feedback before launch",
+          "level": "pro"
+        },
+        {
+          "topic": "Estimate bottom-up market size from countable customers and realistic price",
+          "level": "pro"
+        },
+        {
+          "topic": "Tear down a competitor's onboarding, pricing and reviews to find gaps",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "mvp-scoping.md",
+      "title": "MVP scoping",
+      "purpose": "Read when deciding the smallest thing worth shipping and what to leave out, fake or do by hand.",
+      "leaves": [
+        {
+          "topic": "Cut the MVP to one user, one job and one happy path",
+          "level": "core"
+        },
+        {
+          "topic": "Scope around the riskiest assumption and cut everything else",
+          "level": "core"
+        },
+        {
+          "topic": "Decide what to fake, do manually or buy instead of build",
+          "level": "core"
+        },
+        {
+          "topic": "Ship a narrow MVP in weeks and iterate on real usage",
+          "level": "core"
+        },
+        {
+          "topic": "Define what is good enough to charge for",
+          "level": "core"
+        },
+        {
+          "topic": "Set the quality bar per area: polish the core, stub the rest",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "specs.md",
+      "title": "Specs and requirements",
+      "purpose": "Read when writing down what a feature must do before it is designed or built.",
+      "leaves": [
+        {
+          "topic": "Write a one-page spec with problem, non-goals and a success metric",
+          "level": "core"
+        },
+        {
+          "topic": "Write user stories with acceptance criteria someone else can test",
+          "level": "core"
+        },
+        {
+          "topic": "Specify edge cases, states and error behavior before building",
+          "level": "core"
+        },
+        {
+          "topic": "Define in the spec how success will be measured and instrumented",
+          "level": "pro"
+        },
+        {
+          "topic": "Review a spec with customers or teammates before committing",
+          "level": "pro"
+        },
+        {
+          "topic": "Write a press release and FAQ first for a larger bet",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "prioritization-roadmaps.md",
+      "title": "Prioritization and roadmaps",
+      "purpose": "Read when choosing what to do next, saying no, planning a quarter, or retiring a feature.",
+      "leaves": [
+        {
+          "topic": "Prioritize the backlog by impact, confidence and effort",
+          "level": "core"
+        },
+        {
+          "topic": "Decide which feature requests to refuse and say no gracefully",
+          "level": "core"
+        },
+        {
+          "topic": "Balance customer requests, strategic bets and maintenance",
+          "level": "pro"
+        },
+        {
+          "topic": "Run a quarterly roadmap process tied to metrics, not opinions",
+          "level": "pro"
+        },
+        {
+          "topic": "Publish a now, next, later roadmap without committing to dates",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide to kill, pivot or double down on a feature from usage data",
+          "level": "pro"
+        },
+        {
+          "topic": "Deprecate a feature using usage data and a migration notice",
+          "level": "pro"
+        },
+        {
+          "topic": "Delegate a product area with outcome targets instead of feature lists",
+          "level": "expert"
+        },
+        {
+          "topic": "Hire a first product manager once founder attention is the bottleneck",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "feedback-loops.md",
+      "title": "Feedback loops and product-market fit",
+      "purpose": "Read when collecting and using feedback after launch, or judging whether the product has found its market.",
+      "leaves": [
+        {
+          "topic": "Onboard the first fifty users by hand and record every stumble",
+          "level": "core"
+        },
+        {
+          "topic": "Collect in-app feedback at the moment of use",
+          "level": "core"
+        },
+        {
+          "topic": "Turn support tickets and calls into tagged, counted product feedback",
+          "level": "pro"
+        },
+        {
+          "topic": "Run churn-reason surveys and exit interviews",
+          "level": "pro"
+        },
+        {
+          "topic": "Run win/loss interviews and fix the top objection",
+          "level": "pro"
+        },
+        {
+          "topic": "Run a beta or early-access program for new features",
+          "level": "pro"
+        },
+        {
+          "topic": "Tell users when the thing they asked for ships",
+          "level": "pro"
+        },
+        {
+          "topic": "Judge product-market fit from retention, the 40% survey and organic pull",
+          "level": "pro"
+        }
+      ]
+    }
+  ]
+}

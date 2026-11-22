@@ -1,0 +1,15 @@
+[
+  {"id": 0, "name": "Machine & OS", "question": "What is my code actually running on?"},
+  {"id": 1, "name": "Network", "question": "How does a request travel from a browser to my server and back?"},
+  {"id": 2, "name": "Cloud & delivery", "question": "Where does my code run, and how does a change reach production safely?"},
+  {"id": 3, "name": "Data", "question": "Where does the truth live, and how do I keep it correct, fast and recoverable?"},
+  {"id": 4, "name": "Backend", "question": "What does the server do with a request, and what does it promise other systems?"},
+  {"id": 5, "name": "Trust", "question": "Who is this, what may they do, and what keeps attackers and regulators away?"},
+  {"id": 6, "name": "Frontend", "question": "What runs in the user's browser, on any device?"},
+  {"id": 7, "name": "Design & accessibility", "question": "Can every person see it, understand it and finish the task?"},
+  {"id": 8, "name": "Engineering craft", "question": "How do I keep changing the code quickly without breaking it?"},
+  {"id": 9, "name": "Operations", "question": "Is it up, is it fast, and what happens when it is not?"},
+  {"id": 10, "name": "Product", "question": "What should I build next, and is it working for users?"},
+  {"id": 11, "name": "Growth & revenue", "question": "How do customers find it, pay for it and stay?"},
+  {"id": 12, "name": "Company", "question": "How does this become a business that lasts?"}
+]

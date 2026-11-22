@@ -1,0 +1,367 @@
+{
+  "name": "payments-billing",
+  "layer": 4,
+  "order": 4,
+  "title": "Payments, billing and commerce",
+  "summary": "Take money correctly: checkout integration, subscriptions and entitlements, usage billing, invoices and tax, refunds, disputes and fraud, ledger and reconciliation, and catalog, cart, inventory and fulfillment.",
+  "useWhen": [
+    "Integrate Stripe or Paddle checkout into the app",
+    "Add subscriptions with trials, upgrades, downgrades and cancellation",
+    "A customer says they were charged twice, or paid but has no access",
+    "Handle payment webhooks and keep our database in sync with the provider",
+    "Add usage-based or credit-based billing",
+    "Do I need to charge VAT or sales tax, and how do I invoice?",
+    "We are getting chargebacks or card-testing attacks",
+    "Failed renewals are costing us revenue",
+    "Build a product catalog, cart, inventory and order fulfillment",
+    "Reconcile payouts with what our database says we earned"
+  ],
+  "notFor": [
+    {
+      "topic": "What to charge, plan design and pricing strategy",
+      "use": "pricing-monetization"
+    },
+    {
+      "topic": "Generic webhook and idempotency-key mechanics",
+      "use": "api-design"
+    },
+    {
+      "topic": "PCI DSS scope, SAQ and consumer-law rules on renewal and cancellation",
+      "use": "privacy-compliance"
+    },
+    {
+      "topic": "Bookkeeping, revenue recognition and tax filing",
+      "use": "startup-finance"
+    },
+    {
+      "topic": "Cancellation save offers and churn reduction",
+      "use": "sales-support"
+    },
+    {
+      "topic": "Checkout page conversion experiments",
+      "use": "product-analytics"
+    }
+  ],
+  "references": [
+    {
+      "file": "checkout-integration.md",
+      "title": "Payment provider and checkout integration",
+      "purpose": "Read when choosing a provider or wiring a payment flow end to end, from the pay button to confirmed state in the database.",
+      "leaves": [
+        {
+          "topic": "Choose a payment provider by markets, payment methods, fees and payout terms",
+          "level": "core"
+        },
+        {
+          "topic": "Use hosted checkout or provider-hosted fields so card data never touches your servers",
+          "level": "core"
+        },
+        {
+          "topic": "Create the payment server-side from item IDs, never client-computed amounts",
+          "level": "core"
+        },
+        {
+          "topic": "Treat the provider webhook, not the browser redirect, as the source of truth",
+          "level": "core"
+        },
+        {
+          "topic": "Generate an idempotency key per payment attempt so retries never double-charge",
+          "level": "core"
+        },
+        {
+          "topic": "Block reload, back button and second tabs from resubmitting a payment",
+          "level": "core"
+        },
+        {
+          "topic": "Handle 3-D Secure and asynchronous payment states correctly",
+          "level": "core"
+        },
+        {
+          "topic": "Resolve an unknown outcome after a timeout by querying, never re-charging",
+          "level": "pro"
+        },
+        {
+          "topic": "Offer Apple Pay, Google Pay and local payment methods per market",
+          "level": "pro"
+        },
+        {
+          "topic": "Add a second processor with portable payment tokens for uptime and freeze risk",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "checkout-experience.md",
+      "title": "Checkout experience and payment errors",
+      "purpose": "Read when designing or fixing what the customer sees while paying: totals, errors, confirmation and recovery.",
+      "leaves": [
+        {
+          "topic": "Show localized price, tax and total before the customer commits",
+          "level": "core"
+        },
+        {
+          "topic": "Map every provider error and decline code to a clear customer action",
+          "level": "core"
+        },
+        {
+          "topic": "Confirm the order with an ID, receipt and next steps on every outcome path",
+          "level": "core"
+        },
+        {
+          "topic": "Monitor checkout conversion and decline rates by method and country",
+          "level": "pro"
+        },
+        {
+          "topic": "Recover abandoned checkouts with reminders and saved carts",
+          "level": "pro"
+        },
+        {
+          "topic": "Tune retries and payment-method order to raise authorization rate",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "subscriptions.md",
+      "title": "Subscriptions and entitlements",
+      "purpose": "Read when implementing recurring billing: plan changes, trials, failed renewals, and what a customer is allowed to use.",
+      "leaves": [
+        {
+          "topic": "Implement subscriptions with hosted checkout, a customer portal and webhooks",
+          "level": "core"
+        },
+        {
+          "topic": "Sync entitlements from billing webhooks as the source of truth",
+          "level": "core"
+        },
+        {
+          "topic": "Model trials, proration, upgrades, downgrades and grace periods explicitly",
+          "level": "core"
+        },
+        {
+          "topic": "Implement cancel, pause and reactivate states in billing and access",
+          "level": "core"
+        },
+        {
+          "topic": "Gate features through an entitlements layer separate from billing",
+          "level": "pro"
+        },
+        {
+          "topic": "Recover failed renewals with smart retries, card updater and dunning emails",
+          "level": "pro"
+        },
+        {
+          "topic": "Support seats, add-ons and annual plans in the subscription model",
+          "level": "pro"
+        },
+        {
+          "topic": "Test billing lifecycles with the provider's simulated clocks",
+          "level": "pro"
+        },
+        {
+          "topic": "Migrate subscribers between plans or price versions safely",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "usage-billing.md",
+      "title": "Usage-based and credit billing",
+      "purpose": "Read when price depends on consumption: metering, credits, quotas, overages and showing customers their usage.",
+      "leaves": [
+        {
+          "topic": "Meter usage with accurate, idempotent events",
+          "level": "pro"
+        },
+        {
+          "topic": "Enforce quotas in real time without blocking on the billing provider",
+          "level": "pro"
+        },
+        {
+          "topic": "Show customers live usage with spend alerts and caps",
+          "level": "pro"
+        },
+        {
+          "topic": "Bill usage-based plans from metered totals at period end",
+          "level": "expert"
+        },
+        {
+          "topic": "Implement prepaid credits with top-ups, expiry and a balance ledger",
+          "level": "expert"
+        },
+        {
+          "topic": "Implement hybrid plans: seats plus usage with allowances and overages",
+          "level": "expert"
+        },
+        {
+          "topic": "Reconcile metered usage against invoices before each billing run",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "invoices-tax.md",
+      "title": "Invoices and sales tax",
+      "purpose": "Read when deciding how tax is handled, issuing invoices, or selling to businesses and other countries.",
+      "leaves": [
+        {
+          "topic": "Decide between a merchant of record and handling sales tax and VAT yourself",
+          "level": "core"
+        },
+        {
+          "topic": "Issue compliant invoices and receipts with tax details",
+          "level": "core"
+        },
+        {
+          "topic": "Collect and validate tax IDs and billing addresses from business customers",
+          "level": "pro"
+        },
+        {
+          "topic": "Register for, collect and remit VAT, GST or sales tax",
+          "level": "pro"
+        },
+        {
+          "topic": "Correct an invoice with a credit note instead of editing it",
+          "level": "pro"
+        },
+        {
+          "topic": "Accept bank transfers, purchase orders and net payment terms",
+          "level": "pro"
+        },
+        {
+          "topic": "Track tax registration thresholds across jurisdictions",
+          "level": "expert"
+        },
+        {
+          "topic": "Support mandatory e-invoicing formats where required",
+          "level": "expert"
+        },
+        {
+          "topic": "Handle multi-currency pricing, settlement and exchange-rate differences",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "refunds-disputes-fraud.md",
+      "title": "Refunds, chargebacks and fraud",
+      "purpose": "Read when refunding, fighting a dispute, facing card testing or fraud, or worrying about a processor freeze.",
+      "leaves": [
+        {
+          "topic": "Issue full and partial refunds and update entitlements",
+          "level": "core"
+        },
+        {
+          "topic": "Prevent disputes with clear descriptors, receipts and easy cancellation",
+          "level": "pro"
+        },
+        {
+          "topic": "Contest chargebacks with evidence before the deadline",
+          "level": "pro"
+        },
+        {
+          "topic": "Watch dispute rate against card-network monitoring thresholds",
+          "level": "pro"
+        },
+        {
+          "topic": "Stop card-testing attacks with fraud rules, challenges and velocity limits",
+          "level": "pro"
+        },
+        {
+          "topic": "Refund, credit and correct entitlements after a billing bug",
+          "level": "pro"
+        },
+        {
+          "topic": "Stay within processor terms and hold reserves for a payout freeze",
+          "level": "pro"
+        },
+        {
+          "topic": "Tune fraud rules against false declines using decline-code data",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "ledger-reconciliation.md",
+      "title": "Ledger and reconciliation",
+      "purpose": "Read when modeling money in the database, investigating a billing discrepancy, or matching provider payouts to your records.",
+      "leaves": [
+        {
+          "topic": "Design a schema for orders, payments and ledger entries",
+          "level": "core"
+        },
+        {
+          "topic": "Make double charges impossible with unique constraints and state checks",
+          "level": "core"
+        },
+        {
+          "topic": "Answer a double-charge complaint from logs, ledger and provider dashboard",
+          "level": "core"
+        },
+        {
+          "topic": "Reconcile provider records against your database daily",
+          "level": "pro"
+        },
+        {
+          "topic": "Match provider payouts, fees and refunds to ledger entries",
+          "level": "pro"
+        },
+        {
+          "topic": "Export transactions to accounting software cleanly",
+          "level": "pro"
+        },
+        {
+          "topic": "Implement an immutable double-entry ledger",
+          "level": "expert"
+        },
+        {
+          "topic": "Hold and pay out marketplace funds through connected accounts",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "commerce.md",
+      "title": "Catalog, cart, inventory and fulfillment",
+      "purpose": "Read when selling goods or bookable units: product data, carts, stock, discounts, shipping, fulfillment and returns.",
+      "leaves": [
+        {
+          "topic": "Decide between a commerce platform, a headless backend and a custom build",
+          "level": "core"
+        },
+        {
+          "topic": "Model a product catalog with variants, options and per-currency prices",
+          "level": "core"
+        },
+        {
+          "topic": "Build a cart that survives sessions, devices and price changes",
+          "level": "core"
+        },
+        {
+          "topic": "Compute discounts, coupons, shipping and tax server-side in one pricing engine",
+          "level": "core"
+        },
+        {
+          "topic": "Reserve stock or seats without overselling under concurrency",
+          "level": "pro"
+        },
+        {
+          "topic": "Orchestrate fulfillment: pick, ship, track and notify, with failure handling",
+          "level": "pro"
+        },
+        {
+          "topic": "Handle returns, exchanges and restocking tied to refunds",
+          "level": "pro"
+        },
+        {
+          "topic": "Deliver digital goods and license keys securely after payment",
+          "level": "pro"
+        },
+        {
+          "topic": "Sync inventory and orders with external channels and warehouses",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}

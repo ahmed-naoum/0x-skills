@@ -1,0 +1,216 @@
+{
+  "name": "accessibility",
+  "layer": 7,
+  "order": 2,
+  "title": "Accessibility",
+  "summary": "Make the product usable by people with disabilities and meet WCAG 2.2 AA: names, roles and ARIA, keyboard and focus, accessible forms, visual and cognitive access, and testing and audits.",
+  "useWhen": [
+    "Make this component or page accessible",
+    "Does this meet WCAG 2.2 AA? Audit it",
+    "A screen reader does not announce this, or reads it wrongly",
+    "This cannot be used with the keyboard, or focus gets lost",
+    "Fix the accessibility errors axe or Lighthouse reports",
+    "Build an accessible modal, menu, combobox or tabs",
+    "Check color contrast, zoom and touch-target sizes",
+    "An enterprise buyer asked for a VPAT or accessibility report"
+  ],
+  "notFor": [
+    {
+      "topic": "Accessibility law, statements and responding to legal complaints",
+      "use": "privacy-compliance"
+    },
+    {
+      "topic": "General HTML structure, forms, CSS and reduced-motion animation code",
+      "use": "frontend-foundations"
+    },
+    {
+      "topic": "Visual design, color palettes and usability testing in general",
+      "use": "ui-ux-design"
+    },
+    {
+      "topic": "Accessible charts and data-visualization design",
+      "use": "dataviz"
+    },
+    {
+      "topic": "Setting up the end-to-end test runner that hosts axe checks",
+      "use": "code-quality"
+    }
+  ],
+  "references": [
+    {
+      "file": "names-roles-aria.md",
+      "title": "Names, roles, states and ARIA",
+      "purpose": "Read when a control or region must be understood by assistive technology, or when building a custom widget.",
+      "leaves": [
+        {
+          "topic": "Give every control an accessible name, role and state",
+          "level": "core"
+        },
+        {
+          "topic": "Write alt text that conveys purpose, and hide decorative images",
+          "level": "core"
+        },
+        {
+          "topic": "Remove redundant, conflicting or invalid ARIA from existing markup",
+          "level": "core"
+        },
+        {
+          "topic": "Apply ARIA patterns correctly for tabs, menus, comboboxes and dialogs",
+          "level": "pro"
+        },
+        {
+          "topic": "Announce dynamic changes with live regions",
+          "level": "pro"
+        },
+        {
+          "topic": "Replace an inaccessible custom widget with a tested primitive",
+          "level": "pro"
+        },
+        {
+          "topic": "Make data tables understandable without sight: headers, scope and captions",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "keyboard-focus.md",
+      "title": "Keyboard, focus and pointer access",
+      "purpose": "Read when making an interface operable without a mouse, managing focus, or sizing interactive targets.",
+      "leaves": [
+        {
+          "topic": "Make every flow keyboard-operable with visible focus",
+          "level": "core"
+        },
+        {
+          "topic": "Provide skip links and a logical tab order",
+          "level": "core"
+        },
+        {
+          "topic": "Size and space touch targets to WCAG 2.2 minimums",
+          "level": "core"
+        },
+        {
+          "topic": "Manage focus on route changes and dynamically inserted content",
+          "level": "core"
+        },
+        {
+          "topic": "Trap focus in modals and restore it on close",
+          "level": "core"
+        },
+        {
+          "topic": "Offer alternatives to drag, hover and gesture-only interactions",
+          "level": "pro"
+        },
+        {
+          "topic": "Support switch and voice-control users through standard semantics",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "accessible-forms.md",
+      "title": "Accessible forms and authentication",
+      "purpose": "Read when making forms, validation errors, sign-in and timed flows work for assistive-technology users.",
+      "leaves": [
+        {
+          "topic": "Label every field and associate hints and errors programmatically",
+          "level": "core"
+        },
+        {
+          "topic": "Announce validation errors and move focus to the first one",
+          "level": "core"
+        },
+        {
+          "topic": "Make sign-in accessible: allow paste and password managers, no cognitive tests",
+          "level": "pro"
+        },
+        {
+          "topic": "Warn before session timeouts and let users extend them",
+          "level": "pro"
+        },
+        {
+          "topic": "Make multi-step and payment flows completable by screen reader",
+          "level": "pro"
+        },
+        {
+          "topic": "Avoid redundant entry and let users review before submitting",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "visual-cognitive.md",
+      "title": "Visual, media and cognitive access",
+      "purpose": "Read when checking contrast, zoom, color use, media alternatives and how demanding content is to read and follow.",
+      "leaves": [
+        {
+          "topic": "Meet contrast minimums for text, icons and focus indicators",
+          "level": "core"
+        },
+        {
+          "topic": "Support 200% zoom, text resizing and reflow at 320px",
+          "level": "core"
+        },
+        {
+          "topic": "Never convey meaning by color alone",
+          "level": "core"
+        },
+        {
+          "topic": "Caption video and provide transcripts for audio",
+          "level": "pro"
+        },
+        {
+          "topic": "Avoid flashing, autoplay and motion that triggers vestibular problems",
+          "level": "pro"
+        },
+        {
+          "topic": "Write content in plain language with clear structure",
+          "level": "pro"
+        },
+        {
+          "topic": "Reduce cognitive load with consistent navigation and no time pressure",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "testing-audits.md",
+      "title": "Accessibility testing and audits",
+      "purpose": "Read when checking accessibility: automated checks, screen-reader and keyboard passes, a full audit, or a conformance report.",
+      "leaves": [
+        {
+          "topic": "Run automated accessibility checks with axe in CI",
+          "level": "core"
+        },
+        {
+          "topic": "Test key flows with a screen reader (VoiceOver, NVDA)",
+          "level": "core"
+        },
+        {
+          "topic": "Run a keyboard-only, zoom and high-contrast pass on every feature",
+          "level": "core"
+        },
+        {
+          "topic": "Run a manual WCAG 2.2 AA audit and prioritize findings",
+          "level": "pro"
+        },
+        {
+          "topic": "Fix accessibility failures in order of user impact",
+          "level": "pro"
+        },
+        {
+          "topic": "Build accessibility into the definition of done and the component library",
+          "level": "pro"
+        },
+        {
+          "topic": "Include disabled users in usability testing",
+          "level": "expert"
+        },
+        {
+          "topic": "Produce a VPAT or conformance report for enterprise buyers",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}

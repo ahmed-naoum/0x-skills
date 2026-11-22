@@ -1,0 +1,322 @@
+{
+  "name": "linux-server",
+  "layer": 0,
+  "order": 1,
+  "title": "Linux servers and the machine",
+  "summary": "Set up, harden, script and diagnose the Linux machine your code runs on, from CPU, memory and disk limits to systemd, SSH and container internals.",
+  "useWhen": [
+    "The server is slow, out of memory or the disk is full",
+    "Set up a fresh VPS and make it safe to expose to the internet",
+    "A service keeps crashing or does not come back after a reboot",
+    "Write a bash script or one-liner to automate a server or repo task",
+    "Permission denied, command not found or the wrong PATH on the server",
+    "A container gets OOM-killed or throttled and I do not know why",
+    "Stored timestamps or scheduled jobs are off by an hour, or text is garbled",
+    "Which instance size and disk type do I need for this workload?"
+  ],
+  "notFor": [
+    {
+      "topic": "Writing Dockerfiles, Compose files or Kubernetes manifests",
+      "use": "cloud-infrastructure"
+    },
+    {
+      "topic": "DNS, TLS, reverse proxies and anything between the browser and the box",
+      "use": "web-networking"
+    },
+    {
+      "topic": "Deploy pipelines, releases and rollbacks",
+      "use": "ci-cd-release"
+    },
+    {
+      "topic": "Postgres tuning, backups and slow queries",
+      "use": "postgres-database"
+    },
+    {
+      "topic": "Application logs, dashboards, alerts and incident process",
+      "use": "site-reliability"
+    },
+    {
+      "topic": "A slow page or endpoint when the host has CPU, memory and disk to spare",
+      "use": "web-performance"
+    }
+  ],
+  "references": [
+    {
+      "file": "shell-files.md",
+      "title": "Shell, files and permissions",
+      "purpose": "Read when working in a shell: file permissions, pipes, environment and writing scripts that are safe to rerun.",
+      "leaves": [
+        {
+          "topic": "Find files, logs and config using the standard Linux directory layout",
+          "level": "core"
+        },
+        {
+          "topic": "Fix permission-denied errors using users, groups, modes and sudo rules",
+          "level": "core"
+        },
+        {
+          "topic": "Compose pipes with grep, sed, awk, jq and xargs to answer a question",
+          "level": "core"
+        },
+        {
+          "topic": "Write a safe Bash script with strict mode and correct quoting",
+          "level": "core"
+        },
+        {
+          "topic": "Manage environment variables, PATH and shell profiles without surprises",
+          "level": "core"
+        },
+        {
+          "topic": "Make scripts idempotent so rerunning them is safe",
+          "level": "core"
+        },
+        {
+          "topic": "Transfer and sync files with rsync and scp, preserving permissions",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide when a shell script should become a real program",
+          "level": "pro"
+        },
+        {
+          "topic": "Mount, resize and check filesystems and volumes without losing data",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "hardware-resources.md",
+      "title": "Hardware resources and limits",
+      "purpose": "Read when sizing a machine or working out which resource (CPU, memory, disk, network) is the bottleneck.",
+      "leaves": [
+        {
+          "topic": "Read live CPU, memory, disk and network usage and name the bottleneck",
+          "level": "core"
+        },
+        {
+          "topic": "Explain load average, iowait and memory pressure when a box feels slow",
+          "level": "core"
+        },
+        {
+          "topic": "Choose instance size by CPU architecture, memory and network needs",
+          "level": "core"
+        },
+        {
+          "topic": "Set log rotation, disk alerts and swap policy before a host fills",
+          "level": "pro"
+        },
+        {
+          "topic": "Diagnose a saturated host with the USE method",
+          "level": "pro"
+        },
+        {
+          "topic": "Choose disk type and size by IOPS, throughput and durability needs",
+          "level": "pro"
+        },
+        {
+          "topic": "Free a full disk safely without deleting database or WAL files",
+          "level": "pro"
+        },
+        {
+          "topic": "Benchmark disk IOPS and fsync latency for a database volume",
+          "level": "expert"
+        },
+        {
+          "topic": "Diagnose tail latency from CPU steal, NUMA and noisy neighbors",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "processes-systemd.md",
+      "title": "Processes, systemd and kernel limits",
+      "purpose": "Read when a service dies, will not start, leaks resources or needs to run reliably under systemd.",
+      "leaves": [
+        {
+          "topic": "Inspect processes, signals and exit codes to find why a service died",
+          "level": "core"
+        },
+        {
+          "topic": "Read and filter service logs with journalctl",
+          "level": "core"
+        },
+        {
+          "topic": "Write a systemd unit that restarts on crash and starts on boot",
+          "level": "pro"
+        },
+        {
+          "topic": "Inspect open sockets, files and system calls with ss, lsof and strace",
+          "level": "pro"
+        },
+        {
+          "topic": "Read the OOM killer's log and fix the limit or leak behind it",
+          "level": "pro"
+        },
+        {
+          "topic": "Schedule recurring work with systemd timers or cron, with overlap protection",
+          "level": "pro"
+        },
+        {
+          "topic": "Raise file-descriptor, conntrack and ephemeral-port limits before exhaustion",
+          "level": "expert"
+        },
+        {
+          "topic": "Tune kernel TCP backlog, buffers and congestion control",
+          "level": "expert"
+        },
+        {
+          "topic": "Trace kernel and network latency with eBPF tools",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "packages-updates.md",
+      "title": "Packages, updates and provisioning",
+      "purpose": "Read when installing software on a host, keeping it patched, or making server setup repeatable.",
+      "leaves": [
+        {
+          "topic": "Install language runtimes with version managers, not distro packages",
+          "level": "core"
+        },
+        {
+          "topic": "Install and pin packages with apt or dnf from trusted repositories",
+          "level": "pro"
+        },
+        {
+          "topic": "Apply kernel and package security updates on a schedule, including reboots",
+          "level": "pro"
+        },
+        {
+          "topic": "Audit what is installed, running and listening before exposing a host",
+          "level": "pro"
+        },
+        {
+          "topic": "Provision a server repeatably with cloud-init or a script, not by hand",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide when to patch a host in place versus replace it",
+          "level": "pro"
+        },
+        {
+          "topic": "Track operating-system end-of-life dates and plan the upgrade",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "ssh-hardening.md",
+      "title": "SSH access and host hardening",
+      "purpose": "Read when exposing a host to the internet, granting or revoking shell access, or reaching private services through SSH.",
+      "leaves": [
+        {
+          "topic": "Manage SSH keys, config files, agent and jump hosts safely",
+          "level": "core"
+        },
+        {
+          "topic": "Create a non-root sudo user and lock root's password on a fresh VPS",
+          "level": "pro"
+        },
+        {
+          "topic": "Harden SSH: keys only, no root login, restricted users",
+          "level": "pro"
+        },
+        {
+          "topic": "Configure a host firewall that allows only the ports in use",
+          "level": "pro"
+        },
+        {
+          "topic": "Use SSH tunnels and port forwarding to reach private services",
+          "level": "pro"
+        },
+        {
+          "topic": "Throttle brute-force attempts and review authentication logs",
+          "level": "pro"
+        },
+        {
+          "topic": "Replace long-lived SSH keys with short-lived certificates or identity-based access",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "container-internals.md",
+      "title": "Virtualization and container internals",
+      "purpose": "Read when a container behaves differently from the host: limits, signals, isolation, networking or disk.",
+      "leaves": [
+        {
+          "topic": "Tell whether a fault is in the app, the container or the host",
+          "level": "core"
+        },
+        {
+          "topic": "Inspect a running container's processes, network and filesystem from the host",
+          "level": "core"
+        },
+        {
+          "topic": "Debug OOM-killed or CPU-throttled containers from cgroup metrics",
+          "level": "pro"
+        },
+        {
+          "topic": "Run containers non-root, read-only and with dropped capabilities",
+          "level": "pro"
+        },
+        {
+          "topic": "Handle PID 1, signal forwarding and zombie reaping inside a container",
+          "level": "pro"
+        },
+        {
+          "topic": "Explain image layers and overlay filesystems when disk fills or builds slow down",
+          "level": "pro"
+        },
+        {
+          "topic": "Explain VMs, containers and microVMs and pick the isolation a workload needs",
+          "level": "expert"
+        },
+        {
+          "topic": "Trace container networking: bridges, port mapping and DNS between containers",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "time-encoding.md",
+      "title": "Time, time zones and text encoding",
+      "purpose": "Read when a bug involves clocks, time zones, daylight saving, scheduling in local time, or garbled or miscounted text.",
+      "leaves": [
+        {
+          "topic": "Store timestamps in UTC and convert time zones only at the edges",
+          "level": "core"
+        },
+        {
+          "topic": "Store and transmit text as UTF-8 and fix mojibake at its source",
+          "level": "core"
+        },
+        {
+          "topic": "Run servers in UTC and keep clocks synced with NTP",
+          "level": "pro"
+        },
+        {
+          "topic": "Store time-zone names, not offsets, and keep the zone database current",
+          "level": "pro"
+        },
+        {
+          "topic": "Handle DST and recurring local-time schedules without off-by-one-hour bugs",
+          "level": "pro"
+        },
+        {
+          "topic": "Choose monotonic versus wall-clock time for durations and timeouts",
+          "level": "pro"
+        },
+        {
+          "topic": "Write code tolerant of clock skew between machines",
+          "level": "expert"
+        },
+        {
+          "topic": "Handle Unicode normalization, grapheme length and case-folding in comparisons",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}

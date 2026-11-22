@@ -1,0 +1,350 @@
+{
+  "name": "cloud-infrastructure",
+  "layer": 2,
+  "order": 1,
+  "title": "Cloud infrastructure and hosting",
+  "summary": "Choose where the product runs and build it: hosting model, container images, Kubernetes, serverless and edge runtimes, cloud networking, IAM, infrastructure as code and cost control.",
+  "useWhen": [
+    "Where should I host this: a PaaS, serverless, a VPS, containers or Kubernetes?",
+    "Write or shrink a Dockerfile, or set up Docker Compose for local development",
+    "Set up AWS, GCP or Azure accounts, IAM roles and permissions properly",
+    "Write Terraform or OpenTofu for our infrastructure",
+    "Design the VPC, subnets and private access to the database",
+    "My cloud bill jumped and I need to find out why and cut it",
+    "Serverless functions are slow to start or exhausting the database",
+    "A pod is stuck Pending or crash-looping in Kubernetes",
+    "Should this code run at the edge or next to the database?"
+  ],
+  "notFor": [
+    {
+      "topic": "CI pipelines, deploy strategies, rollbacks and feature flags",
+      "use": "ci-cd-release"
+    },
+    {
+      "topic": "Shell access, systemd, host hardening, instance and disk sizing, and container internals on one machine",
+      "use": "linux-server"
+    },
+    {
+      "topic": "DNS, TLS certificates, CDN configuration and load-balancer behavior",
+      "use": "web-networking"
+    },
+    {
+      "topic": "Running and tuning Postgres itself",
+      "use": "postgres-database"
+    },
+    {
+      "topic": "Autoscaling policy, capacity planning and disaster recovery",
+      "use": "site-reliability"
+    },
+    {
+      "topic": "Secrets, staff SSO and devices, and admin-panel hardening",
+      "use": "web-security"
+    }
+  ],
+  "references": [
+    {
+      "file": "platform-choice.md",
+      "title": "Choosing where to run",
+      "purpose": "Read when deciding or revisiting the hosting model, provider or region for a product or a single workload.",
+      "leaves": [
+        {
+          "topic": "Decide between a PaaS, managed containers, a VPS and Kubernetes for your stage",
+          "level": "core"
+        },
+        {
+          "topic": "Choose container, function, edge isolate or VM for each workload",
+          "level": "core"
+        },
+        {
+          "topic": "Choose block, file or object storage for each kind of data",
+          "level": "core"
+        },
+        {
+          "topic": "Choose regions for latency, data residency and sovereignty requirements",
+          "level": "pro"
+        },
+        {
+          "topic": "Calculate when per-request serverless pricing loses to always-on containers",
+          "level": "pro"
+        },
+        {
+          "topic": "Assess lock-in and exit cost before adopting a platform's proprietary services",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide cloud versus bare metal versus colocation on cost and risk",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "docker-images.md",
+      "title": "Docker images, Compose and single-server deploys",
+      "purpose": "Read when writing, shrinking, speeding up or securing a container image, running the stack locally in containers, or deploying containers to a single server.",
+      "leaves": [
+        {
+          "topic": "Write a multi-stage Dockerfile producing a small non-root image",
+          "level": "core"
+        },
+        {
+          "topic": "Run the whole stack locally with Compose or dev containers",
+          "level": "core"
+        },
+        {
+          "topic": "Keep build secrets and development dependencies out of the final image",
+          "level": "core"
+        },
+        {
+          "topic": "Set a health check and resource limits on every container",
+          "level": "core"
+        },
+        {
+          "topic": "Order layers and use build cache so image builds stay fast",
+          "level": "pro"
+        },
+        {
+          "topic": "Choose a minimal or distroless base image and keep it patched",
+          "level": "pro"
+        },
+        {
+          "topic": "Tag images immutably and manage a registry with retention rules",
+          "level": "pro"
+        },
+        {
+          "topic": "Build multi-arch images and run on ARM64 for price-performance",
+          "level": "pro"
+        },
+        {
+          "topic": "Deploy containers to one VPS with Kamal or Coolify and zero downtime",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "kubernetes.md",
+      "title": "Kubernetes operations",
+      "purpose": "Read only when the project already runs on Kubernetes or has decided to: deploying, debugging and upgrading workloads.",
+      "leaves": [
+        {
+          "topic": "Write a Deployment with probes, a rollout strategy and externalized config",
+          "level": "expert"
+        },
+        {
+          "topic": "Debug a pod stuck Pending, crash-looping or failing readiness",
+          "level": "expert"
+        },
+        {
+          "topic": "Set resource requests and limits and configure pod autoscaling",
+          "level": "expert"
+        },
+        {
+          "topic": "Route traffic with Gateway API or ingress and automate certificates",
+          "level": "expert"
+        },
+        {
+          "topic": "Deploy with GitOps and reviewable manifests or Helm charts",
+          "level": "expert"
+        },
+        {
+          "topic": "Isolate workloads with namespaces, network policies and pod security settings",
+          "level": "expert"
+        },
+        {
+          "topic": "Upgrade cluster versions and node pools without downtime",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "serverless-edge.md",
+      "title": "Serverless and edge runtimes",
+      "purpose": "Read when code runs in functions or edge isolates: cold starts, limits, state, connections and runaway invocations.",
+      "leaves": [
+        {
+          "topic": "Write to Web-standard APIs (fetch, Request, Streams) portable across runtimes",
+          "level": "core"
+        },
+        {
+          "topic": "Design around cold starts, time limits and stateless invocations",
+          "level": "core"
+        },
+        {
+          "topic": "Decide what runs at the edge versus in-region beside the database",
+          "level": "core"
+        },
+        {
+          "topic": "Work within edge-runtime limits: missing Node APIs, CPU caps, eventually consistent stores",
+          "level": "pro"
+        },
+        {
+          "topic": "Set concurrency limits so functions cannot exhaust the database or the budget",
+          "level": "pro"
+        },
+        {
+          "topic": "Run background and scheduled work on a serverless platform",
+          "level": "pro"
+        },
+        {
+          "topic": "Guard against recursive triggers and unbounded retry loops",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "cloud-networking.md",
+      "title": "Cloud networking",
+      "purpose": "Read when designing or debugging private networking in a cloud account: VPCs, subnets, firewall rules, egress and private access.",
+      "leaves": [
+        {
+          "topic": "Keep databases and admin panels off the public internet",
+          "level": "core"
+        },
+        {
+          "topic": "Design the VPC: CIDR ranges, subnets, security groups, NAT and private endpoints",
+          "level": "pro"
+        },
+        {
+          "topic": "Reach private resources through a bastion or identity-aware proxy",
+          "level": "pro"
+        },
+        {
+          "topic": "Expose services through one load balancer or gateway, not public instance IPs",
+          "level": "pro"
+        },
+        {
+          "topic": "Debug a blocked connection through security groups, routes and network ACLs",
+          "level": "pro"
+        },
+        {
+          "topic": "Control egress with static IPs and an allowlist of destinations",
+          "level": "expert"
+        },
+        {
+          "topic": "Connect networks and services privately with peering or private links",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "iam-accounts.md",
+      "title": "Cloud accounts and IAM",
+      "purpose": "Read when creating cloud accounts, granting permissions to people or services, or auditing who can do what.",
+      "leaves": [
+        {
+          "topic": "Secure the cloud root account: MFA, no access keys, break-glass recovery",
+          "level": "core"
+        },
+        {
+          "topic": "Give people access through SSO and roles, not shared users",
+          "level": "core"
+        },
+        {
+          "topic": "Grant least-privilege IAM roles scoped to specific resources and actions",
+          "level": "pro"
+        },
+        {
+          "topic": "Give each service its own identity with scoped permissions",
+          "level": "pro"
+        },
+        {
+          "topic": "Isolate environments in separate cloud accounts or projects",
+          "level": "pro"
+        },
+        {
+          "topic": "Audit unused permissions and publicly exposed resources with the provider's analyzer",
+          "level": "pro"
+        },
+        {
+          "topic": "Apply organization-wide guardrails that no account can override",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "infrastructure-as-code.md",
+      "title": "Infrastructure as code",
+      "purpose": "Read when defining, changing, importing or scanning cloud resources in Terraform, OpenTofu or Pulumi.",
+      "leaves": [
+        {
+          "topic": "Decide what a small team should leave to the PaaS instead of codifying",
+          "level": "core"
+        },
+        {
+          "topic": "Define cloud resources in Terraform or OpenTofu with plans reviewed in pull requests",
+          "level": "pro"
+        },
+        {
+          "topic": "Read a plan diff and catch a destructive change before applying",
+          "level": "pro"
+        },
+        {
+          "topic": "Structure state, modules and environments so changes stay small and safe",
+          "level": "pro"
+        },
+        {
+          "topic": "Import hand-made resources into code and stop console drift",
+          "level": "pro"
+        },
+        {
+          "topic": "Protect stateful resources from accidental destroy",
+          "level": "pro"
+        },
+        {
+          "topic": "Scan infrastructure code and cloud configuration for misconfigurations",
+          "level": "pro"
+        },
+        {
+          "topic": "Rebuild an environment from infrastructure code from scratch",
+          "level": "pro"
+        },
+        {
+          "topic": "Enforce policy as code on infrastructure changes and detect drift",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "cost-control.md",
+      "title": "Cloud cost control",
+      "purpose": "Read when estimating infrastructure cost, investigating a bill, or putting limits in place before spend runs away.",
+      "leaves": [
+        {
+          "topic": "Set budgets, billing alerts and service quotas on every cloud account",
+          "level": "core"
+        },
+        {
+          "topic": "Review the cloud bill monthly and explain the top five line items",
+          "level": "core"
+        },
+        {
+          "topic": "Estimate monthly infrastructure cost at 100, 10,000 and 1,000,000 users",
+          "level": "pro"
+        },
+        {
+          "topic": "Estimate egress, NAT, log-ingestion and storage costs before committing to a design",
+          "level": "pro"
+        },
+        {
+          "topic": "Cap autoscaling and metered services with hard maximums that bound spend",
+          "level": "pro"
+        },
+        {
+          "topic": "Find and delete orphaned resources, snapshots and idle instances",
+          "level": "pro"
+        },
+        {
+          "topic": "Tag resources and attribute cost per service and per customer",
+          "level": "expert"
+        },
+        {
+          "topic": "Cut spend with rightsizing, commitments and storage lifecycle rules",
+          "level": "expert"
+        },
+        {
+          "topic": "Negotiate credits after an accidental or attack-driven bill",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}

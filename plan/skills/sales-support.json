@@ -1,0 +1,351 @@
+{
+  "name": "sales-support",
+  "layer": 11,
+  "order": 3,
+  "title": "Sales, support and customer success",
+  "summary": "Win customers and keep them: prospecting and outreach, discovery calls and demos, proposals and contracts, procurement and security questionnaires, onboarding, support operations, customer success and churn, and reviews.",
+  "useWhen": [
+    "Write a cold email or build a prospect list",
+    "Prepare for a discovery call or product demo",
+    "A prospect sent a security questionnaire or wants us in their vendor portal",
+    "Write a proposal or statement of work, or respond to redlines on our contract",
+    "Set up customer support: inbox, help center, response targets and escalation",
+    "A customer is angry or asking for a refund; how do I respond?",
+    "Customers are churning; how do I find out why and stop it?",
+    "Run kickoff, data import and training for a newly signed business customer",
+    "Decide what an internal admin tool must let support do without an engineer",
+    "We got a bad public review"
+  ],
+  "notFor": [
+    {
+      "topic": "Positioning, landing pages, launches and inbound marketing",
+      "use": "growth-marketing"
+    },
+    {
+      "topic": "List prices, plans and discount policy",
+      "use": "pricing-monetization"
+    },
+    {
+      "topic": "Processing refunds, cancellations and billing states in code",
+      "use": "payments-billing"
+    },
+    {
+      "topic": "DPAs, terms of service and compliance certifications themselves",
+      "use": "privacy-compliance"
+    },
+    {
+      "topic": "Retention metrics, cohorts and churn analysis",
+      "use": "product-analytics"
+    },
+    {
+      "topic": "Turning feedback into roadmap decisions",
+      "use": "product-discovery"
+    }
+  ],
+  "references": [
+    {
+      "file": "prospecting-outreach.md",
+      "title": "Prospecting, outreach and pipeline",
+      "purpose": "Read when finding and contacting potential customers, tracking deals, or preparing to hand sales to someone else.",
+      "leaves": [
+        {
+          "topic": "Build a qualified prospect list from the ideal customer profile",
+          "level": "core"
+        },
+        {
+          "topic": "Start with warm introductions and existing networks",
+          "level": "core"
+        },
+        {
+          "topic": "Track every deal in a CRM with stage, next step and close date",
+          "level": "core"
+        },
+        {
+          "topic": "Write cold outreach that earns replies and stays deliverable",
+          "level": "core"
+        },
+        {
+          "topic": "Follow up with a multi-touch sequence without becoming spam",
+          "level": "core"
+        },
+        {
+          "topic": "Hire a first salesperson only after founder-led sales is repeatable",
+          "level": "pro"
+        },
+        {
+          "topic": "Build a sales playbook a hired rep can repeat",
+          "level": "expert"
+        },
+        {
+          "topic": "Set quota, commission plan and a weekly pipeline review",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "discovery-demos.md",
+      "title": "Discovery calls, demos and pilots",
+      "purpose": "Read when preparing for or debriefing a sales conversation, a demo or a pilot.",
+      "leaves": [
+        {
+          "topic": "Run a discovery call that uncovers pain, impact and decision process",
+          "level": "core"
+        },
+        {
+          "topic": "Qualify a lead on pain, budget, authority and timeline",
+          "level": "core"
+        },
+        {
+          "topic": "Give a demo tailored to the buyer's stated problem",
+          "level": "core"
+        },
+        {
+          "topic": "Handle price, security and timing objections",
+          "level": "core"
+        },
+        {
+          "topic": "Map the stakeholders: champion, economic buyer, blocker and users",
+          "level": "pro"
+        },
+        {
+          "topic": "Run a paid pilot with written success criteria and conversion terms",
+          "level": "pro"
+        },
+        {
+          "topic": "Agree a mutual close plan with dates and owners",
+          "level": "pro"
+        },
+        {
+          "topic": "Recognize a deal that will not close and walk away",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "proposals-contracts.md",
+      "title": "Proposals, contracts, custom work and collection",
+      "purpose": "Read when writing a proposal, scoping paid custom work, negotiating terms, signing a customer contract or collecting payment on it.",
+      "leaves": [
+        {
+          "topic": "Write a proposal restating the problem, outcome, price and next step",
+          "level": "core"
+        },
+        {
+          "topic": "Store signed contracts and track renewal dates",
+          "level": "core"
+        },
+        {
+          "topic": "Shorten contracting with an order form on standard terms",
+          "level": "pro"
+        },
+        {
+          "topic": "Negotiate discounts, annual prepay and terms without eroding price",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide which contract terms to concede, trade or refuse",
+          "level": "pro"
+        },
+        {
+          "topic": "Collect annual prepayments and chase overdue invoices",
+          "level": "pro"
+        },
+        {
+          "topic": "Scope custom work in a statement of work with change control and acceptance",
+          "level": "pro"
+        },
+        {
+          "topic": "Price services as fixed bid, day rate or retainer without subsidizing the customer",
+          "level": "pro"
+        },
+        {
+          "topic": "Negotiate an enterprise MSA: liability caps, SLA, indemnity and termination",
+          "level": "expert"
+        },
+        {
+          "topic": "Handle redlines with a playbook of fallback positions",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "procurement-security.md",
+      "title": "Procurement and security questionnaires",
+      "purpose": "Read when a buyer's procurement, legal or security team stands between you and a signed deal.",
+      "leaves": [
+        {
+          "topic": "Complete a security questionnaire from a reusable answer library",
+          "level": "pro"
+        },
+        {
+          "topic": "Prepare a security and compliance pack before the first enterprise deal",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide which enterprise requirement to build next from the deals it blocks",
+          "level": "pro"
+        },
+        {
+          "topic": "Register in vendor portals and supply insurance and tax forms",
+          "level": "pro"
+        },
+        {
+          "topic": "Navigate enterprise procurement and vendor onboarding",
+          "level": "expert"
+        },
+        {
+          "topic": "Decide whether to answer an RFP and how",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "customer-onboarding.md",
+      "title": "Customer onboarding",
+      "purpose": "Read when getting a newly signed or newly registered account to its first real value.",
+      "leaves": [
+        {
+          "topic": "Decide high-touch or self-serve onboarding by contract value",
+          "level": "core"
+        },
+        {
+          "topic": "Onboard a new account to first value with a checklist",
+          "level": "core"
+        },
+        {
+          "topic": "Run a kickoff and implementation plan for larger customers",
+          "level": "pro"
+        },
+        {
+          "topic": "Build importers that migrate customers off a competitor quickly",
+          "level": "pro"
+        },
+        {
+          "topic": "Train users with guides, videos and office hours",
+          "level": "pro"
+        },
+        {
+          "topic": "Track each account's onboarding milestones and chase the stalled ones",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "support-operations.md",
+      "title": "Support operations",
+      "purpose": "Read when setting up or improving customer support: channels, targets, help content, AI agents, tooling and quality.",
+      "leaves": [
+        {
+          "topic": "Set up a shared support inbox with response-time targets",
+          "level": "core"
+        },
+        {
+          "topic": "Triage a ticket: reproduce, classify as bug, gap or confusion, and close the loop",
+          "level": "core"
+        },
+        {
+          "topic": "Write help articles and saved replies for the top ten questions",
+          "level": "core"
+        },
+        {
+          "topic": "Handle refund and cancellation requests by a written policy",
+          "level": "core"
+        },
+        {
+          "topic": "Decide what an AI support agent may answer and when a human takes over",
+          "level": "pro"
+        },
+        {
+          "topic": "Build admin tools with audited impersonation so support needs no engineer",
+          "level": "pro"
+        },
+        {
+          "topic": "Tag tickets by root cause and review the trends",
+          "level": "pro"
+        },
+        {
+          "topic": "Review support quality with CSAT, response time and ticket sampling",
+          "level": "pro"
+        },
+        {
+          "topic": "Hire a first support person and hand over a documented playbook",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "success-churn.md",
+      "title": "Customer success and churn",
+      "purpose": "Read when working to keep and grow existing accounts: health, renewals, cancellation flow and win-back.",
+      "leaves": [
+        {
+          "topic": "Separate involuntary from voluntary churn and find each one's causes",
+          "level": "pro"
+        },
+        {
+          "topic": "Build a customer health score and trigger outreach before churn",
+          "level": "pro"
+        },
+        {
+          "topic": "Design a cancellation flow with reasons, pause and save offers",
+          "level": "pro"
+        },
+        {
+          "topic": "Win back churned customers with targeted offers",
+          "level": "pro"
+        },
+        {
+          "topic": "Announce new releases to customers to re-engage dormant accounts",
+          "level": "pro"
+        },
+        {
+          "topic": "Run renewal and expansion conversations from account health",
+          "level": "expert"
+        },
+        {
+          "topic": "Run business reviews for key accounts",
+          "level": "expert"
+        },
+        {
+          "topic": "Stand up customer success with onboarding, reviews and renewal ownership",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "reviews-reputation.md",
+      "title": "Reviews, complaints and reputation",
+      "purpose": "Read when a customer is upset in private or in public, or when building up reviews and references.",
+      "leaves": [
+        {
+          "topic": "Ask happy customers for reviews and referrals at the right moment",
+          "level": "core"
+        },
+        {
+          "topic": "De-escalate an angry customer and turn the complaint around",
+          "level": "core"
+        },
+        {
+          "topic": "Answer a bad review or viral complaint publicly",
+          "level": "pro"
+        },
+        {
+          "topic": "Apologize and compensate well after an outage or mistake",
+          "level": "pro"
+        },
+        {
+          "topic": "Monitor mentions on review sites, social media and communities",
+          "level": "pro"
+        },
+        {
+          "topic": "Measure satisfaction with NPS or CSAT and act on detractors",
+          "level": "pro"
+        },
+        {
+          "topic": "Build a reference-customer program for sales",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,221 @@
+{
+  "name": "ai-coding-agents",
+  "layer": 8,
+  "order": 3,
+  "title": "Building with AI coding agents",
+  "summary": "Get reliable work out of coding agents such as Claude Code: scoping and specs, context and project setup, verification and review, parallel and automated runs, and permissions and governance.",
+  "useWhen": [
+    "How should I break this feature down for a coding agent?",
+    "The agent keeps going off track or making changes I did not ask for",
+    "Decide what belongs in CLAUDE.md or AGENTS.md so agents stop repeating mistakes",
+    "Decide which skills, hooks or MCP servers are worth adding for my stack",
+    "How do I review AI-written code without reading every line?",
+    "Run several agents in parallel without them colliding",
+    "Run a coding agent in CI or on a schedule",
+    "Decide what an agent may touch: commands, secrets, network and production",
+    "Set a team policy for using AI tools on our code"
+  ],
+  "notFor": [
+    {
+      "topic": "LLM features inside the product itself",
+      "use": "ai-features"
+    },
+    {
+      "topic": "Claude API usage, model IDs and SDK details",
+      "use": "claude-api"
+    },
+    {
+      "topic": "Reviewing a specific diff for bugs",
+      "use": "code-review"
+    },
+    {
+      "topic": "Writing the tests and lint setup agents rely on",
+      "use": "code-quality"
+    },
+    {
+      "topic": "License and IP status of AI-generated code",
+      "use": "privacy-compliance"
+    },
+    {
+      "topic": "Product specs and acceptance criteria as product decisions",
+      "use": "product-discovery"
+    }
+  ],
+  "references": [
+    {
+      "file": "delegation-specs.md",
+      "title": "Scoping and delegating work",
+      "purpose": "Read when deciding what to hand to an agent and how to brief it: task size, spec, plan and checkpoints.",
+      "leaves": [
+        {
+          "topic": "Delegate a scoped task to a coding agent with acceptance criteria",
+          "level": "core"
+        },
+        {
+          "topic": "Write a spec and plan first, then implement in small verified steps",
+          "level": "core"
+        },
+        {
+          "topic": "Decide which code you must write or deeply read yourself",
+          "level": "core"
+        },
+        {
+          "topic": "Delegate mechanical, well-tested, low-blast-radius work first",
+          "level": "core"
+        },
+        {
+          "topic": "Interrupt, redirect or restart an agent that is going wrong",
+          "level": "core"
+        },
+        {
+          "topic": "Break a large feature into agent-sized tasks with checkpoints",
+          "level": "core"
+        },
+        {
+          "topic": "Ask for options and trade-offs before code on design decisions",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "context-setup.md",
+      "title": "Context and project setup",
+      "purpose": "Read when preparing a repository so agents work well in it: instructions, commands, context, skills, hooks and MCP servers.",
+      "leaves": [
+        {
+          "topic": "Maintain AGENTS.md or CLAUDE.md with conventions and commands",
+          "level": "core"
+        },
+        {
+          "topic": "Provide one-command setup so an agent can run the app and tests",
+          "level": "core"
+        },
+        {
+          "topic": "Give agents the files, examples and constraints they need, not everything",
+          "level": "core"
+        },
+        {
+          "topic": "Keep the codebase agent-legible: small modules, strong types, documented commands",
+          "level": "core"
+        },
+        {
+          "topic": "Manage long sessions: compact, write handoff notes, start fresh",
+          "level": "core"
+        },
+        {
+          "topic": "Extend agents with MCP servers, skills and hooks for your stack",
+          "level": "pro"
+        },
+        {
+          "topic": "Write reusable commands and skills for recurring tasks",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "verification-review.md",
+      "title": "Verifying and reviewing agent work",
+      "purpose": "Read when deciding how agent output is checked before it merges: feedback loops, proof, review depth and failure modes.",
+      "leaves": [
+        {
+          "topic": "Give agents fast feedback: types, tests, linters and a runnable app",
+          "level": "core"
+        },
+        {
+          "topic": "Make the agent prove its work with test output and screenshots",
+          "level": "core"
+        },
+        {
+          "topic": "Review every agent diff like a junior's pull request",
+          "level": "core"
+        },
+        {
+          "topic": "Catch agent failure modes: invented APIs, weakened tests, over-broad changes",
+          "level": "core"
+        },
+        {
+          "topic": "Apply extra scrutiny to agent changes in auth, payments and migrations",
+          "level": "core"
+        },
+        {
+          "topic": "Have agents write failing tests first and reject tests that assert nothing",
+          "level": "pro"
+        },
+        {
+          "topic": "Add AI code review in CI while keeping human merge approval",
+          "level": "pro"
+        },
+        {
+          "topic": "Keep your own understanding of the architecture as agents write more",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "parallel-automation.md",
+      "title": "Parallel and automated agents",
+      "purpose": "Read when running more than one agent at once, or running agents unattended in CI, in the cloud or on a schedule.",
+      "leaves": [
+        {
+          "topic": "Run parallel agents in git worktrees or cloud sandboxes",
+          "level": "pro"
+        },
+        {
+          "topic": "Partition work so parallel agents do not touch the same files",
+          "level": "pro"
+        },
+        {
+          "topic": "Schedule recurring agent tasks: dependency bumps, flaky-test fixes, doc sync",
+          "level": "pro"
+        },
+        {
+          "topic": "Measure whether agents speed delivery: cycle time, rework and defects",
+          "level": "expert"
+        },
+        {
+          "topic": "Run agents headlessly in CI for triage, fixes and upgrades",
+          "level": "expert"
+        },
+        {
+          "topic": "Orchestrate multi-agent workflows with independent verification",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "permissions-governance.md",
+      "title": "Agent permissions and governance",
+      "purpose": "Read when deciding what an agent may touch, what data it may see, and what rules the team follows for AI tools.",
+      "leaves": [
+        {
+          "topic": "Run agents in sandboxes with no production credentials",
+          "level": "core"
+        },
+        {
+          "topic": "Require approval for destructive commands, pushes and deploys",
+          "level": "core"
+        },
+        {
+          "topic": "Restrict agent permissions, secrets and network access",
+          "level": "core"
+        },
+        {
+          "topic": "Decide what code and customer data may be sent to AI tools",
+          "level": "core"
+        },
+        {
+          "topic": "Set a team policy for AI tool use and code provenance",
+          "level": "pro"
+        },
+        {
+          "topic": "Guard against prompt injection from repositories, issues and web pages agents read",
+          "level": "pro"
+        },
+        {
+          "topic": "Track agent spend and set budgets",
+          "level": "pro"
+        }
+      ]
+    }
+  ]
+}

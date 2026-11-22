@@ -1,0 +1,322 @@
+{
+  "name": "web-performance",
+  "layer": 9,
+  "order": 2,
+  "title": "Web performance",
+  "summary": "Make pages and endpoints fast and keep them fast: Core Web Vitals, loading and delivery, JavaScript bundles, images and fonts, rendering and runtime, backend latency and profiling, load testing, and performance budgets.",
+  "useWhen": [
+    "The site feels slow; find out why and fix it",
+    "Our Lighthouse or Core Web Vitals scores are bad",
+    "LCP, INP or CLS is failing in the field data",
+    "The JavaScript bundle is too big",
+    "Images or fonts load slowly or make the page jump",
+    "This endpoint or page takes seconds to respond",
+    "Load-test the app before launch",
+    "Scrolling or typing is janky on phones",
+    "Stop performance regressing every release"
+  ],
+  "notFor": [
+    {
+      "topic": "Reading query plans, indexing and fixing a slow SQL query",
+      "use": "postgres-database"
+    },
+    {
+      "topic": "Cache-Control headers, CDN configuration and HTTP/3",
+      "use": "web-networking"
+    },
+    {
+      "topic": "Adding a Redis application cache",
+      "use": "data-stores"
+    },
+    {
+      "topic": "Rendering strategy, server components and hydration design",
+      "use": "react-nextjs"
+    },
+    {
+      "topic": "Capacity planning, autoscaling and SLOs",
+      "use": "site-reliability"
+    },
+    {
+      "topic": "Frame rate of three.js scenes",
+      "use": "3dui"
+    }
+  ],
+  "references": [
+    {
+      "file": "core-web-vitals.md",
+      "title": "Core Web Vitals",
+      "purpose": "Read when measuring or fixing LCP, INP or CLS, or tracing a field-data regression to its cause.",
+      "leaves": [
+        {
+          "topic": "Measure LCP, INP and CLS from real users, not only Lighthouse",
+          "level": "core"
+        },
+        {
+          "topic": "Prevent layout shift by reserving space for media, fonts and embeds",
+          "level": "core"
+        },
+        {
+          "topic": "Cut LCP with fetchpriority, preload and server-rendered hero content",
+          "level": "core"
+        },
+        {
+          "topic": "Fix poor INP by breaking long tasks and yielding to the main thread",
+          "level": "pro"
+        },
+        {
+          "topic": "Segment field data by device, connection and country to find who is slow",
+          "level": "pro"
+        },
+        {
+          "topic": "Trace a Core Web Vitals regression to the release that caused it",
+          "level": "pro"
+        },
+        {
+          "topic": "Attribute slow interactions using Long Animation Frames data",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "loading-delivery.md",
+      "title": "Loading and delivery",
+      "purpose": "Read when the page takes too long to appear or navigate: critical path, time to first byte, third parties and caching layers.",
+      "leaves": [
+        {
+          "topic": "Lazy-load below-the-fold content and defer non-critical work",
+          "level": "core"
+        },
+        {
+          "topic": "Decide which caching layer fixes a slow page: browser, CDN, app or database",
+          "level": "core"
+        },
+        {
+          "topic": "Remove render-blocking CSS and scripts from the critical path",
+          "level": "core"
+        },
+        {
+          "topic": "Audit third-party scripts and defer or remove the costly ones",
+          "level": "core"
+        },
+        {
+          "topic": "Cut time to first byte with caching, streaming and fewer origin round trips",
+          "level": "pro"
+        },
+        {
+          "topic": "Use preconnect and resource hints for critical third-party origins",
+          "level": "pro"
+        },
+        {
+          "topic": "Cut request count and bytes for slow radios and battery",
+          "level": "pro"
+        },
+        {
+          "topic": "Make navigations instant with bfcache eligibility and speculation-rules prerendering",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "javascript-bundles.md",
+      "title": "JavaScript bundles",
+      "purpose": "Read when shipping too much JavaScript: analyzing, splitting, trimming and budgeting bundles.",
+      "leaves": [
+        {
+          "topic": "Analyze the bundle and remove duplicate or oversized dependencies",
+          "level": "core"
+        },
+        {
+          "topic": "Ship less JavaScript by rendering on the server and using platform features",
+          "level": "core"
+        },
+        {
+          "topic": "Code-split by route and lazy-load heavy components",
+          "level": "core"
+        },
+        {
+          "topic": "Enforce a JavaScript bundle budget in CI",
+          "level": "pro"
+        },
+        {
+          "topic": "Make tree-shaking work: ES modules, side-effect flags, no barrel-file traps",
+          "level": "pro"
+        },
+        {
+          "topic": "Load third-party widgets through facades or workers",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "images-fonts.md",
+      "title": "Images, video and fonts",
+      "purpose": "Read when media or web fonts dominate page weight, delay rendering or cause layout shift.",
+      "leaves": [
+        {
+          "topic": "Serve responsive AVIF or WebP images with srcset, sizes and lazy loading",
+          "level": "core"
+        },
+        {
+          "topic": "Set explicit dimensions and high priority on the LCP image",
+          "level": "core"
+        },
+        {
+          "topic": "Choose system or variable fonts to cut font weight",
+          "level": "core"
+        },
+        {
+          "topic": "Load web fonts with subsetting, preload and font-display without layout shift",
+          "level": "core"
+        },
+        {
+          "topic": "Resize and optimize images on demand through an image CDN or framework loader",
+          "level": "pro"
+        },
+        {
+          "topic": "Deliver video with posters, streaming formats and lazy loading",
+          "level": "pro"
+        },
+        {
+          "topic": "Replace icon fonts and heavy SVG with optimized sprites or inline SVG",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "rendering-runtime.md",
+      "title": "Rendering and runtime performance",
+      "purpose": "Read when the page is slow after it has loaded: jank, slow interactions and layout thrashing.",
+      "leaves": [
+        {
+          "topic": "Profile a slow page with DevTools on a throttled low-end device",
+          "level": "core"
+        },
+        {
+          "topic": "Respond to input within 100 ms, optimistically where safe",
+          "level": "core"
+        },
+        {
+          "topic": "Profile style, layout, paint and composite in the Performance panel",
+          "level": "pro"
+        },
+        {
+          "topic": "Find and fix layout thrashing and forced reflow",
+          "level": "pro"
+        },
+        {
+          "topic": "Reduce DOM size and use content-visibility on long pages",
+          "level": "pro"
+        },
+        {
+          "topic": "Keep typing and scrolling responsive by debouncing, deferring and batching updates",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "backend-latency.md",
+      "title": "Backend latency and profiling",
+      "purpose": "Read when a server response is slow: measuring per endpoint, profiling, and removing waits in the request path.",
+      "leaves": [
+        {
+          "topic": "Profile a slow endpoint and find the slow query, lock or downstream call",
+          "level": "core"
+        },
+        {
+          "topic": "Run independent I/O in parallel instead of sequential awaits",
+          "level": "core"
+        },
+        {
+          "topic": "Track p95 and p99 latency per endpoint and log slow queries",
+          "level": "pro"
+        },
+        {
+          "topic": "Set a latency budget for each hop of a critical request",
+          "level": "pro"
+        },
+        {
+          "topic": "Profile CPU with a flame graph and fix the hot path",
+          "level": "pro"
+        },
+        {
+          "topic": "Precompute expensive results in materialized tables or background jobs",
+          "level": "pro"
+        },
+        {
+          "topic": "Reduce payload size and serialization cost",
+          "level": "pro"
+        },
+        {
+          "topic": "Find tail-latency causes: garbage collection, cold starts, pool waits, lock contention",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "load-testing.md",
+      "title": "Load testing",
+      "purpose": "Read when you need to know how much traffic the system can take and what breaks first.",
+      "leaves": [
+        {
+          "topic": "Decide whether a load test is worth running at this stage",
+          "level": "core"
+        },
+        {
+          "topic": "Load-test critical endpoints with k6 and find the saturation point",
+          "level": "pro"
+        },
+        {
+          "topic": "Model realistic traffic: request mix, think time, data variety and ramp",
+          "level": "pro"
+        },
+        {
+          "topic": "Identify the first bottleneck from metrics during a test",
+          "level": "pro"
+        },
+        {
+          "topic": "Run soak, spike and stress tests and read what each reveals",
+          "level": "expert"
+        },
+        {
+          "topic": "Test against production-like data and infrastructure without harming users",
+          "level": "expert"
+        },
+        {
+          "topic": "Add performance regression checks for key endpoints to CI",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "performance-budgets.md",
+      "title": "Performance budgets and audits",
+      "purpose": "Read when auditing a site's performance, setting targets, or stopping regressions from shipping.",
+      "leaves": [
+        {
+          "topic": "Audit a site's performance and produce a ranked fix list",
+          "level": "core"
+        },
+        {
+          "topic": "Set performance targets tied to conversion and retention",
+          "level": "core"
+        },
+        {
+          "topic": "Enforce a performance budget in CI with lab tests",
+          "level": "pro"
+        },
+        {
+          "topic": "Monitor field performance continuously and alert on regressions",
+          "level": "pro"
+        },
+        {
+          "topic": "Prioritize performance work by user and revenue impact",
+          "level": "pro"
+        },
+        {
+          "topic": "Report performance to stakeholders with before-and-after field data",
+          "level": "pro"
+        }
+      ]
+    }
+  ]
+}

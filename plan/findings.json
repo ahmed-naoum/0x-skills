@@ -1,0 +1,242 @@
+[
+ {
+  "kind": "missing-leaf",
+  "where": "react-nextjs > rendering-strategies.md",
+  "problem": "No leaf anywhere covers content management. 'Add a blog', 'let a non-developer edit the marketing site' and 'where do docs and help articles live' are among the most frequent web tasks, yet the tree has no CMS, MDX or content-model leaf. growth-marketing covers what to write, not where content lives or how it is previewed and published.",
+  "fix": "Add two leaves to react-nextjs > rendering-strategies.md (8 -> 10 leaves): 'Choose where content lives: repo MDX, a headless CMS or a site builder' (core) and 'Model content types and wire draft preview and publish-time revalidation' (pro). Add a useWhen entry 'Add a blog, docs or CMS so non-developers can edit pages' (9 -> 10) and extend the file purpose with 'or where editable content lives'."
+ },
+ {
+  "kind": "too-broad",
+  "where": "backend-architecture > multi-tenancy.md",
+  "problem": "Data residency is named in four leaves (cloud-infrastructure platform-choice, privacy-compliance privacy-law, ai-features ai-data-privacy, and here) but no leaf teaches how to build it: a second regional stack, tenant-to-region routing, what stays global. The only engineering leaf is the three-in-one expert leaf 'Support per-tenant configuration, custom domains and data residency', which is also the only place that serving customer custom domains appears. The first EU or enterprise customer who asks where their data lives hits exactly this.",
+  "fix": "Replace that leaf with three in the same file (8 -> 10 leaves): 'Pin each tenant to a home region with isolated regional stacks and global routing' (expert); 'Serve customer custom domains with ownership verification and on-demand TLS certificates' (expert); 'Support per-tenant settings and limits without forking the codebase' (pro). No overlap with web-security 'Sandbox user-supplied code, HTML and custom domains', which is the security side."
+ },
+ {
+  "kind": "missing-leaf",
+  "where": "privacy-compliance > sector-consumer-rules.md",
+  "problem": "Selling to the first customer in another country triggers sanctions and export-control duties (blocked countries and parties, screening, what the payment provider does and does not cover). Nothing in the tree mentions sanctions or export controls; privacy, VAT and consumer law are covered but this is not.",
+  "fix": "Add to privacy-compliance > sector-consumer-rules.md (8 -> 9 leaves): 'Block sanctioned countries and parties and check export-control rules before selling abroad' (pro)."
+ },
+ {
+  "kind": "missing-leaf",
+  "where": "engineering-leadership > technical-strategy.md",
+  "problem": "The first enterprise, regulated or public-sector buyer commonly asks to run the product in their own cloud or on-premises. The tree covers SSO, SCIM, audit logs, DPA, SOC 2, SLA and 'Move a large tenant to dedicated infrastructure', but has no leaf for deciding whether to offer self-hosted or customer-cloud deployment and what supporting it costs. It is a hard-to-reverse fork that founders usually make under deal pressure.",
+  "fix": "Add to engineering-leadership > technical-strategy.md (7 -> 8 leaves): 'Decide whether to offer self-hosted or customer-cloud deployments and price their upkeep' (expert)."
+ },
+ {
+  "kind": "missing-leaf",
+  "where": "startup-finance > exit-due-diligence.md",
+  "problem": "The file purpose promises 'selling, merging or shutting down', but the only shutdown leaf is product-level ('Sunset a product gracefully with notice, refunds and customer data export'). Winding down the company itself (creditors, staff, customers, dissolution, final filings) is the most common way a startup ends and has no leaf.",
+  "fix": "Add to startup-finance > exit-due-diligence.md (9 -> 10 leaves): 'Wind down the company: settle debts, notify customers and staff, dissolve, file final returns' (pro). Add a useWhen entry 'We are out of runway; how do I shut the company down properly?' (9 -> 10)."
+ },
+ {
+  "kind": "missing-leaf",
+  "where": "company-building > founder-effectiveness.md",
+  "problem": "A co-founder split is covered only before it happens ('Choose a co-founder and sign a roles, vesting and decision-rights agreement', 'Raise co-founder disagreements early and resolve them') and on the equity mechanics ('Handle a departure: repurchase, exercise window and acceleration' in startup-finance). The separation itself has no leaf: the agreement and release, board seat, handover of accounts and access, and what to tell team, customers and investors.",
+  "fix": "Add to company-building > founder-effectiveness.md (8 -> 9 leaves): 'Negotiate a co-founder exit: separation agreement, board seat, access handover and announcement' (expert)."
+ },
+ {
+  "kind": "missing-leaf",
+  "where": "company-building > strategy-moats.md and incorporation-founders.md",
+  "problem": "A competitor copying the product, or a clone or phishing site using the brand, has no leaf. The tree registers a trademark and handles takedown notices received, but never enforces the founder's own rights, never decides how to respond to a fast follower, and never mentions patents or trade secrets.",
+  "fix": "Add to company-building > strategy-moats.md (7 -> 8 leaves): 'Respond to a copycat: ignore, out-ship, reposition or enforce your rights' (pro). Add to company-building > incorporation-founders.md (8 -> 10 leaves): 'Enforce trademark and copyright against clones with takedowns and platform complaints' (pro) and 'Decide whether patents or trade-secret protection are worth their cost' (expert)."
+ },
+ {
+  "kind": "missing-leaf",
+  "where": "frontend-foundations > pwa-mobile.md and ci-cd-release > ci-pipelines.md",
+  "problem": "The mobile branch covers the web-versus-native decision, wrappers, store review, in-app purchase and staged rollouts, but not the two things that eat the first weeks of a real app: links that open the installed app (needed for magic-link sign-in, password reset and sharing), and automated builds, signing and store submission. pwa-mobile.md is at the 10-leaf cap and frontend-foundations at the 8-reference cap, so nothing can simply be appended.",
+  "fix": "In frontend-foundations > pwa-mobile.md replace 'Handle offline storage and sync conflicts on devices' (expert, already owned by backend-architecture > realtime.md 'Build collaborative or offline-first features with a sync engine or CRDTs') with 'Open emailed and shared URLs in the installed app with universal and app links' (pro). Add to ci-cd-release > ci-pipelines.md (7 -> 8 leaves): 'Automate mobile builds, code signing, store submission and over-the-air updates' (expert)."
+ },
+ {
+  "kind": "missing-leaf",
+  "where": "web-security > secrets.md",
+  "problem": "Cryptography appears only as individual uses (Argon2id passwords, webhook signatures, hashed reset tokens, field encryption) plus 'never hand-roll crypto'. No leaf teaches choosing the right primitive for a job, which is where application code goes wrong: non-random tokens, unauthenticated encryption, a hash where a MAC is needed, wrong JWT algorithm.",
+  "fix": "Add to web-security > secrets.md (8 -> 9 leaves): 'Pick the right primitive: random tokens, hashes, HMAC, authenticated encryption or signatures' (core). Extend the file purpose with 'or choosing a cryptographic primitive'."
+ },
+ {
+  "kind": "missing-leaf",
+  "where": "backend-architecture > architecture-shape.md",
+  "problem": "The tree chooses a backend language and runtime, an API style and a frontend meta-framework, but never answers the question this reader asks first: is the Next.js server my backend, or do I need a separate API service, and on which framework? No leaf names a backend framework decision at all.",
+  "fix": "Add to backend-architecture > architecture-shape.md (9 -> 10 leaves): 'Choose between the meta-framework's server and a separate API service with its own framework' (core)."
+ },
+ {
+  "kind": "missing-leaf",
+  "where": "auth-identity > abuse-defense.md",
+  "problem": "When users abuse the product (phishing pages, spam, malware links), the consequence that actually takes the business offline is external: an abuse notice from the cloud host or registrar with a short deadline, or a browser deceptive-site warning on the whole domain. Email blocklisting and DMCA/DSA notices are covered; these are not.",
+  "fix": "Add to auth-identity > abuse-defense.md (9 -> 10 leaves): 'Answer host, registrar and browser-blocklist abuse notices before they suspend you' (pro)."
+ },
+ {
+  "kind": "missing-leaf",
+  "where": "site-reliability > postmortems-runbooks.md",
+  "problem": "First deploy has per-domain pre-launch leaves (security baseline checklist, bug bash, status page, marketing launch checklist) but no operational go-live gate that checks backups are restore-tested, alerts reach a phone, rollback works and limits are set. The file also has no core leaf, so the roadmap shows nothing to do here before launch.",
+  "fix": "Add to site-reliability > postmortems-runbooks.md (7 -> 8 leaves): 'Run a production-readiness review before launch: backups, alerts, rollback, limits and owners' (core). Extend the file purpose with 'or before a launch'."
+ },
+ {
+  "kind": "missing-leaf",
+  "where": "sales-customers > proposals-contracts.md",
+  "problem": "Paid custom work has no leaf. An enterprise customer who will sign 'if you build X', paid implementation or migration, and consulting to fund the product early are all common, and all need scope, change control, acceptance and a services price. The tree covers proposals, pilots and MSAs but not a statement of work or services pricing. This also covers the reading of the request in which 'customers' are clients of a web developer.",
+  "fix": "Add to sales-customers > proposals-contracts.md (8 -> 10 leaves): 'Scope custom work in a statement of work with change control and acceptance' (pro) and 'Price services as fixed bid, day rate or retainer without subsidizing the customer' (pro)."
+ },
+ {
+  "kind": "missing-leaf",
+  "where": "data-stores > choosing-datastores.md",
+  "problem": "The skill's useWhen promises 'Do I need Redis, Elasticsearch, a vector database or Kafka for this?', but the decision leaf lists only 'Redis, a search engine, object storage or a vector index'. Queues and streams are a coverage-floor item, and the tree goes from 'Start with a Postgres-backed queue and know when to outgrow it' straight to expert stream design with no leaf deciding whether a broker or log is needed.",
+  "fix": "Add to data-stores > choosing-datastores.md (8 -> 9 leaves): 'Decide when a job queue must give way to a broker or event log' (pro)."
+ },
+ {
+  "kind": "wrong-level",
+  "where": "company-building > managing-people.md",
+  "problem": "'Let someone go lawfully and humanely' is the only leaf for a first firing and is marked expert (specialist depth, needed at scale). A founder can need it with the first hire, so it disappears from the roadmap exactly when it is needed.",
+  "fix": "Change the level of 'Let someone go lawfully and humanely' from expert to pro in company-building > managing-people.md."
+ },
+ {
+  "kind": "layer-order",
+  "where": "build.py and every skills/*.json (order of skills inside a layer)",
+  "problem": "build.py orders skills inside a layer by file name (sorted glob), so tree.md teaches data-stores ('when a product needs more than Postgres') before postgres-database, 3dui before frontend-foundations, ai-features before backend-architecture and api-design, product-analytics before product-discovery, ci-cd-release before cloud-infrastructure, accessibility before ui-ux-design, and ai-coding-agents before git-collaboration and code-quality. A learner reading top to bottom meets the specialist branch before its foundation.",
+  "fix": "Add an integer \"order\" field to each skill JSON and change the sort key in build.py to (layer, s.get('order', 99), order[name]). Values: L2 cloud-infrastructure 1, ci-cd-release 2. L3 postgres-database 1, data-stores 2. L4 backend-architecture 1, api-design 2, email-notifications 3, payments-billing 4, ai-features 5. L5 auth-identity 1, web-security 2, privacy-compliance 3. L6 frontend-foundations 1, react-nextjs 2, 3dui 3. L7 ui-ux-design 1, accessibility 2. L8 git-collaboration 1, code-quality 2, ai-coding-agents 3, engineering-leadership 4. L10 product-discovery 1, product-analytics 2. Layers 0, 1, 9, 11, 12 keep their current order. Inside linux-server, move shell-files.md to be the first reference (shell basics before the USE method)."
+ },
+ {
+  "kind": "overlap",
+  "where": "web-security > infrastructure-hardening.md versus cloud-infrastructure > iam-accounts.md",
+  "problem": "'Lock down our AWS account' has two obvious owners. web-security useWhen says 'Harden our cloud, admin panel and staff accounts before launch' and owns 'Enforce MFA and least privilege on cloud, registrar, repository and SaaS accounts' and 'Scan infrastructure code and cloud configuration for misconfigurations'. cloud-infrastructure useWhen says 'Set up AWS, GCP or Azure accounts, IAM roles and permissions properly' and owns 'Secure the cloud root account...', 'Grant least-privilege IAM roles...' and 'Audit unused permissions and publicly exposed resources...'. web-security has no notFor pointing at cloud-infrastructure (all 6 slots are used) and cloud-infrastructure only points back for secrets.",
+  "fix": "Remove cloud from web-security instead of adding a notFor: (1) useWhen becomes 'Harden our admin panel, staff accounts and SaaS logins before launch'. (2) Reword the leaf to 'Enforce MFA and least privilege on registrar, repository, payment and SaaS accounts' (core). (3) Move 'Scan infrastructure code and cloud configuration for misconfigurations' (pro) to cloud-infrastructure > infrastructure-as-code.md. (4) Retitle the reference 'Hardening company accounts, staff access and admin tools'. (5) In cloud-infrastructure, change the notFor topic 'Storing and rotating secrets' to 'Secrets, staff SSO and devices, and admin-panel hardening' (use: web-security)."
+ },
+ {
+  "kind": "missing-leaf",
+  "where": "engineering-leadership > technical-strategy.md",
+  "problem": "useWhen 'What tech stack should I choose for this product?' and the reference purpose 'Read when choosing a stack' promise stack selection, but no leaf teaches it (closest is 'Choose boring, well-supported technology...'). The pieces are claimed separately by react-nextjs ('Which framework...'), backend-architecture ('Which backend language or runtime...'), cloud-infrastructure ('Where should I host this...') and postgres-database ('ORM or raw SQL, UUIDs or integer IDs'), so the most common greenfield question has four partial owners and no whole one.",
+  "fix": "Add leaf 'Pick a full default stack for a new product, with each choice's flip condition' (core) to engineering-leadership > technical-strategy.md. Reword the useWhen to 'What whole tech stack should I start this product on?'. Widen the notFor topic 'Designing a specific system's modules and services' to 'Choosing a backend runtime or designing a system's modules and services' (use: backend-architecture). The notFor list is full, so the single-layer questions stay disambiguated by the existing useWhen wording in react-nextjs, backend-architecture and cloud-infrastructure."
+ },
+ {
+  "kind": "overlap",
+  "where": "ui-ux-design, growth-marketing, sales-customers, email-notifications (useWhen) and growth-marketing > landing-conversion.md",
+  "problem": "'Onboarding' is a trigger in three skills with no notFor between ui-ux-design and sales-customers or from growth-marketing to ui-ux-design: 'Design the flow for onboarding, settings or a new feature' (ui-ux-design), 'Write the onboarding and lifecycle email sequence' (growth-marketing), 'Onboard a new business customer successfully' (sales-customers). 'Welcome email' is also claimed twice (email-notifications useWhen and growth-marketing leaf 'Write a welcome and activation sequence...'). And growth-marketing leaf 'Cut signup friction: remove every optional step before first value' repeats ui-ux-design leaf 'Cut a flow's steps, decisions and fields to the minimum'.",
+  "fix": "Reword the triggers so each names its own facet: ui-ux-design 'Design the in-app flow for first run, settings or a new feature before I build it'; growth-marketing 'Write the welcome, activation and win-back email sequence'; sales-customers 'Run kickoff, data import and training for a newly signed business customer'; email-notifications 'Send a receipt, verification or password-reset email from the app'. Delete the growth-marketing leaf 'Cut signup friction: remove every optional step before first value' (landing-conversion.md drops to 6 leaves)."
+ },
+ {
+  "kind": "overlap",
+  "where": "sales-customers > support-operations.md versus ai-features",
+  "problem": "'Add an AI support chatbot' is obvious for both: sales-customers useWhen 'Set up customer support: inbox, help center and an AI support agent' with leaf 'Deploy an AI support agent grounded in docs with human escalation', and ai-features useWhen 'Add an AI assistant, chat or summarization feature' plus retrieval.md and guardrails.md. Neither points at the other and both notFor lists are full. The same skill also takes an engineering build request, 'Build an internal admin tool so support can fix things themselves', while holding one leaf on it.",
+  "fix": "Keep the build in ai-features and the policy in sales-customers. useWhen becomes 'Set up customer support: inbox, help center, response targets and escalation'. Reword the leaf to 'Decide what an AI support agent may answer and when it hands off to a human' (pro). Reword the admin-tool useWhen to 'Decide what an internal admin tool must let support do without an engineer'."
+ },
+ {
+  "kind": "wrong-skill",
+  "where": "company-building > strategy-moats.md; accessibility > names-roles-aria.md; product-analytics > north-star-metrics.md; ui-ux-design > dark-mode-theming.md",
+  "problem": "Four leaves contradict their own skill's notFor. (a) company-building leaf 'Choose a market and problem worth years of your life' versus its notFor 'Choosing which problem and customer to pursue => product-discovery'. (b) accessibility leaf 'Make data tables and charts understandable without sight' versus notFor 'Accessible charts and data-visualization design => dataviz'. (c) product-analytics leaf 'Build one dashboard the company reviews every week' versus notFor 'Running the analysis: SQL queries, statistics and dashboards from data => data'. (d) ui-ux-design leaf 'Let users choose system, light or dark and persist it without a flash' is CSS and script implementation, versus notFor 'Implementing layout, theming and animation in CSS => frontend-foundations'; it is also marked core, and no product needs a theme switcher to ship.",
+  "fix": "(a) Delete the company-building leaf; product-discovery > problem-validation.md already has 'Score ideas on pain, payer clarity, reachability and founder advantage'. (b) Reword to 'Make data tables understandable without sight: headers, scope and captions' (pro). (c) Reword to 'Choose the handful of numbers the company reviews every week' (core). (d) Reword the ui-ux-design leaf to 'Decide whether to offer a theme switcher and default to the system setting' (pro), and reword frontend-foundations > css-layout.md 'Implement theming with color-scheme, light-dark() and OKLCH custom properties' to 'Implement themes with color-scheme, light-dark() and OKLCH custom properties, without a load flash' (pro)."
+ },
+ {
+  "kind": "wrong-level",
+  "where": "cloud-infrastructure > kubernetes.md and platform-choice.md",
+  "problem": "Deciding whether to use Kubernetes is expert ('Decide whether Kubernetes is justified over a managed platform') but operating it is pro: 'Operate Kubernetes deployments, probes, rollouts and config', 'Debug a pod stuck Pending, crash-looping or failing readiness', 'Set resource requests and limits and configure pod autoscaling'. Pro means needed to run in production with paying customers, and the house default is Kubernetes only with people to run it. The expert decision leaf also repeats the core leaf 'Decide between a PaaS, managed containers, a VPS and Kubernetes for your stage'.",
+  "fix": "Set all three pro leaves in kubernetes.md to expert, so the whole reference is expert. Delete 'Decide whether Kubernetes is justified over a managed platform' from platform-choice.md (the core leaf owns the decision)."
+ },
+ {
+  "kind": "wrong-level",
+  "where": "linux-server (hardware-resources.md, processes-systemd.md, shell-files.md, packages-updates.md, ssh-hardening.md, time-encoding.md) and web-networking (tls-certificates.md, proxies-load-balancers.md)",
+  "problem": "Twelve leaves that only matter when you run your own host are marked core ('needed to ship a real product at all'), against the house default of a PaaS first. It is also inconsistent inside the plan: 'Deploy containers to one VPS with Kamal or Coolify' and 'Provision a server repeatably...' are pro, yet setting up that VPS is core. The roadmap would tell a founder on a PaaS that writing systemd units is a prerequisite to shipping.",
+  "fix": "Change core to pro for: 'Write a systemd unit that restarts on crash and starts on boot'; 'Set log rotation, disk alerts and swap policy before a host fills'; 'Transfer and sync files with rsync and scp, preserving permissions'; 'Install and pin packages with apt or dnf from trusted repositories'; 'Apply kernel and package security updates on a schedule, including reboots'; 'Audit what is installed, running and listening before exposing a host'; 'Set up a fresh VPS: non-root user, sudo, firewall and updates'; 'Harden SSH: keys only, no root login, restricted users'; 'Configure a host firewall that allows only the ports in use'; 'Run servers in UTC and keep clocks synced with NTP'; web-networking 'Configure TLS 1.3 and disable legacy protocols and ciphers'; web-networking 'Configure a reverse proxy with routing, timeouts, compression and forwarded headers'. linux-server keeps 17 core leaves (reading resources, processes and logs, shell, SSH keys, containers, UTC and UTF-8)."
+ },
+ {
+  "kind": "wrong-level",
+  "where": "linux-server > time-encoding.md; site-reliability > capacity-scaling.md; git-collaboration > versioning-releases.md; data-stores > caching-redis.md; cloud-infrastructure > infrastructure-as-code.md; ai-features > retrieval.md; api-design > webhooks.md; growth-marketing > content-marketing.md",
+  "problem": "Eight single-leaf level errors. Too low for what they are: tenant leaks through RAG and SSRF through customer webhook URLs are launch-blocking wherever the feature exists, and zone names are a precondition of the pro DST leaf. Too high: the others are marked core but depend on a pro practice or are not needed to ship.",
+  "fix": "'Store time-zone names, not offsets, and keep the zone database current': expert to pro. 'Enforce per-user and per-tenant permissions inside retrieval': pro to core (matches data-stores 'Enforce tenant and permission filters inside every search query', core). 'Deliver outbound webhooks without letting customer URLs reach internal networks': expert to pro (same level as 'Send signed webhooks...'). 'Run two or more instances behind a health-checked load balancer': core to pro. 'Apply semantic versioning to libraries and APIs': core to pro. 'Measure hit rate and prove a cache earns its complexity': core to pro (adding the cache is pro). 'Read a plan diff and catch a destructive change before applying': core to pro (using Terraform is pro). 'Build in public with consistent founder-led content': core to pro."
+ },
+ {
+  "kind": "obsolete-or-wrong",
+  "where": "backend-architecture > runtime-language.md; web-networking > tls-certificates.md; api-design > api-style.md; frontend-foundations > javascript-typescript.md; privacy-compliance > sector-consumer-rules.md",
+  "problem": "Six leaves a 2026 practitioner would correct. (a) 'Prefer runtime built-ins (fetch, test runner, watch) over extra dependencies' contradicts the WRITING.md house default of Vitest. (b) 'Configure TLS 1.3 and disable legacy protocols and ciphers' reads as TLS 1.3 only; production still needs a 1.2 fallback. (c) 'Enable HSTS and preload after verifying every subdomain' presents preload, which is slow to undo, as a core step. (d) 'Describe REST APIs in OpenAPI 3.1...' pins a version; 3.2 has been published (writer to verify) and the number will keep aging. (e) 'Use modern built-ins (structuredClone, Intl, Temporal, iterators)...' names Temporal unconditionally while the same skill says to target Baseline; Temporal was not in every engine at my last check (writer to verify). (f) 'Meet EU Cyber Resilience Act vulnerability-reporting and update duties' assumes the Act applies; it covers products with digital elements placed on the market, not hosted SaaS as such.",
+  "fix": "(a) 'Prefer runtime built-ins (fetch, crypto, watch mode, env files) over extra dependencies'. (b) 'Serve TLS 1.3 with a TLS 1.2 fallback and disable everything older'. (c) 'Enable HSTS with a staged max-age; preload only once every subdomain serves HTTPS'. (d) 'Describe REST APIs in OpenAPI and generate typed clients'. (e) 'Use Baseline built-ins (structuredClone, Intl, iterator helpers, Temporal when Baseline) instead of libraries'. (f) 'Decide whether the EU Cyber Resilience Act covers software you distribute, and meet its duties'."
+ },
+ {
+  "kind": "too-many-competencies",
+  "where": "engineering-leadership > build-vs-buy.md",
+  "problem": "'Decide build versus buy for auth, payments, email, search and analytics' (core) is five decisions in one leaf, and each is already owned by its domain skill: auth-identity 'Decide between a managed auth provider and a vetted library', payments-billing 'Choose a payment provider or merchant of record', email-notifications 'Choose an email provider...', data-stores 'Choose a search engine...', product-analytics 'Choose an analytics tool...'. It makes engineering-leadership a second obvious answer to 'Should I use Clerk or build auth?'.",
+  "fix": "Reword to the method the domain skills do not own: 'Decide build versus buy from differentiation, yearly ownership cost and exit path' (core)."
+ },
+ {
+  "kind": "near-duplicate",
+  "where": "payments-billing > checkout-integration.md, checkout-experience.md, invoices-tax.md, refunds-disputes-fraud.md",
+  "problem": "Three duplicate pairs inside one skill. (a) 'Route payments to a secondary processor for uptime and acceptance' (checkout-integration.md, expert) and 'Keep a second processor and portable payment tokens ready' (refunds-disputes-fraud.md, expert). (b) 'Choose a payment provider or merchant of record for your markets' (checkout-integration.md, core) and 'Decide between a merchant of record and handling sales tax and VAT yourself' (invoices-tax.md, core). (c) 'Resolve an unknown outcome after a timeout by querying, never re-charging' (checkout-integration.md, pro) and 'Recover the payment state after a lost response, reload or closed tab' (checkout-experience.md, pro).",
+  "fix": "(a) Delete the refunds-disputes-fraud.md leaf and reword the checkout-integration.md one to 'Add a second processor with portable payment tokens for uptime and freeze risk' (expert). (b) Reword the checkout-integration.md leaf to 'Choose a payment provider by markets, payment methods, fees and payout terms' (core); the merchant-of-record decision stays in invoices-tax.md. (c) Delete the checkout-experience.md leaf (drops to 6 leaves)."
+ },
+ {
+  "kind": "near-duplicate",
+  "where": "ci-cd-release > environments-config.md; web-security > secrets.md; react-nextjs > rendering-strategies.md, server-components.md, build-tooling.md",
+  "problem": "'Secrets never in the repo, image or bundle' is taught five times. ci-cd-release 'Inject secrets at deploy time from a manager, never from the repo or image' (core) repeats web-security 'Keep secrets in a secrets manager, never in repositories, images or client bundles' (core), and ci-cd-release's own notFor sends secret storage to web-security. Inside react-nextjs, three leaves cover one competency: '...and where secrets may live', 'Keep server-only code and secrets out of client bundles', 'Manage environment variables and their public or private exposure at build time'.",
+  "fix": "Delete the ci-cd-release leaf (environments-config.md drops to 6; 'Separate development, staging and production with distinct secrets and data' stays). In react-nextjs: reword rendering-strategies.md to 'Decide what runs at build time, request time and in the browser'; reword server-components.md to 'Mark server-only modules so importing them from client code fails the build'; keep the build-tooling.md leaf as the single owner of environment-variable exposure."
+ },
+ {
+  "kind": "near-duplicate",
+  "where": "frontend-foundations (html-semantics.md, browser-dom.md, javascript-typescript.md); accessibility > names-roles-aria.md; web-performance > rendering-runtime.md; code-quality > debugging.md",
+  "problem": "Four duplicated competencies across the browser-side skills. (a) 'Choose native elements (button, a, details, dialog) before custom widgets' (frontend-foundations, core) equals 'Build with native controls before reaching for ARIA' (accessibility, core). (b) Memory leaks three times: 'Find and fix leaks from listeners, timers and detached DOM nodes' (frontend-foundations, pro), 'Fix memory growth in long-lived single-page sessions' (web-performance, expert), 'Find a memory leak with heap snapshots' (code-quality, pro). (c) 'Test on a low-end Android with CPU and network throttling' (frontend-foundations, core) equals 'Profile a slow page with DevTools on a throttled low-end device' (web-performance, core). (d) 'Move heavy work off the main thread with web workers' (frontend-foundations, pro) equals 'Keep scrolling and typing smooth by moving work off the main thread' (web-performance, pro).",
+  "fix": "(a) Reword the accessibility leaf to 'Remove redundant, conflicting or invalid ARIA from existing markup' (core). (b) Delete the web-performance leaf; reword the code-quality leaf to 'Find a server-side memory leak by comparing heap snapshots under load' (pro). (c) Delete the frontend-foundations leaf (browser-dom.md drops to 9). (d) Reword the web-performance leaf to 'Keep typing and scrolling responsive by debouncing, deferring and virtualizing updates' (pro)."
+ },
+ {
+  "kind": "near-duplicate",
+  "where": "backend-architecture (architecture-shape.md, integrations-resilience.md); auth-identity (auth-architecture.md, oauth-oidc.md); api-design > api-style.md; web-networking > proxies-load-balancers.md; code-quality > refactoring.md",
+  "problem": "Six duplicated leaves across the server-side skills. (a) 'Draw a system diagram with every component, data store and trust boundary' (backend-architecture, pro) repeats web-security 'Draw trust boundaries and data flows for the system' and code-quality 'Document architecture with a map, key flows and constraints'. (b) 'Model users, identities, sessions and organizations in the schema' (auth-identity) overlaps 'Model accounts, workspaces and users so one user can join many tenants' (backend-architecture). (c) 'Request minimal scopes and store provider tokens encrypted' (auth-identity) overlaps 'Store and refresh third-party OAuth tokens for integrations' (backend-architecture). (d) 'Share types end to end from database schema to client' (api-design) equals 'Generate types from database and API schemas so drift fails the build' (code-quality). (e) 'Route by host and path with an ingress or gateway' (web-networking) equals 'Route traffic with Gateway API or ingress and automate certificates' (cloud-infrastructure). (f) 'Remove dead code, stale flags and unused dependencies routinely' (code-quality) repeats ci-cd-release 'Remove stale flags on a schedule...' and code-quality 'Find dead exports, unused dependencies and circular imports with tooling'.",
+  "fix": "(a) Delete the backend-architecture leaf (architecture-shape.md drops to 8). (b) Reword the auth leaf to 'Model users, linked identities, credentials and sessions in the schema'. (c) Reword the auth leaf to 'Request minimal scopes at login and discard provider tokens you do not need' and the backend leaf to 'Store third-party OAuth tokens encrypted and refresh them before expiry'. (d) Delete the api-design leaf (api-style.md drops to 6). (e) Reword the web-networking leaf to 'Route by host and path at the reverse proxy or load balancer'. (f) Reword the refactoring.md leaf to 'Delete dead code as soon as it is unreachable, not in a cleanup project'."
+ },
+ {
+  "kind": "near-duplicate",
+  "where": "company-building (hiring.md, operating-cadence.md, founder-effectiveness.md, incorporation-founders.md); engineering-leadership (estimation-planning.md, hiring-engineers.md); sales-customers > procurement-security.md; startup-finance > fundraising-process.md",
+  "problem": "Eight duplicated leaves across the business layers. (a) 'Hire first sales, marketing and support leads and define their metrics' repeats sales-customers 'Hire a first salesperson...' and 'Hire a first support person...'. (b) 'Reduce bus factor with a shared credential vault, runbooks and account ownership' is three competencies owned by web-security secrets.md, site-reliability and web-security infrastructure-hardening.md. (c) 'Sequence the enterprise must-haves: SSO, audit logs, DPA and SLA' (sales-customers) repeats pricing-monetization 'Package an enterprise tier: SSO, audit logs, SLA and support'. (d) 'Keep a weekly plan-and-review cadence, even when solo' (engineering-leadership) equals 'Set a weekly, monthly and quarterly operating rhythm' (company-building). (e) 'Decide reversible things fast and irreversible things slowly' (company-building) equals 'Identify the few hard-to-reverse decisions and slow down only for those' (engineering-leadership). (f) 'Reshape team structure past one team with clear ownership' (engineering-leadership) equals 'Design an org structure with clear ownership beyond ten people' (company-building). (g) 'Choose a co-founder and sign a roles, vesting and decision-rights agreement' is two competencies and repeats startup-finance 'Vest founder equity with a cliff...'. (h) 'Run a board meeting with a pre-read, honest metrics and clear asks' sits in a fundraising file and overlaps company-building 'Build a board and advisors and use them for decisions'.",
+  "fix": "(a) Reword to 'Hire a first marketing lead and define the metrics they own' (expert). (b) Reword to 'Name a deputy with legal and account authority if the founder is unreachable' (pro). (c) Reword the sales-customers leaf to 'Decide which enterprise requirement to build next from the deals it blocks' (pro). (d) Delete the engineering-leadership leaf (estimation-planning.md drops to 7). (e) Delete the company-building leaf (founder-effectiveness.md drops to 7). (f) Delete the engineering-leadership leaf (hiring-engineers.md drops to 7). (g) Reword to 'Sign a co-founder agreement on roles, decision rights and what happens if one leaves' (core). (h) Delete the startup-finance leaf (fundraising-process.md drops to 6) and reword the company-building leaf to 'Build a board and run its meetings with a pre-read and clear asks' (expert)."
+ },
+ {
+  "kind": "near-duplicate",
+  "where": "pricing-monetization > revenue-model.md; ai-features > feature-design.md; growth-marketing > paid-acquisition.md and landing-conversion.md; data-stores > choosing-datastores.md; ui-ux-design > visual-design.md; linux-server > ssh-hardening.md, container-internals.md, shell-files.md; web-networking > cdn-edge.md",
+  "problem": "Leaves that restate a sibling in the same reference, or act as an umbrella over the leaves beside them. Each wastes a slot and gives the writer two headings for one idea.",
+  "fix": "pricing-monetization: delete 'Choose seat-based, usage-based or hybrid pricing' (it is 'Pick a value metric...'). ai-features: reword 'Decide between prompting, retrieval, tools and fine-tuning for a quality gap' to 'Diagnose a quality gap as a prompt, context, retrieval or model problem first' (pro). growth-marketing: merge 'Pick one acquisition channel to master before adding a second' and 'Test one or two channels cheaply before scaling spend' into 'Test a few channels cheaply, then master one before adding a second' (core); reword 'Raise landing-page conversion with tested copy, proof and less friction' to 'Find why visitors leave using recordings, scroll depth and five-second tests' (pro). data-stores: delete 'Count the operating cost of each extra system before adopting it' (it is the justification in 'Default to Postgres and justify every additional datastore'). ui-ux-design: reword the umbrella 'Apply hierarchy, spacing, typography and contrast so screens scan easily' to 'Establish visual hierarchy so each screen has one clear primary action' (core). linux-server: reword the umbrella 'Set up a fresh VPS: non-root user, sudo, firewall and updates' to 'Create a non-root sudo user and lock the root account on a fresh VPS'; delete 'Explain cgroups and namespaces well enough to debug a container limit' (restates 'Debug OOM-killed or CPU-throttled containers from cgroup metrics'); reword 'Navigate Linux files, permissions and ownership from the shell' to 'Find files, logs and config using the standard Linux directory layout'. web-networking: delete 'Apply emergency rate limits, challenges or geo-blocks during an attack' and reword the expert leaf to 'Rehearse the DDoS response: who flips which control and how to reach the provider'."
+ },
+ {
+  "kind": "vague-leaf",
+  "where": "web-networking (ip-transport.md, http.md); cloud-infrastructure > kubernetes.md; web-security > secrets.md; frontend-foundations (browser-dom.md, javascript-typescript.md); git-collaboration > git-model.md; sales-customers > support-operations.md; data-stores > data-lifecycle.md; growth-marketing > email-lifecycle.md; ui-ux-design > visual-design.md",
+  "problem": "Leaves that are not a single do-or-decide: 'Explain ...' knowledge statements, '... correctly' catch-alls, three competencies joined by commas, or outcomes with no action.",
+  "fix": "Reword, keeping the level: 'Explain ports, sockets, NAT and firewalls well enough to explain a refused connection' to 'Diagnose a refused or timed-out connection through ports, NAT and firewall rules'. 'Design requests to survive a Wi-Fi to cellular handover' to 'Make requests retry-safe and uploads resumable across a Wi-Fi to cellular switch'. 'Apply HTTP methods, status codes and idempotency correctly' to 'Choose the HTTP method and status code each endpoint and error should use'. 'Use conditional, range and content-negotiation requests correctly' to 'Serve conditional and range requests so clients revalidate and resume instead of refetching'. 'Operate Kubernetes deployments, probes, rollouts and config' to 'Write a Deployment with probes, a rollout strategy and externalized config'. 'Encrypt data at rest and in transit and manage the keys' to 'Turn on provider-managed encryption at rest for databases, disks, buckets and backups' (TLS is web-networking's, field-level keys are data-stores'). 'Debug layout, network and memory problems in browser DevTools' to 'Inspect and live-edit DOM, computed styles and layout in DevTools to find a bug'. 'Explain the event loop, promises and microtasks when fixing async bugs' to 'Fix async ordering bugs by reasoning about the event loop and microtasks'. 'Explain commits, branches, refs and the index well enough to predict a command' to 'Predict what a git command does to commits, refs, index and working tree'. 'Reproduce, diagnose and resolve a customer issue end to end' to 'Triage a ticket: reproduce, classify as bug, gap or confusion, and close the loop'. 'Keep working exports of every datastore and SaaS holding customer data' to 'Test that you can export your data from every datastore and SaaS vendor'. 'Grow an email list you own' to 'Add email capture with a reason to subscribe at each high-intent moment'. 'Write a newsletter people open' to 'Pick a newsletter format and cadence you can sustain and measure replies'. 'Use icons, imagery and illustration consistently' to 'Choose one icon set and imagery style and write the rules for using them'."
+ },
+ {
+  "kind": "wrong-reference",
+  "where": "postgres-database (indexes-query-plans.md, backup-recovery.md); pricing-monetization > unit-economics.md; code-quality > test-strategy.md; cloud-infrastructure > platform-choice.md",
+  "problem": "Five leaves sit in a reference whose purpose line would never lead Claude to them: killing a query under indexes, a provider migration under backups, customer-concentration risk under unit economics, bug-report triage under test strategy, and a deploy how-to under platform choice.",
+  "fix": "Move 'Kill a runaway query safely' (pro) to postgres-database > postgres-operations.md. Move 'Migrate between database providers with minimal downtime via logical replication' (expert) to postgres-database > replication-scaling.md. Move 'Reduce reliance on any single customer for most revenue' (pro) to startup-finance > runway-forecasting.md. Move 'Write a reproducible bug report and triage by severity and reach' (core) to code-quality > debugging.md. Move 'Deploy containers to one VPS with Kamal or Coolify and zero downtime' (pro) to cloud-infrastructure > docker-images.md. All source and target files stay within 5 to 10 leaves after these moves and the other fixes in this report."
+ },
+ {
+  "kind": "grab-bag-reference",
+  "where": "data-stores > streams-pipelines.md",
+  "problem": "The reference mixes two unrelated moments (loading an analytics warehouse; operational event streaming and change data capture) plus a data-integrity leaf, 'Write reconciliation jobs that check invariants across tables and systems', that is neither. The skill's first useWhen asks 'Do I need Redis, Elasticsearch, a vector database or Kafka for this?' but no leaf decides the Kafka question: choosing-datastores.md lists Redis, search, object storage and vector only, and the queue leaf lives in backend-architecture.",
+  "fix": "Retitle the reference 'Warehouse, pipelines and event streams' and order its leaves warehouse first, streams last. Move 'Write reconciliation jobs that check invariants across tables and systems' (expert) to backend-architecture > consistency-concurrency.md. Add leaf 'Decide when a job queue is not enough and a Kafka-style event log is justified' (expert) to data-stores > streams-pipelines.md."
+ },
+ {
+  "kind": "missing-notFor",
+  "where": "linux-server (useWhen, notFor) and cloud-infrastructure (notFor)",
+  "problem": "Three unguarded edges around linux-server, which has one free notFor slot. 'The server is slow...' (linux-server) and 'This endpoint or page takes seconds to respond' (web-performance) have no pointer either way. 'Timestamps are off by an hour...' (linux-server) also describes a display bug owned by frontend-foundations 'Display and accept times correctly for users in different time zones'. And 'Which instance size and disk type do I need?' is owned by linux-server, but cloud-infrastructure's notFor for linux-server does not mention sizing, so a cloud purchase decision looks like cloud-infrastructure's.",
+  "fix": "Add to linux-server notFor: {\"topic\": \"A slow page or endpoint when the host has CPU, memory and disk to spare\", \"use\": \"web-performance\"}. Reword the linux-server useWhen to 'Stored timestamps or scheduled jobs are off by an hour, or text is garbled'. Change the cloud-infrastructure notFor topic to 'Shell access, systemd, host hardening, instance and disk sizing, and container internals on one machine' (use: linux-server)."
+ },
+ {
+  "kind": "overlap",
+  "where": "web-security (useWhen) versus backend-architecture > file-uploads.md; ci-cd-release (useWhen) versus code-quality",
+  "problem": "Two useWhen lines reach into a neighbor. web-security 'Handle user-supplied HTML, URLs or files safely' claims files, but upload validation, separate-origin serving and malware scanning are all leaves of backend-architecture > file-uploads.md, with no notFor between the two skills. ci-cd-release 'CI is slow or flaky to set up and I want it faster' is garbled and collides with code-quality 'This test is flaky, or the suite is too slow'.",
+  "fix": "web-security useWhen becomes 'Render user-supplied HTML, markdown, SVG or URLs safely'. ci-cd-release useWhen becomes 'CI takes too long; make the pipeline faster'."
+ },
+ {
+  "kind": "overlap",
+  "where": "ai-coding-agents (useWhen) versus harness skills installed in this environment",
+  "problem": "Three triggers collide with skills that are installed here but absent from SPEC.md's table: 'Write or improve CLAUDE.md or AGENTS.md for this repository' (init), 'Set up skills, hooks or MCP servers for my stack' (update-config owns hooks and settings.json; skill-creator owns writing skills), 'What permissions and secrets should the agent have?' (update-config, fewer-permission-prompts). build.py's EXTERNAL set would reject a notFor naming them.",
+  "fix": "Keep the judgment in ai-coding-agents and leave the mechanics to the harness skills. Reword to 'Decide what belongs in CLAUDE.md or AGENTS.md so agents stop repeating mistakes', 'Decide which skills, hooks or MCP servers are worth adding for my stack' and 'Decide what an agent may touch: commands, secrets, network and production'. Optionally add update-config and skill-creator to SPEC.md's installed table and to EXTERNAL in build.py, then replace the notFor 'Product specs and acceptance criteria as product decisions' pointer only if a slot is judged less useful; otherwise the rewording is enough."
+ },
+ {
+  "kind": "bad-name",
+  "where": "sales-customers",
+  "problem": "The name does not say what is inside: half the skill is post-sale (customer-onboarding.md, support-operations.md, success-churn.md, reviews-reputation.md), and 'sales-customers' reads as customers of sales. It is also the one skill with two distinct moments of use (closing a deal; serving an existing customer). At the 32-skill cap a split is not available, so the name and description have to carry both.",
+  "fix": "Rename to sales-support (file skills/sales-support.json, name field, and the notFor 'use' values in code-quality, growth-marketing, payments-billing, pricing-monetization and privacy-compliance). Keep the summary's two halves explicit: 'Win customers and keep them: ...' stays, with support named before success and churn."
+ },
+ {
+  "kind": "vague-leaf",
+  "where": "3dui > SKILL.md",
+  "problem": "'Synthesize sound with Web Audio, unlocked with tilt by a hold-to-act gesture' is garbled: per SPEC.md the hold-to-act gesture unlocks both audio and tilt, and sound synthesis is a separate technique. The reference is already at 10 leaves, so it cannot be split without a build warning.",
+  "fix": "Reword in place to 'Synthesize sound with Web Audio; unlock audio and tilt with one hold-to-act gesture' (expert)."
+ }
+]

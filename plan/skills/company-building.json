@@ -1,0 +1,289 @@
+{
+  "name": "company-building",
+  "layer": 12,
+  "order": 1,
+  "title": "Company building: strategy, founders and people",
+  "summary": "Build the company around the product: strategy and moats, incorporation and founder legal basics, hiring, managing people, operating cadence and culture, and the founder's own effectiveness.",
+  "useWhen": [
+    "Which kind of company should I set up, and where?",
+    "Draft a co-founder agreement, or negotiate a co-founder's departure",
+    "Write our one-page strategy; what is our moat?",
+    "A competitor copied our product, or a clone site is using our brand",
+    "Who should be my first hire? Write the job description and interview plan",
+    "Contractor or employee? How do I hire someone in another country?",
+    "How do I give hard feedback, or let someone go properly?",
+    "Set quarterly goals and a weekly operating rhythm",
+    "I am doing everything myself and burning out",
+    "What happens to the company if I get hit by a bus?"
+  ],
+  "notFor": [
+    {
+      "topic": "Bookkeeping, runway, fundraising, cap table and exit",
+      "use": "startup-finance"
+    },
+    {
+      "topic": "Hiring, interviewing and onboarding engineers specifically",
+      "use": "engineering-leadership"
+    },
+    {
+      "topic": "Terms of service, privacy policy and regulatory compliance",
+      "use": "privacy-compliance"
+    },
+    {
+      "topic": "Choosing which problem and customer to pursue",
+      "use": "product-discovery"
+    },
+    {
+      "topic": "Positioning against competitors in the market",
+      "use": "growth-marketing"
+    },
+    {
+      "topic": "Revenue model and unit economics",
+      "use": "pricing-monetization"
+    }
+  ],
+  "references": [
+    {
+      "file": "strategy-moats.md",
+      "title": "Strategy and moats",
+      "purpose": "Read when deciding where the company is going, what will keep competitors out, how to respond to a copycat, and what the next quarter is for.",
+      "leaves": [
+        {
+          "topic": "Write a one-page strategy: customer, wedge, moat and business model",
+          "level": "core"
+        },
+        {
+          "topic": "Decide what to do yourself, automate, outsource or hire next",
+          "level": "core"
+        },
+        {
+          "topic": "Identify a durable advantage: data, network effects, switching costs, brand or distribution",
+          "level": "pro"
+        },
+        {
+          "topic": "Choose a wedge and the sequence of markets after it",
+          "level": "pro"
+        },
+        {
+          "topic": "Analyze competitors and decide where not to compete",
+          "level": "pro"
+        },
+        {
+          "topic": "Respond to a copycat: ignore, out-ship, reposition or enforce your rights",
+          "level": "pro"
+        },
+        {
+          "topic": "Set quarterly goals with measurable key results",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "incorporation-founders.md",
+      "title": "Incorporation, founder legal basics, IP protection and the board",
+      "purpose": "Read when forming the company, bringing on a co-founder, putting basic legal protection in place, enforcing your IP against a clone, or setting up a board.",
+      "leaves": [
+        {
+          "topic": "Choose an entity and jurisdiction and keep filings current",
+          "level": "core"
+        },
+        {
+          "topic": "Sign a co-founder agreement on roles, decision rights and what happens if one leaves",
+          "level": "core"
+        },
+        {
+          "topic": "Check employer IP-assignment clauses before building on the side",
+          "level": "core"
+        },
+        {
+          "topic": "Assign all founder, employee and contractor IP to the company in writing",
+          "level": "core"
+        },
+        {
+          "topic": "Keep standard templates: NDA, contractor agreement and offer letter",
+          "level": "core"
+        },
+        {
+          "topic": "Clear and register a trademark before investing in the brand",
+          "level": "pro"
+        },
+        {
+          "topic": "Enforce trademark and copyright against clones with takedowns and platform complaints",
+          "level": "pro"
+        },
+        {
+          "topic": "Buy cyber, professional-liability and D&O insurance matched to risk",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide whether patents or trade-secret protection are worth their cost",
+          "level": "expert"
+        },
+        {
+          "topic": "Build a board and run its meetings with a pre-read and clear asks",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "hiring.md",
+      "title": "Hiring",
+      "purpose": "Read when deciding whether and whom to hire, how to run the process, and how to employ someone legally.",
+      "leaves": [
+        {
+          "topic": "Choose the first hire by the bottleneck, not the org chart",
+          "level": "pro"
+        },
+        {
+          "topic": "Write a role scorecard and job description from outcomes",
+          "level": "pro"
+        },
+        {
+          "topic": "Source candidates from networks, communities and direct outreach",
+          "level": "pro"
+        },
+        {
+          "topic": "Run structured interviews with work samples and scorecards",
+          "level": "pro"
+        },
+        {
+          "topic": "Check references and verify identity against fraudulent remote candidates",
+          "level": "pro"
+        },
+        {
+          "topic": "Choose contractor, employee or employer-of-record for each country",
+          "level": "pro"
+        },
+        {
+          "topic": "Set compensation bands from market data and what the company can afford",
+          "level": "pro"
+        },
+        {
+          "topic": "Make an offer and close the candidate without overpromising",
+          "level": "pro"
+        },
+        {
+          "topic": "Hire a first marketing lead and define the metrics they own",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "managing-people.md",
+      "title": "Managing people",
+      "purpose": "Read when someone works for you: onboarding, expectations, feedback, delegation, underperformance and departures.",
+      "leaves": [
+        {
+          "topic": "Onboard a new hire to productive within two weeks",
+          "level": "pro"
+        },
+        {
+          "topic": "Set 30/60/90-day expectations and review against them",
+          "level": "pro"
+        },
+        {
+          "topic": "Run one-on-ones that surface blockers and growth goals",
+          "level": "pro"
+        },
+        {
+          "topic": "Delegate outcomes with a clear owner and check-ins",
+          "level": "pro"
+        },
+        {
+          "topic": "Give direct feedback and manage underperformance to a resolution",
+          "level": "pro"
+        },
+        {
+          "topic": "Let someone go lawfully and humanely",
+          "level": "pro"
+        },
+        {
+          "topic": "Run payroll, benefits and required employer registrations",
+          "level": "pro"
+        },
+        {
+          "topic": "Design an org structure with clear ownership beyond ten people",
+          "level": "expert"
+        },
+        {
+          "topic": "Decide when to add a people lead versus outsourced HR",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "operating-cadence.md",
+      "title": "Operating cadence, process and culture",
+      "purpose": "Read when setting how the company works day to day: rhythm, written decisions, norms, automation and continuity.",
+      "leaves": [
+        {
+          "topic": "Set a weekly, monthly and quarterly operating rhythm",
+          "level": "core"
+        },
+        {
+          "topic": "Name a deputy with legal and account authority if the founder is unreachable",
+          "level": "pro"
+        },
+        {
+          "topic": "Work async-first with written decisions",
+          "level": "pro"
+        },
+        {
+          "topic": "Stay a small team by automating back-office work with SaaS and agents",
+          "level": "pro"
+        },
+        {
+          "topic": "Write down values and working norms that actually guide decisions",
+          "level": "pro"
+        },
+        {
+          "topic": "Keep a company handbook as the single source of truth",
+          "level": "pro"
+        },
+        {
+          "topic": "Replace status meetings with documents and keep the meetings that decide",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "founder-effectiveness.md",
+      "title": "Founder effectiveness",
+      "purpose": "Read when the constraint is the founder: time, energy, co-founder conflict or separation, or a changing role.",
+      "leaves": [
+        {
+          "topic": "Split your own week across building, selling and operating",
+          "level": "core"
+        },
+        {
+          "topic": "Protect your energy and avoid burnout over a multi-year effort",
+          "level": "core"
+        },
+        {
+          "topic": "Build a support network of advisors, peers and mentors",
+          "level": "core"
+        },
+        {
+          "topic": "Raise co-founder disagreements early and resolve them",
+          "level": "pro"
+        },
+        {
+          "topic": "Learn an unfamiliar function well enough to hire for it",
+          "level": "pro"
+        },
+        {
+          "topic": "Negotiate a co-founder exit: separation agreement, board seat, access handover and announcement",
+          "level": "expert"
+        },
+        {
+          "topic": "Step back from coding and redefine your own role as CEO",
+          "level": "expert"
+        },
+        {
+          "topic": "Plan succession or stepping aside",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}

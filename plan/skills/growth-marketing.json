@@ -1,0 +1,322 @@
+{
+  "name": "growth-marketing",
+  "layer": 11,
+  "order": 1,
+  "title": "Growth and marketing",
+  "summary": "Get the product found and tried: positioning and messaging, landing pages and conversion, launches, content, lifecycle email, paid acquisition, referral and product-led loops, and community and partnerships.",
+  "useWhen": [
+    "Write the positioning and homepage copy for this product",
+    "Build a landing page that converts",
+    "Plan the launch: Product Hunt, Hacker News, communities and my list",
+    "Nobody is signing up; where should I look for customers?",
+    "Which marketing channel should I focus on first?",
+    "Write the welcome, activation and win-back email sequence",
+    "Should I run ads, and how do I keep them from burning money?",
+    "Add a referral program or an invite loop",
+    "Plan a content strategy that brings signups, not just traffic"
+  ],
+  "notFor": [
+    {
+      "topic": "SEO, keyword research, technical SEO and AI-search visibility",
+      "use": "seo-aeo-geo-ultimate"
+    },
+    {
+      "topic": "Email deliverability, SPF, DKIM and sending infrastructure",
+      "use": "email-notifications"
+    },
+    {
+      "topic": "Attribution, funnel analysis and experiment statistics",
+      "use": "product-analytics"
+    },
+    {
+      "topic": "Outbound sales, demos and closing deals",
+      "use": "sales-support"
+    },
+    {
+      "topic": "Price points and plan packaging",
+      "use": "pricing-monetization"
+    },
+    {
+      "topic": "Validating the problem before there is a product",
+      "use": "product-discovery"
+    }
+  ],
+  "references": [
+    {
+      "file": "positioning-messaging.md",
+      "title": "Positioning and messaging",
+      "purpose": "Read when deciding how to describe the product: who it is for, against what, and in which words.",
+      "leaves": [
+        {
+          "topic": "Write positioning: who it is for, what it replaces, why it wins, proof",
+          "level": "core"
+        },
+        {
+          "topic": "Write a homepage headline a stranger understands in five seconds",
+          "level": "core"
+        },
+        {
+          "topic": "Choose a name after checking domain, trademark and handle availability",
+          "level": "core"
+        },
+        {
+          "topic": "Collect testimonials and write case studies with quantified results",
+          "level": "core"
+        },
+        {
+          "topic": "Build a messaging hierarchy: value propositions, proof points, objections",
+          "level": "pro"
+        },
+        {
+          "topic": "Choose the category you compete in and name the alternatives honestly",
+          "level": "pro"
+        },
+        {
+          "topic": "Test messaging with real prospects before scaling spend",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "landing-conversion.md",
+      "title": "Landing pages and conversion",
+      "purpose": "Read when building or improving the marketing site or a landing page, or finding why visitors do not convert.",
+      "leaves": [
+        {
+          "topic": "Build a landing page with one clear promise, proof and call to action",
+          "level": "core"
+        },
+        {
+          "topic": "Structure a marketing site: home, pricing, use cases, comparisons, docs",
+          "level": "core"
+        },
+        {
+          "topic": "Find why visitors leave using recordings, scroll depth and five-second tests",
+          "level": "pro"
+        },
+        {
+          "topic": "Place social proof and trust signals where doubt occurs",
+          "level": "pro"
+        },
+        {
+          "topic": "Record a short demo video that sells the outcome",
+          "level": "pro"
+        },
+        {
+          "topic": "Build dedicated landing pages per campaign and intent",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "launches.md",
+      "title": "Launches",
+      "purpose": "Read when planning a product or feature launch, from audience building to the follow-up afterwards.",
+      "leaves": [
+        {
+          "topic": "Build an audience and waitlist before launch day",
+          "level": "core"
+        },
+        {
+          "topic": "Plan a staged launch: private beta, waitlist drip, then public channels",
+          "level": "core"
+        },
+        {
+          "topic": "Write launch posts tailored to each community's norms",
+          "level": "core"
+        },
+        {
+          "topic": "Run a launch with a checklist, announcement and measurement",
+          "level": "core"
+        },
+        {
+          "topic": "Pitch journalists, newsletters and creators with a real story",
+          "level": "pro"
+        },
+        {
+          "topic": "Follow up after launch to convert attention into retained users",
+          "level": "pro"
+        },
+        {
+          "topic": "Treat every major feature as a launch moment",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "content-marketing.md",
+      "title": "Content marketing",
+      "purpose": "Read when planning or producing content meant to attract and convert customers.",
+      "leaves": [
+        {
+          "topic": "Edit AI-drafted content to a quality bar readers trust",
+          "level": "core"
+        },
+        {
+          "topic": "Build in public with consistent founder-led content",
+          "level": "pro"
+        },
+        {
+          "topic": "Run a content engine from customer-question research to publication",
+          "level": "pro"
+        },
+        {
+          "topic": "Write from proprietary expertise and data competitors cannot copy",
+          "level": "pro"
+        },
+        {
+          "topic": "Publish docs, examples and tools as an acquisition channel",
+          "level": "pro"
+        },
+        {
+          "topic": "Build free tools, templates and calculators as lead magnets",
+          "level": "pro"
+        },
+        {
+          "topic": "Repurpose one piece across formats and channels",
+          "level": "pro"
+        },
+        {
+          "topic": "Measure content by signups and pipeline, not pageviews",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "email-lifecycle.md",
+      "title": "Email list and lifecycle messaging",
+      "purpose": "Read when building an email list, a newsletter, or behavior-triggered onboarding, retention and win-back messages.",
+      "leaves": [
+        {
+          "topic": "Add email capture with a reason to subscribe at each high-intent moment",
+          "level": "core"
+        },
+        {
+          "topic": "Write a welcome and activation sequence triggered by behavior",
+          "level": "core"
+        },
+        {
+          "topic": "Trigger in-app messages and nudges that build habit",
+          "level": "pro"
+        },
+        {
+          "topic": "Segment the list by behavior, plan and lifecycle stage",
+          "level": "pro"
+        },
+        {
+          "topic": "Pick a newsletter format and cadence you can sustain and measure replies",
+          "level": "pro"
+        },
+        {
+          "topic": "Re-engage dormant users and sunset unengaged subscribers",
+          "level": "pro"
+        },
+        {
+          "topic": "Measure lifecycle messages by activation and revenue, not opens",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "paid-acquisition.md",
+      "title": "Channel selection and paid acquisition",
+      "purpose": "Read when choosing where to spend acquisition effort or money, and running ads or sponsorships without waste.",
+      "leaves": [
+        {
+          "topic": "Test a few channels cheaply, then master one before adding a second",
+          "level": "core"
+        },
+        {
+          "topic": "Run paid ads with conversion tracking and a hard CAC ceiling",
+          "level": "pro"
+        },
+        {
+          "topic": "Test ad creative and audiences systematically",
+          "level": "pro"
+        },
+        {
+          "topic": "Sponsor newsletters, podcasts and creators and measure the result",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide when to stop a channel from its payback data",
+          "level": "pro"
+        },
+        {
+          "topic": "Judge an agency or freelancer by pipeline produced, not activity",
+          "level": "pro"
+        },
+        {
+          "topic": "Run retargeting within consent and frequency limits",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "referral-loops.md",
+      "title": "Referral and product-led loops",
+      "purpose": "Read when making the product bring in its own users: invites, sharing, referrals and usage-based sales signals.",
+      "leaves": [
+        {
+          "topic": "Build a referral or invite loop into the core workflow",
+          "level": "pro"
+        },
+        {
+          "topic": "Build sharing and public pages that expose the product to new users",
+          "level": "pro"
+        },
+        {
+          "topic": "Design referral incentives that resist fraud",
+          "level": "pro"
+        },
+        {
+          "topic": "Use templates, galleries and badges as distribution surfaces",
+          "level": "pro"
+        },
+        {
+          "topic": "Score product-qualified leads from usage and route them to sales",
+          "level": "expert"
+        },
+        {
+          "topic": "Measure a loop's viral coefficient and cycle time",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "community-partnerships.md",
+      "title": "Community, partnerships and market expansion",
+      "purpose": "Read when growing through communities, integrations, affiliates, partners or expansion into another country.",
+      "leaves": [
+        {
+          "topic": "Contribute to existing communities as a member before promoting",
+          "level": "core"
+        },
+        {
+          "topic": "Avoid depending on one channel or platform for customers",
+          "level": "pro"
+        },
+        {
+          "topic": "Build and moderate your own community",
+          "level": "pro"
+        },
+        {
+          "topic": "Ship integrations and marketplace listings as distribution channels",
+          "level": "pro"
+        },
+        {
+          "topic": "Co-market with complementary products",
+          "level": "pro"
+        },
+        {
+          "topic": "Set up affiliate and reseller programs with tracking and payouts",
+          "level": "expert"
+        },
+        {
+          "topic": "Localize product, pricing and payment methods for a new market",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,268 @@
+{
+  "name": "api-design",
+  "layer": 4,
+  "order": 2,
+  "title": "API design",
+  "summary": "Design, document and evolve HTTP APIs and webhooks: style choice, request and response contracts, errors, pagination, idempotency, rate limits, versioning and a public developer platform.",
+  "useWhen": [
+    "Design the API for this feature, or review my endpoint design",
+    "Should this be REST, GraphQL, tRPC or server functions?",
+    "Add pagination, filtering and a consistent error format",
+    "Make this POST safe to retry without creating duplicates",
+    "Add rate limiting and quotas per API key or tenant",
+    "Receive a third party's webhooks, or send webhooks to our customers",
+    "Change this API without breaking existing clients",
+    "Launch a public API with keys, docs and SDKs",
+    "Expose our product to AI agents through MCP"
+  ],
+  "notFor": [
+    {
+      "topic": "User login, sessions and permission models behind the endpoints",
+      "use": "auth-identity"
+    },
+    {
+      "topic": "Service boundaries, background jobs and realtime transports",
+      "use": "backend-architecture"
+    },
+    {
+      "topic": "Payment-provider webhooks and billing state",
+      "use": "payments-billing"
+    },
+    {
+      "topic": "HTTP caching headers, CDN rules and edge rate limiting",
+      "use": "web-networking"
+    },
+    {
+      "topic": "Contract tests and other API test automation",
+      "use": "code-quality"
+    },
+    {
+      "topic": "Claude API parameters, tool-use syntax and SDK usage",
+      "use": "claude-api"
+    }
+  ],
+  "references": [
+    {
+      "file": "api-style.md",
+      "title": "Choosing and shaping an API style",
+      "purpose": "Read when starting an API or adding a new surface: REST, typed RPC, GraphQL, gRPC or server functions, and how to describe it.",
+      "leaves": [
+        {
+          "topic": "Choose REST, typed RPC, GraphQL or server functions for each consumer",
+          "level": "core"
+        },
+        {
+          "topic": "Design resources, names and URL structure consistently",
+          "level": "core"
+        },
+        {
+          "topic": "Agree the API contract before implementing either side",
+          "level": "core"
+        },
+        {
+          "topic": "Describe REST APIs in OpenAPI and generate typed clients",
+          "level": "core"
+        },
+        {
+          "topic": "Design a GraphQL schema with complexity limits, batching and persisted queries",
+          "level": "expert"
+        },
+        {
+          "topic": "Use gRPC or Connect between internal services where it pays",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "requests-responses.md",
+      "title": "Validation, errors, pagination and payloads",
+      "purpose": "Read when defining what an endpoint accepts and returns: input validation, error shape, lists, filtering and data formats.",
+      "leaves": [
+        {
+          "topic": "Validate every input at the boundary against a schema",
+          "level": "core"
+        },
+        {
+          "topic": "Return consistent RFC 9457 problem-details errors",
+          "level": "core"
+        },
+        {
+          "topic": "Paginate every list endpoint with opaque cursors and stable ordering",
+          "level": "core"
+        },
+        {
+          "topic": "Represent dates, money, IDs and enums unambiguously in JSON",
+          "level": "core"
+        },
+        {
+          "topic": "Design filtering, sorting and field selection without exposing the schema",
+          "level": "core"
+        },
+        {
+          "topic": "Cap body size, header size and request duration",
+          "level": "core"
+        },
+        {
+          "topic": "Support partial updates with clear semantics for null and absent fields",
+          "level": "pro"
+        },
+        {
+          "topic": "Model long-running operations as job resources clients can poll",
+          "level": "pro"
+        },
+        {
+          "topic": "Report partial failure clearly in batch endpoints",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "idempotency-rate-limits.md",
+      "title": "Idempotency, concurrency control and rate limits",
+      "purpose": "Read when clients may retry writes, edit the same resource concurrently, or need to be limited and metered.",
+      "leaves": [
+        {
+          "topic": "Make write endpoints safe to retry with client-supplied idempotency keys",
+          "level": "core"
+        },
+        {
+          "topic": "Rate-limit per tenant and key with clear 429 and Retry-After responses",
+          "level": "core"
+        },
+        {
+          "topic": "Store the request fingerprint and response so replays return the original result",
+          "level": "pro"
+        },
+        {
+          "topic": "Choose a rate-limit algorithm and store: token bucket, sliding window, Redis",
+          "level": "pro"
+        },
+        {
+          "topic": "Meter API usage per key and expose quotas in response headers",
+          "level": "pro"
+        },
+        {
+          "topic": "Use ETags and If-Match for optimistic concurrency on updates",
+          "level": "pro"
+        },
+        {
+          "topic": "Tell clients which errors to retry, with backoff and jitter",
+          "level": "pro"
+        },
+        {
+          "topic": "Cap expensive operations with cost-based limits and concurrency ceilings",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "webhooks.md",
+      "title": "Webhooks, inbound and outbound",
+      "purpose": "Read when receiving events from another service or delivering events to customers' endpoints.",
+      "leaves": [
+        {
+          "topic": "Verify webhook signatures and reject replays",
+          "level": "core"
+        },
+        {
+          "topic": "Acknowledge webhooks fast and process them asynchronously",
+          "level": "core"
+        },
+        {
+          "topic": "Process webhooks idempotently, out of order and after delays",
+          "level": "core"
+        },
+        {
+          "topic": "Reconcile missed webhooks by polling the source API",
+          "level": "pro"
+        },
+        {
+          "topic": "Send signed webhooks with retries, backoff and delivery logs",
+          "level": "pro"
+        },
+        {
+          "topic": "Deliver outbound webhooks without letting customer URLs reach internal networks",
+          "level": "pro"
+        },
+        {
+          "topic": "Let customers manage endpoints, secret rotation and event subscriptions",
+          "level": "expert"
+        },
+        {
+          "topic": "Version webhook payloads and choose thin or fat events",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "versioning-evolution.md",
+      "title": "Versioning and evolving an API",
+      "purpose": "Read before changing an API that has consumers you do not control, or when planning a deprecation.",
+      "leaves": [
+        {
+          "topic": "Evolve an API with additive changes and tolerant readers",
+          "level": "core"
+        },
+        {
+          "topic": "Recognize which changes break clients before shipping them",
+          "level": "core"
+        },
+        {
+          "topic": "Version a public API and publish a deprecation policy",
+          "level": "pro"
+        },
+        {
+          "topic": "Detect breaking changes by diffing the OpenAPI document in CI",
+          "level": "pro"
+        },
+        {
+          "topic": "Sunset an endpoint using usage data, response headers and customer notice",
+          "level": "pro"
+        },
+        {
+          "topic": "Run two API versions side by side with one implementation",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "public-api-platform.md",
+      "title": "Public API and developer platform",
+      "purpose": "Read when opening the product to outside developers or agents: keys, docs, SDKs, sandbox, OAuth apps and MCP.",
+      "leaves": [
+        {
+          "topic": "Decide whether and when to commit to a public API",
+          "level": "core"
+        },
+        {
+          "topic": "Issue scoped, expiring, hash-stored API keys customers can rotate",
+          "level": "pro"
+        },
+        {
+          "topic": "Publish API reference from OpenAPI with runnable examples",
+          "level": "pro"
+        },
+        {
+          "topic": "Get a new developer from signup to first successful call in minutes",
+          "level": "pro"
+        },
+        {
+          "topic": "Expose the product to AI agents through an MCP server",
+          "level": "pro"
+        },
+        {
+          "topic": "Ship versioned SDKs generated from the schema",
+          "level": "expert"
+        },
+        {
+          "topic": "Provide a sandbox or test mode separate from live data",
+          "level": "expert"
+        },
+        {
+          "topic": "Offer OAuth so third-party apps can act for your users",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}

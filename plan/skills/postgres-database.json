@@ -1,0 +1,374 @@
+{
+  "name": "postgres-database",
+  "layer": 3,
+  "order": 1,
+  "title": "PostgreSQL and relational data",
+  "summary": "Model, query, migrate, tune, back up and scale a relational database, with PostgreSQL as the default: schemas, SQL, transactions, indexes, zero-downtime migrations, operations and recovery.",
+  "useWhen": [
+    "Design the database schema for this feature",
+    "This query is slow, or the database CPU is pegged",
+    "Write a migration that will not lock the table or break the running app",
+    "Two requests raced and corrupted the data",
+    "We ran out of database connections",
+    "Set up backups and prove we can restore",
+    "Someone deleted production data and I need it back",
+    "Should I use an ORM or raw SQL, UUIDs or integer IDs?",
+    "When do I need a read replica, partitioning or a bigger instance?"
+  ],
+  "notFor": [
+    {
+      "topic": "Redis, search engines, object storage, warehouses and other non-relational stores",
+      "use": "data-stores"
+    },
+    {
+      "topic": "Analytics queries, reporting SQL and statistics on business data",
+      "use": "data"
+    },
+    {
+      "topic": "Choosing a multi-tenancy model and row-level tenant isolation",
+      "use": "backend-architecture"
+    },
+    {
+      "topic": "SQL injection and other vulnerability classes",
+      "use": "web-security"
+    },
+    {
+      "topic": "Running the migration step inside the deploy pipeline",
+      "use": "ci-cd-release"
+    },
+    {
+      "topic": "Company-wide disaster recovery plans, RPO and RTO",
+      "use": "site-reliability"
+    }
+  ],
+  "references": [
+    {
+      "file": "schema-modeling.md",
+      "title": "Relational modeling",
+      "purpose": "Read when designing or reviewing tables, keys, constraints and column types for a feature or a new product.",
+      "leaves": [
+        {
+          "topic": "Model a domain in normalized tables with keys and foreign keys",
+          "level": "core"
+        },
+        {
+          "topic": "Make invalid states impossible with NOT NULL, CHECK, UNIQUE and exclusion constraints",
+          "level": "core"
+        },
+        {
+          "topic": "Choose column types: timestamptz, text, numeric, enums and JSONB",
+          "level": "core"
+        },
+        {
+          "topic": "Store money as integer minor units with an explicit currency",
+          "level": "core"
+        },
+        {
+          "topic": "Choose between a typed ORM (Drizzle, Prisma) and raw SQL",
+          "level": "core"
+        },
+        {
+          "topic": "Choose primary keys: UUIDv7, identity columns or natural keys",
+          "level": "core"
+        },
+        {
+          "topic": "Use JSONB for variable attributes without losing integrity or indexability",
+          "level": "pro"
+        },
+        {
+          "topic": "Model soft deletes, audit history and temporal data deliberately",
+          "level": "pro"
+        },
+        {
+          "topic": "Model hierarchies, many-to-many and polymorphic relations idiomatically",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide when to denormalize and how to keep the copies consistent",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "sql-queries.md",
+      "title": "Writing application SQL",
+      "purpose": "Read when writing or reviewing the queries an application runs, or changing production data by hand.",
+      "leaves": [
+        {
+          "topic": "Write joins, aggregates, window functions and CTEs by hand",
+          "level": "core"
+        },
+        {
+          "topic": "Eliminate N+1 queries in the ORM",
+          "level": "core"
+        },
+        {
+          "topic": "Wrap manual production SQL in a transaction and review it first",
+          "level": "core"
+        },
+        {
+          "topic": "Write upserts and bulk writes with ON CONFLICT and batching",
+          "level": "core"
+        },
+        {
+          "topic": "Read the SQL an ORM generates and override it when it is wrong",
+          "level": "core"
+        },
+        {
+          "topic": "Write keyset pagination queries that stay fast on deep pages",
+          "level": "pro"
+        },
+        {
+          "topic": "Use RETURNING, lateral joins and recursive CTEs to simplify application code",
+          "level": "pro"
+        },
+        {
+          "topic": "Write, dry-run and execute a backfill to correct bad records",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "transactions-concurrency.md",
+      "title": "Transactions, isolation and locking",
+      "purpose": "Read when writes must be atomic, concurrent requests can race, or queries are blocking each other.",
+      "leaves": [
+        {
+          "topic": "Use transactions to keep multi-step writes atomic",
+          "level": "core"
+        },
+        {
+          "topic": "Prevent lost updates with atomic SQL updates or optimistic version checks",
+          "level": "core"
+        },
+        {
+          "topic": "Keep external API calls outside database transactions",
+          "level": "core"
+        },
+        {
+          "topic": "Choose an isolation level and retry serialization failures",
+          "level": "pro"
+        },
+        {
+          "topic": "Lock rows with SELECT FOR UPDATE and avoid deadlocks",
+          "level": "pro"
+        },
+        {
+          "topic": "Set statement, lock and idle-in-transaction timeouts to protect the pool",
+          "level": "pro"
+        },
+        {
+          "topic": "Use SKIP LOCKED and advisory locks for queues and single-run work",
+          "level": "expert"
+        },
+        {
+          "topic": "Diagnose blocked queries and deadlocks from pg_locks and logs",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "indexes-query-plans.md",
+      "title": "Indexes and query plans",
+      "purpose": "Read when a query is slow, the database is under load, or you are deciding which indexes to add or drop.",
+      "leaves": [
+        {
+          "topic": "Read an EXPLAIN ANALYZE plan and fix a sequential scan",
+          "level": "core"
+        },
+        {
+          "topic": "Add an index that matches a slow query's filter and sort order",
+          "level": "core"
+        },
+        {
+          "topic": "Design composite and partial indexes from real query patterns",
+          "level": "pro"
+        },
+        {
+          "topic": "Find the costliest queries with pg_stat_statements and fix them",
+          "level": "pro"
+        },
+        {
+          "topic": "Choose index types: B-tree, GIN, GiST, BRIN or hash",
+          "level": "pro"
+        },
+        {
+          "topic": "Remove unused and duplicate indexes that slow writes",
+          "level": "pro"
+        },
+        {
+          "topic": "Use covering indexes and index-only scans for hot reads",
+          "level": "expert"
+        },
+        {
+          "topic": "Fix bad plans caused by stale statistics or row misestimates",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "migrations.md",
+      "title": "Zero-downtime schema migrations",
+      "purpose": "Read before writing any schema change that will run against a database with live traffic or large tables.",
+      "leaves": [
+        {
+          "topic": "Run schema migrations as versioned, reviewed code",
+          "level": "core"
+        },
+        {
+          "topic": "Write backward-compatible migrations using expand-then-contract",
+          "level": "core"
+        },
+        {
+          "topic": "Add indexes and constraints without long table locks",
+          "level": "pro"
+        },
+        {
+          "topic": "Rename or retype a column across several deploys without downtime",
+          "level": "pro"
+        },
+        {
+          "topic": "Backfill large tables in throttled, resumable batches",
+          "level": "pro"
+        },
+        {
+          "topic": "Rehearse migrations on a production-sized copy with lock timeouts set",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide whether a migration needs a down script or a forward fix",
+          "level": "pro"
+        },
+        {
+          "topic": "Recover from a half-applied migration without losing data",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "postgres-operations.md",
+      "title": "Running Postgres in production",
+      "purpose": "Read when choosing a Postgres provider, sizing connections, setting roles, monitoring health, stopping a runaway query, or planning maintenance and upgrades.",
+      "leaves": [
+        {
+          "topic": "Choose a managed database provider by backups, limits, support and exit path",
+          "level": "core"
+        },
+        {
+          "topic": "Pool connections and size the pool against database limits",
+          "level": "core"
+        },
+        {
+          "topic": "Configure pooling for serverless and high-concurrency workloads with PgBouncer",
+          "level": "pro"
+        },
+        {
+          "topic": "Grant least-privilege database roles per service",
+          "level": "pro"
+        },
+        {
+          "topic": "Monitor connections, locks, cache hit rate, disk and long transactions",
+          "level": "pro"
+        },
+        {
+          "topic": "Kill a runaway query safely",
+          "level": "pro"
+        },
+        {
+          "topic": "Use serverless Postgres with branching for previews and tests",
+          "level": "pro"
+        },
+        {
+          "topic": "Control vacuum, bloat and transaction-ID wraparound",
+          "level": "expert"
+        },
+        {
+          "topic": "Tune memory and planner settings for the instance and workload",
+          "level": "expert"
+        },
+        {
+          "topic": "Upgrade a major database version with minimal downtime",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "backup-recovery.md",
+      "title": "Backup, restore and data recovery",
+      "purpose": "Read when setting up backups, proving a restore works, or recovering deleted or corrupted data.",
+      "leaves": [
+        {
+          "topic": "Configure automated backups with point-in-time recovery",
+          "level": "core"
+        },
+        {
+          "topic": "Restore from backup on a schedule and time it",
+          "level": "core"
+        },
+        {
+          "topic": "Take a verified snapshot before a risky change",
+          "level": "core"
+        },
+        {
+          "topic": "Store immutable backups in a separate account and region",
+          "level": "pro"
+        },
+        {
+          "topic": "Restore a database to a chosen timestamp and reconcile lost writes",
+          "level": "pro"
+        },
+        {
+          "topic": "Guard critical tables with deletion protection and restricted destructive grants",
+          "level": "pro"
+        },
+        {
+          "topic": "Recover one tenant's deleted rows from backup without a full rollback",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "replication-scaling.md",
+      "title": "Replication and scaling",
+      "purpose": "Read when one database node is no longer enough, or when moving providers by replication: replicas, failover, partitioning, archiving and sharding decisions.",
+      "leaves": [
+        {
+          "topic": "Scale vertically first and recognize when that is exhausted",
+          "level": "pro"
+        },
+        {
+          "topic": "Set up a standby replica and rehearse failover",
+          "level": "pro"
+        },
+        {
+          "topic": "Monitor replication lag and alert before reads go stale",
+          "level": "pro"
+        },
+        {
+          "topic": "Offload reporting queries so they cannot starve transactional traffic",
+          "level": "pro"
+        },
+        {
+          "topic": "Route reads to replicas while handling replication lag",
+          "level": "expert"
+        },
+        {
+          "topic": "Promote a replica and rebuild the failed primary",
+          "level": "expert"
+        },
+        {
+          "topic": "Partition large tables by time or tenant",
+          "level": "expert"
+        },
+        {
+          "topic": "Decide when to add read replicas, partition tables or shard",
+          "level": "expert"
+        },
+        {
+          "topic": "Migrate between database providers with minimal downtime via logical replication",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}

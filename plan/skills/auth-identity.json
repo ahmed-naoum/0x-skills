@@ -1,0 +1,359 @@
+{
+  "name": "auth-identity",
+  "layer": 5,
+  "order": 1,
+  "title": "Authentication, authorization and account abuse",
+  "summary": "Build sign-in and access control that resist takeover: auth architecture, sessions and tokens, passwords, MFA and passkeys, OAuth and OIDC, enterprise SSO, authorization models, account recovery and abuse defense.",
+  "useWhen": [
+    "Add login and signup to the app",
+    "Should I use Clerk, Auth0 or Supabase Auth, or a library in my own database?",
+    "Add Sign in with Google, passkeys, magic links or two-factor",
+    "Sessions or JWTs? Where do I store the token?",
+    "Add roles, permissions, organizations and team invitations",
+    "An enterprise customer wants SAML SSO and SCIM",
+    "Design the password reset and account recovery flow",
+    "A user can see another user's data by changing the ID in the URL",
+    "We are getting fake signups or a credential-stuffing attack",
+    "Users are abusing the product for spam or phishing and our host sent an abuse notice"
+  ],
+  "notFor": [
+    {
+      "topic": "XSS, injection, CSP, CORS and other vulnerability classes",
+      "use": "web-security"
+    },
+    {
+      "topic": "Tenant data isolation and row-level security design",
+      "use": "backend-architecture"
+    },
+    {
+      "topic": "API keys and OAuth for third-party developers",
+      "use": "api-design"
+    },
+    {
+      "topic": "Sending the verification, reset and security emails or SMS",
+      "use": "email-notifications"
+    },
+    {
+      "topic": "WAF rules and DDoS protection at the edge",
+      "use": "web-networking"
+    },
+    {
+      "topic": "Staff SSO, device security and internal access control",
+      "use": "web-security"
+    }
+  ],
+  "references": [
+    {
+      "file": "auth-architecture.md",
+      "title": "Auth architecture and signup",
+      "purpose": "Read when starting auth in a product or replacing it: provider versus library, sign-in methods, account model and signup flow.",
+      "leaves": [
+        {
+          "topic": "Decide between a managed auth provider and a vetted library; never hand-roll crypto",
+          "level": "core"
+        },
+        {
+          "topic": "Choose sign-in methods for the audience: passkeys, social, magic links, passwords",
+          "level": "core"
+        },
+        {
+          "topic": "Model users, linked identities, credentials and sessions in the schema",
+          "level": "core"
+        },
+        {
+          "topic": "Design signup and email verification that resist typos and abuse",
+          "level": "core"
+        },
+        {
+          "topic": "Prevent user enumeration and timing leaks on auth endpoints",
+          "level": "pro"
+        },
+        {
+          "topic": "Test auth flows end to end, including expiry and revocation paths",
+          "level": "pro"
+        },
+        {
+          "topic": "Migrate users between auth systems without forcing password resets",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "sessions-tokens.md",
+      "title": "Sessions, cookies and tokens",
+      "purpose": "Read when deciding how a signed-in state is stored, carried, refreshed and revoked across browser, server and mobile.",
+      "leaves": [
+        {
+          "topic": "Keep sessions in HttpOnly, Secure, SameSite cookies, not tokens in localStorage",
+          "level": "core"
+        },
+        {
+          "topic": "Implement sessions with rotation, expiry and revocation",
+          "level": "core"
+        },
+        {
+          "topic": "Protect state-changing requests against CSRF",
+          "level": "core"
+        },
+        {
+          "topic": "Choose server-side sessions or JWTs and accept the revocation trade-off",
+          "level": "core"
+        },
+        {
+          "topic": "Scope cookies correctly across subdomains and environments",
+          "level": "pro"
+        },
+        {
+          "topic": "Rotate refresh tokens and detect reuse",
+          "level": "pro"
+        },
+        {
+          "topic": "Let users view and revoke active sessions and devices",
+          "level": "pro"
+        },
+        {
+          "topic": "Authenticate native and mobile clients with tokens in secure storage",
+          "level": "pro"
+        },
+        {
+          "topic": "Require step-up authentication for sensitive actions",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "passwords-mfa-passkeys.md",
+      "title": "Passwords, MFA and passkeys",
+      "purpose": "Read when implementing a first or second authentication factor: password storage, one-time codes, TOTP and WebAuthn.",
+      "leaves": [
+        {
+          "topic": "Hash passwords with Argon2id and reject known-breached passwords",
+          "level": "core"
+        },
+        {
+          "topic": "Implement email magic links and one-time codes that resist interception and replay",
+          "level": "core"
+        },
+        {
+          "topic": "Offer passkeys via WebAuthn as primary sign-in with a safe fallback",
+          "level": "pro"
+        },
+        {
+          "topic": "Offer TOTP or passkey MFA and never rely on SMS alone",
+          "level": "pro"
+        },
+        {
+          "topic": "Generate, store and consume MFA recovery codes safely",
+          "level": "pro"
+        },
+        {
+          "topic": "Enforce MFA by policy for admins and organizations",
+          "level": "pro"
+        },
+        {
+          "topic": "Handle synced passkeys, multiple devices and cross-device sign-in",
+          "level": "expert"
+        },
+        {
+          "topic": "Upgrade legacy password hashes transparently at login",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "oauth-oidc.md",
+      "title": "OAuth and OpenID Connect login",
+      "purpose": "Read when adding social or OIDC login, debugging a redirect flow, or delegating access to agents and other clients.",
+      "leaves": [
+        {
+          "topic": "Add social login with Google, GitHub, Apple or Microsoft",
+          "level": "core"
+        },
+        {
+          "topic": "Debug an OAuth flow failing on redirect, state or cookie errors",
+          "level": "core"
+        },
+        {
+          "topic": "Link a provider login to an existing account without enabling takeover",
+          "level": "core"
+        },
+        {
+          "topic": "Implement OAuth 2.1 with PKCE and strict redirect URI validation",
+          "level": "pro"
+        },
+        {
+          "topic": "Validate ID tokens: issuer, audience, nonce, signature and expiry",
+          "level": "pro"
+        },
+        {
+          "topic": "Request minimal scopes at login and discard provider tokens you do not need",
+          "level": "pro"
+        },
+        {
+          "topic": "Issue scoped, short-lived credentials to AI agents acting for users",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "enterprise-sso.md",
+      "title": "Enterprise SSO and provisioning",
+      "purpose": "Read when a business customer asks for SAML, OIDC single sign-on, SCIM or directory sync.",
+      "leaves": [
+        {
+          "topic": "Decide build versus buy for enterprise single sign-on",
+          "level": "pro"
+        },
+        {
+          "topic": "Add SAML or OIDC single sign-on for enterprise customers",
+          "level": "pro"
+        },
+        {
+          "topic": "Route users to their identity provider by verified email domain",
+          "level": "expert"
+        },
+        {
+          "topic": "Provision and deprovision users with SCIM",
+          "level": "expert"
+        },
+        {
+          "topic": "Map identity-provider groups to roles with just-in-time provisioning",
+          "level": "expert"
+        },
+        {
+          "topic": "Enforce SSO per organization while keeping a break-glass admin",
+          "level": "expert"
+        },
+        {
+          "topic": "Test SSO against Okta, Entra ID and Google Workspace",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "authorization.md",
+      "title": "Authorization models",
+      "purpose": "Read when deciding who may do what: roles, permissions, organizations, sharing, and where checks are enforced.",
+      "leaves": [
+        {
+          "topic": "Check authorization on every object access to prevent IDOR",
+          "level": "core"
+        },
+        {
+          "topic": "Enforce authorization in server functions, APIs, jobs and realtime channels alike",
+          "level": "core"
+        },
+        {
+          "topic": "Implement organizations, invitations and role-based access for teams",
+          "level": "core"
+        },
+        {
+          "topic": "Centralize permission checks in one policy layer and test them",
+          "level": "core"
+        },
+        {
+          "topic": "Choose role-based, attribute-based or relationship-based authorization",
+          "level": "pro"
+        },
+        {
+          "topic": "Design roles and permissions customers can understand and administer",
+          "level": "pro"
+        },
+        {
+          "topic": "Share resources by link or invitation with expiring, revocable grants",
+          "level": "pro"
+        },
+        {
+          "topic": "Adopt a policy engine or Zanzibar-style service when checks outgrow code",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "account-recovery.md",
+      "title": "Account recovery and lifecycle",
+      "purpose": "Read when designing reset, email-change, lost-device, deletion or ownership-transfer flows, or recovering a hijacked account.",
+      "leaves": [
+        {
+          "topic": "Design password-reset and email-change flows that resist hijacking",
+          "level": "core"
+        },
+        {
+          "topic": "Issue reset tokens that are single-use, short-lived and stored hashed",
+          "level": "core"
+        },
+        {
+          "topic": "Build account deletion, deactivation and reactivation flows",
+          "level": "core"
+        },
+        {
+          "topic": "Notify users of every security-relevant account change",
+          "level": "pro"
+        },
+        {
+          "topic": "Design recovery for lost passkeys and MFA devices without a backdoor",
+          "level": "pro"
+        },
+        {
+          "topic": "Verify identity before support changes account ownership or MFA",
+          "level": "pro"
+        },
+        {
+          "topic": "Transfer organization ownership when the owner leaves",
+          "level": "pro"
+        },
+        {
+          "topic": "Recover hijacked accounts: force resets, restore ownership, undo attacker changes",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "abuse-defense.md",
+      "title": "Bot and abuse defense",
+      "purpose": "Read when login, signup, trials or sharing features are being attacked or exploited by bots and fraudsters, or a host, registrar or browser flags the product for abuse.",
+      "leaves": [
+        {
+          "topic": "Rate-limit login, signup and reset endpoints per IP and per account",
+          "level": "core"
+        },
+        {
+          "topic": "Throttle signups by IP, device and email-domain reputation",
+          "level": "core"
+        },
+        {
+          "topic": "Stop credential stuffing with breach checks, device signals and MFA prompts",
+          "level": "pro"
+        },
+        {
+          "topic": "Alert on failed-login spikes and anomalous-location sign-ins",
+          "level": "pro"
+        },
+        {
+          "topic": "Add CAPTCHA or invisible challenges only where risk justifies the friction",
+          "level": "pro"
+        },
+        {
+          "topic": "Design free tiers and trials so abuse is unprofitable",
+          "level": "pro"
+        },
+        {
+          "topic": "Stop invites and sharing features being used to send spam or phishing",
+          "level": "pro"
+        },
+        {
+          "topic": "Answer host, registrar and browser-blocklist abuse notices before they suspend you",
+          "level": "pro"
+        },
+        {
+          "topic": "Build abuse signals, a review queue and bulk-suspension tooling",
+          "level": "expert"
+        },
+        {
+          "topic": "Detect multi-accounting and ban evasion",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}

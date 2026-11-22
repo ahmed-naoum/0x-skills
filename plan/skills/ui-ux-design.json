@@ -1,0 +1,334 @@
+{
+  "name": "ui-ux-design",
+  "layer": 7,
+  "order": 1,
+  "title": "UI and UX design",
+  "summary": "Design interfaces people understand and enjoy: visual design, design tokens and component systems, UX flows, information architecture, usability testing, microcopy, motion and dark mode.",
+  "useWhen": [
+    "This screen looks amateur; make it look professional",
+    "Design the in-app flow for first run, settings or a new feature before I build it",
+    "Set up design tokens, a color palette and a type scale",
+    "The navigation is getting messy as we add features",
+    "Users get stuck or confused on this screen",
+    "Write the button labels, error messages and empty states",
+    "Run a quick usability test on this prototype",
+    "Design a dark theme that does not look washed out",
+    "How should this component look and behave in each state?"
+  ],
+  "notFor": [
+    {
+      "topic": "Implementing layout, theming and animation in CSS",
+      "use": "frontend-foundations"
+    },
+    {
+      "topic": "Building the React component library",
+      "use": "react-nextjs"
+    },
+    {
+      "topic": "WCAG conformance, screen readers and keyboard access",
+      "use": "accessibility"
+    },
+    {
+      "topic": "Customer interviews, problem validation and what to build",
+      "use": "product-discovery"
+    },
+    {
+      "topic": "Chart and data-visualization design",
+      "use": "dataviz"
+    },
+    {
+      "topic": "Landing-page messaging and conversion copy",
+      "use": "growth-marketing"
+    }
+  ],
+  "references": [
+    {
+      "file": "visual-design.md",
+      "title": "Visual design: type, color, spacing and layout",
+      "purpose": "Read when making a screen look right: hierarchy, typography, color, spacing, density and brand basics.",
+      "leaves": [
+        {
+          "topic": "Establish visual hierarchy so each screen has one clear primary action",
+          "level": "core"
+        },
+        {
+          "topic": "Set a type scale, line length and vertical rhythm",
+          "level": "core"
+        },
+        {
+          "topic": "Build a color palette with semantic roles and accessible contrast",
+          "level": "core"
+        },
+        {
+          "topic": "Use a spacing scale and grid for consistent layout",
+          "level": "core"
+        },
+        {
+          "topic": "Define a minimal brand kit: logo, palette, type and imagery rules",
+          "level": "core"
+        },
+        {
+          "topic": "Critique a screen and name exactly what makes it look amateur",
+          "level": "core"
+        },
+        {
+          "topic": "Choose and pair typefaces that fit the brand and render well on screens",
+          "level": "pro"
+        },
+        {
+          "topic": "Design data-dense screens: tables, filters and dashboards",
+          "level": "pro"
+        },
+        {
+          "topic": "Choose one icon set and imagery style and write the rules for using them",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "design-systems.md",
+      "title": "Design tokens and component systems",
+      "purpose": "Read when defining tokens, deciding the component inventory, specifying component states, or keeping design and code aligned.",
+      "leaves": [
+        {
+          "topic": "Define design tokens for color, type, space, radius and shadow",
+          "level": "core"
+        },
+        {
+          "topic": "Decide when to adopt an existing component kit versus designing custom",
+          "level": "core"
+        },
+        {
+          "topic": "Specify every component state: hover, focus, active, disabled, loading, error",
+          "level": "core"
+        },
+        {
+          "topic": "Inventory the components a product needs before designing screens",
+          "level": "core"
+        },
+        {
+          "topic": "Structure tokens in primitive, semantic and component tiers",
+          "level": "pro"
+        },
+        {
+          "topic": "Keep design files and coded components in sync from one source",
+          "level": "expert"
+        },
+        {
+          "topic": "Govern a design system: contribution, versioning and deprecation",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "ux-flows.md",
+      "title": "UX flows and screen states",
+      "purpose": "Read before building a feature's screens: journey, wireframes, states, first-run experience and responsive behavior.",
+      "leaves": [
+        {
+          "topic": "Map the user journey from first visit to repeated value",
+          "level": "core"
+        },
+        {
+          "topic": "Sketch low-fidelity wireframes for every screen before styling",
+          "level": "core"
+        },
+        {
+          "topic": "Design empty, loading, error and success states for every screen",
+          "level": "core"
+        },
+        {
+          "topic": "Cut a flow's steps, decisions and fields to the minimum",
+          "level": "core"
+        },
+        {
+          "topic": "Decide what changes between phone, tablet and desktop layouts",
+          "level": "core"
+        },
+        {
+          "topic": "Design first-run onboarding screens that lead to first value",
+          "level": "core"
+        },
+        {
+          "topic": "Design undo, confirmation and forgiveness for destructive actions",
+          "level": "core"
+        },
+        {
+          "topic": "Design settings, permissions and team flows that scale",
+          "level": "pro"
+        },
+        {
+          "topic": "Prototype a flow in Figma or code before building it",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "information-architecture.md",
+      "title": "Information architecture and navigation",
+      "purpose": "Read when organizing a product's sections, naming things, choosing navigation patterns, or designing search and filtering.",
+      "leaves": [
+        {
+          "topic": "Name things in the user's vocabulary and keep the object model consistent",
+          "level": "core"
+        },
+        {
+          "topic": "Choose navigation patterns: sidebar, tabs, breadcrumbs or command palette",
+          "level": "core"
+        },
+        {
+          "topic": "Design navigation that survives ten times more features",
+          "level": "pro"
+        },
+        {
+          "topic": "Design search, filtering and sorting for large collections",
+          "level": "pro"
+        },
+        {
+          "topic": "Structure URLs to mirror the information architecture",
+          "level": "pro"
+        },
+        {
+          "topic": "Design a home screen that answers what the user needs next",
+          "level": "pro"
+        },
+        {
+          "topic": "Validate structure with card sorting and tree testing",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "usability-testing.md",
+      "title": "Usability testing and design review",
+      "purpose": "Read when checking whether people can actually use a design: test planning, running sessions, replays, heuristics and critique.",
+      "leaves": [
+        {
+          "topic": "Run a five-user usability test and rank the issues found",
+          "level": "core"
+        },
+        {
+          "topic": "Write task scenarios that do not lead the participant",
+          "level": "core"
+        },
+        {
+          "topic": "Run a heuristic review against established usability principles",
+          "level": "core"
+        },
+        {
+          "topic": "Recruit representative test participants quickly and cheaply",
+          "level": "pro"
+        },
+        {
+          "topic": "Use session replays to locate where users struggle",
+          "level": "pro"
+        },
+        {
+          "topic": "Run a design critique that ends in decisions, not opinions",
+          "level": "pro"
+        },
+        {
+          "topic": "Run unmoderated remote tests and first-click tests",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "microcopy.md",
+      "title": "Microcopy and interface writing",
+      "purpose": "Read when writing or reviewing the words in the interface: labels, buttons, errors, empty states, confirmations and names.",
+      "leaves": [
+        {
+          "topic": "Write labels, buttons and confirmations in plain language",
+          "level": "core"
+        },
+        {
+          "topic": "Write error messages that say what happened and what to do",
+          "level": "core"
+        },
+        {
+          "topic": "Label dialog actions with specific verbs, not Yes and No",
+          "level": "core"
+        },
+        {
+          "topic": "Write empty states and hints that teach the next action",
+          "level": "core"
+        },
+        {
+          "topic": "Set a voice and tone guide with a word list and examples",
+          "level": "pro"
+        },
+        {
+          "topic": "Name features and plans so users understand them without explanation",
+          "level": "pro"
+        },
+        {
+          "topic": "Write copy that translates cleanly and reads well aloud",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "motion-design.md",
+      "title": "Motion design",
+      "purpose": "Read when deciding what should move, how fast and why: feedback, transitions and micro-interactions.",
+      "leaves": [
+        {
+          "topic": "Use motion to explain change, not to decorate",
+          "level": "core"
+        },
+        {
+          "topic": "Design loading feedback: skeletons, spinners, progress and optimistic updates",
+          "level": "core"
+        },
+        {
+          "topic": "Set durations and easing by distance and purpose",
+          "level": "pro"
+        },
+        {
+          "topic": "Choreograph page and element transitions consistently",
+          "level": "pro"
+        },
+        {
+          "topic": "Design micro-interactions for success, error and drag moments",
+          "level": "pro"
+        },
+        {
+          "topic": "Define motion tokens and their reduced-motion variants",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "dark-mode-theming.md",
+      "title": "Dark mode and theming",
+      "purpose": "Read when adding a dark theme, a theme switcher, high-contrast support or customer-branded themes.",
+      "leaves": [
+        {
+          "topic": "Decide whether to offer a theme switcher and default to the system setting",
+          "level": "pro"
+        },
+        {
+          "topic": "Map every color use to a semantic token so themes swap cleanly",
+          "level": "pro"
+        },
+        {
+          "topic": "Design dark surfaces, elevation and contrast instead of inverting colors",
+          "level": "pro"
+        },
+        {
+          "topic": "Adapt images, shadows, charts and brand colors for dark surfaces",
+          "level": "pro"
+        },
+        {
+          "topic": "Support high-contrast and forced-colors modes",
+          "level": "expert"
+        },
+        {
+          "topic": "Offer per-customer branded themes through tokens",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}

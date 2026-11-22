@@ -1,0 +1,394 @@
+{
+  "name": "web-networking",
+  "layer": 1,
+  "order": 1,
+  "title": "Web networking: DNS, TLS, HTTP, CDN and proxies",
+  "summary": "Configure and debug everything between the browser and the app: IP and transport, DNS and domains, TLS, HTTP and its caching, CDN and edge protection, reverse proxies and load balancers.",
+  "useWhen": [
+    "My domain does not resolve or a DNS change has not shown up",
+    "Set up DNS records and HTTPS for a new domain",
+    "The certificate expired or browsers show a TLS error",
+    "I get a 502, 503 or 504 and do not know which hop caused it",
+    "Configure nginx, Caddy or a load balancer in front of the app",
+    "Put a CDN in front of the site and set cache headers and purging",
+    "The site is under a DDoS or bots and scrapers are hammering it",
+    "Enable HTTP/3 or work out why connections are slow",
+    "Users in one region or on mobile networks cannot connect"
+  ],
+  "notFor": [
+    {
+      "topic": "CORS errors, Content Security Policy and other security headers",
+      "use": "web-security"
+    },
+    {
+      "topic": "SPF, DKIM, DMARC and email landing in spam",
+      "use": "email-notifications"
+    },
+    {
+      "topic": "Building WebSocket, SSE or WebRTC features",
+      "use": "backend-architecture"
+    },
+    {
+      "topic": "VPCs, subnets, security groups and private cloud networking",
+      "use": "cloud-infrastructure"
+    },
+    {
+      "topic": "Page-load speed, Core Web Vitals and image delivery",
+      "use": "web-performance"
+    },
+    {
+      "topic": "Login rate limits, credential stuffing and signup bots",
+      "use": "auth-identity"
+    }
+  ],
+  "references": [
+    {
+      "file": "ip-transport.md",
+      "title": "IP, TCP, UDP and QUIC",
+      "purpose": "Read when reasoning about how packets reach the server: addressing, ports, NAT, latency, handshakes and transport behavior.",
+      "leaves": [
+        {
+          "topic": "Trace a request from browser through DNS, TCP, TLS and HTTP to the server",
+          "level": "core"
+        },
+        {
+          "topic": "Distinguish latency, bandwidth, loss and jitter when someone reports slowness",
+          "level": "core"
+        },
+        {
+          "topic": "Diagnose a refused or timed-out connection through ports, NAT and firewall rules",
+          "level": "core"
+        },
+        {
+          "topic": "Serve dual-stack IPv6 end to end, including IPv6-only mobile networks",
+          "level": "pro"
+        },
+        {
+          "topic": "Survive a Wi-Fi to cellular switch with QUIC connection migration and safe client retries",
+          "level": "pro"
+        },
+        {
+          "topic": "Allow and debug UDP traffic for QUIC, DNS and WebRTC through firewalls",
+          "level": "pro"
+        },
+        {
+          "topic": "Count round trips for TCP plus TLS 1.3 versus QUIC and remove extras",
+          "level": "expert"
+        },
+        {
+          "topic": "Explain TCP congestion control and head-of-line blocking during a latency spike",
+          "level": "expert"
+        },
+        {
+          "topic": "Diagnose MTU black holes, carrier NAT and proxy interference",
+          "level": "expert"
+        },
+        {
+          "topic": "Interpret a regional outage using BGP and anycast routing data",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "dns-domains.md",
+      "title": "DNS and domains",
+      "purpose": "Read when registering or moving a domain, adding or changing records, or debugging resolution.",
+      "leaves": [
+        {
+          "topic": "Register a domain with registrar lock, auto-renew and MFA",
+          "level": "core"
+        },
+        {
+          "topic": "Configure A, AAAA, CNAME, ALIAS, MX and TXT records for a production domain",
+          "level": "core"
+        },
+        {
+          "topic": "Trace delegation from root to authoritative servers with dig",
+          "level": "core"
+        },
+        {
+          "topic": "Diagnose stale caches, negative caching and propagation complaints",
+          "level": "core"
+        },
+        {
+          "topic": "Choose TTLs balancing failover speed against cache efficiency",
+          "level": "pro"
+        },
+        {
+          "topic": "Move a domain between registrars or DNS providers without downtime",
+          "level": "pro"
+        },
+        {
+          "topic": "Remove dangling records to prevent subdomain takeover",
+          "level": "pro"
+        },
+        {
+          "topic": "Configure health-checked failover and latency-based DNS routing",
+          "level": "expert"
+        },
+        {
+          "topic": "Enable DNSSEC and roll keys without breaking resolution",
+          "level": "expert"
+        },
+        {
+          "topic": "Run authoritative DNS across two providers",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "tls-certificates.md",
+      "title": "TLS and certificates",
+      "purpose": "Read when issuing, renewing or debugging certificates, choosing TLS settings, or deciding where TLS terminates.",
+      "leaves": [
+        {
+          "topic": "Automate certificate issuance and renewal with ACME",
+          "level": "core"
+        },
+        {
+          "topic": "Alert on certificate and domain expiry before it breaks the site",
+          "level": "core"
+        },
+        {
+          "topic": "Enable HSTS with a staged max-age; preload only once every subdomain serves HTTPS",
+          "level": "core"
+        },
+        {
+          "topic": "Serve TLS 1.3 with a TLS 1.2 fallback and disable everything older",
+          "level": "pro"
+        },
+        {
+          "topic": "Debug handshake, chain and SNI failures with openssl s_client",
+          "level": "pro"
+        },
+        {
+          "topic": "Restrict certificate issuance with CAA records",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide where TLS terminates and whether to re-encrypt to backends",
+          "level": "pro"
+        },
+        {
+          "topic": "Monitor Certificate Transparency logs for unexpected issuance",
+          "level": "expert"
+        },
+        {
+          "topic": "Deploy mutual TLS between internal services",
+          "level": "expert"
+        },
+        {
+          "topic": "Enable hybrid post-quantum key exchange and test client compatibility",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "http.md",
+      "title": "HTTP semantics and versions",
+      "purpose": "Read when choosing methods, status codes, redirects or compression, or enabling and debugging HTTP/2 and HTTP/3.",
+      "leaves": [
+        {
+          "topic": "Choose the HTTP method and status code each endpoint and error should use",
+          "level": "core"
+        },
+        {
+          "topic": "Reproduce any request with curl, including headers, cookies and timing",
+          "level": "core"
+        },
+        {
+          "topic": "Choose 301, 302, 307 or 308 redirects and avoid redirect chains",
+          "level": "core"
+        },
+        {
+          "topic": "Compress text with Brotli or zstd, never already-compressed bodies",
+          "level": "core"
+        },
+        {
+          "topic": "Serve conditional and range requests so clients revalidate and resume instead of refetching",
+          "level": "pro"
+        },
+        {
+          "topic": "Enable HTTP/3 with HTTP/2 fallback and verify negotiation with curl",
+          "level": "pro"
+        },
+        {
+          "topic": "Send 103 Early Hints and preload instead of HTTP/2 push or domain sharding",
+          "level": "pro"
+        },
+        {
+          "topic": "Publish HTTPS/SVCB records to advertise HTTP/3 and ECH",
+          "level": "expert"
+        },
+        {
+          "topic": "Decide whether 0-RTT is safe given replay risk on non-idempotent requests",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "http-caching.md",
+      "title": "HTTP and CDN caching",
+      "purpose": "Read when setting cache headers, designing cache keys, purging, or explaining why a user saw stale or someone else's content.",
+      "leaves": [
+        {
+          "topic": "Set Cache-Control, ETag and Vary so browsers and CDNs cache safely",
+          "level": "core"
+        },
+        {
+          "topic": "Serve static assets from immutable, fingerprinted URLs",
+          "level": "core"
+        },
+        {
+          "topic": "Mark private and sensitive responses no-store so nothing caches them",
+          "level": "core"
+        },
+        {
+          "topic": "Design cache keys and Vary so no user sees another user's page",
+          "level": "core"
+        },
+        {
+          "topic": "Purge or revalidate cached content safely on deploy",
+          "level": "core"
+        },
+        {
+          "topic": "Invalidate content instantly using cache tags or surrogate keys",
+          "level": "pro"
+        },
+        {
+          "topic": "Serve stale on origin error with stale-while-revalidate and stale-if-error",
+          "level": "pro"
+        },
+        {
+          "topic": "Measure cache hit ratio and fix the top misses",
+          "level": "pro"
+        },
+        {
+          "topic": "Prevent cache poisoning and web cache deception",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "cdn-edge.md",
+      "title": "CDN setup and edge protection",
+      "purpose": "Read when putting a CDN in front of the origin, running logic at the edge, or defending against bots, scrapers and DDoS.",
+      "leaves": [
+        {
+          "topic": "Put a CDN before the origin and decide what it caches, proxies and bypasses",
+          "level": "core"
+        },
+        {
+          "topic": "Derive the real client IP without trusting spoofable headers",
+          "level": "core"
+        },
+        {
+          "topic": "Lock the origin so only the CDN can reach it",
+          "level": "pro"
+        },
+        {
+          "topic": "Run redirects, header rewrites and simple auth checks in edge functions",
+          "level": "pro"
+        },
+        {
+          "topic": "Tune WAF rules without blocking real customers",
+          "level": "pro"
+        },
+        {
+          "topic": "Rate-limit and challenge abusive traffic at the edge",
+          "level": "pro"
+        },
+        {
+          "topic": "Set an AI-crawler and scraper policy: allow, block or charge",
+          "level": "pro"
+        },
+        {
+          "topic": "Rehearse the DDoS response: who flips which control and how to reach the provider",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "proxies-load-balancers.md",
+      "title": "Reverse proxies and load balancers",
+      "purpose": "Read when configuring nginx, Caddy, an ingress or a cloud load balancer, or chasing 502, 503 and 504 errors.",
+      "leaves": [
+        {
+          "topic": "Write health checks that reflect real readiness",
+          "level": "core"
+        },
+        {
+          "topic": "Identify which hop produced a 502, 503 or 504",
+          "level": "core"
+        },
+        {
+          "topic": "Configure a reverse proxy with routing, timeouts, compression and forwarded headers",
+          "level": "pro"
+        },
+        {
+          "topic": "Route by host and path to several backends from one proxy or load balancer",
+          "level": "pro"
+        },
+        {
+          "topic": "Drain connections from the load balancer gracefully during deploys",
+          "level": "pro"
+        },
+        {
+          "topic": "Align timeouts across client, CDN, load balancer, app and database",
+          "level": "pro"
+        },
+        {
+          "topic": "Proxy WebSockets and long-lived streams through load balancers without drops",
+          "level": "pro"
+        },
+        {
+          "topic": "Choose layer-4 or layer-7 load balancing for a workload",
+          "level": "expert"
+        },
+        {
+          "topic": "Tune keep-alive and idle timeouts so connections are reused at every hop",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "network-debugging.md",
+      "title": "Network debugging tools and method",
+      "purpose": "Read when something between client and server is slow or failing and you need to find where.",
+      "leaves": [
+        {
+          "topic": "Debug connectivity step by step with dig, curl and traceroute",
+          "level": "core"
+        },
+        {
+          "topic": "Find the slow phase in a DevTools waterfall or HAR file",
+          "level": "core"
+        },
+        {
+          "topic": "Tell a client, network or server fault apart from timing data",
+          "level": "core"
+        },
+        {
+          "topic": "Emulate slow 4G, packet loss and high latency against a critical flow",
+          "level": "core"
+        },
+        {
+          "topic": "Locate a lossy hop with mtr",
+          "level": "pro"
+        },
+        {
+          "topic": "Test from several regions and networks to localize a fault",
+          "level": "pro"
+        },
+        {
+          "topic": "Capture and read packets with tcpdump and Wireshark",
+          "level": "pro"
+        },
+        {
+          "topic": "Diagnose retransmits, resets and congestion-window limits from a capture",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,359 @@
+{
+  "name": "site-reliability",
+  "layer": 9,
+  "order": 1,
+  "title": "Observability, incidents and reliability",
+  "summary": "Know what production is doing and keep it up: logs, errors, metrics and traces, dashboards and alerts, SLOs, incident response, postmortems and runbooks, capacity and scaling, and disaster recovery.",
+  "useWhen": [
+    "Set up logging, error tracking and monitoring for this app",
+    "Production is down or erroring right now; help me handle it",
+    "We get too many alerts, or we found out about the outage from a customer",
+    "Add tracing so I can follow a request across services",
+    "Define SLOs and decide what should page someone",
+    "Write the postmortem for last night's incident",
+    "Will we survive launch-day traffic? How much headroom do we have?",
+    "Are we ready to go live? Check backups, alerts, rollback and limits",
+    "What happens if our region, database or main vendor goes down?",
+    "Set up a status page and an on-call rota for a tiny team"
+  ],
+  "notFor": [
+    {
+      "topic": "Deploy mechanics, rollback commands and feature flags",
+      "use": "ci-cd-release"
+    },
+    {
+      "topic": "Database backups, restore drills and replica failover",
+      "use": "postgres-database"
+    },
+    {
+      "topic": "Running load tests and profiling slow code",
+      "use": "web-performance"
+    },
+    {
+      "topic": "Security incidents, intrusions and audit logging",
+      "use": "web-security"
+    },
+    {
+      "topic": "Diagnosing a single host's CPU, memory or disk",
+      "use": "linux-server"
+    },
+    {
+      "topic": "Product analytics events, funnels and business dashboards",
+      "use": "product-analytics"
+    }
+  ],
+  "references": [
+    {
+      "file": "logging-errors.md",
+      "title": "Logs and error tracking",
+      "purpose": "Read when adding or cleaning up application logging and error reporting, or when logs are noisy, costly or leaking data.",
+      "leaves": [
+        {
+          "topic": "Emit structured JSON logs carrying request and trace IDs",
+          "level": "core"
+        },
+        {
+          "topic": "Capture frontend and backend errors with source maps and release tags",
+          "level": "core"
+        },
+        {
+          "topic": "Scrub card data, tokens and personal data from logs and traces",
+          "level": "core"
+        },
+        {
+          "topic": "Choose log levels and what belongs at each",
+          "level": "core"
+        },
+        {
+          "topic": "Search and correlate logs to follow one request",
+          "level": "core"
+        },
+        {
+          "topic": "Ship logs off the host to a central store",
+          "level": "core"
+        },
+        {
+          "topic": "Triage error-tracker noise: group, assign, ignore and alert on new",
+          "level": "pro"
+        },
+        {
+          "topic": "Control telemetry cost with sampling and retention tiers",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "metrics-tracing.md",
+      "title": "Metrics and distributed tracing",
+      "purpose": "Read when instrumenting services with OpenTelemetry, choosing an observability backend, or tracing a request across hops.",
+      "leaves": [
+        {
+          "topic": "Record business metrics (signups, checkouts, jobs) beside technical ones",
+          "level": "core"
+        },
+        {
+          "topic": "Choose a hosted observability backend that fits a small team's budget",
+          "level": "core"
+        },
+        {
+          "topic": "Instrument services with OpenTelemetry traces, metrics and logs",
+          "level": "pro"
+        },
+        {
+          "topic": "Instrument rate, errors and duration for each service and dependency",
+          "level": "pro"
+        },
+        {
+          "topic": "Propagate W3C trace context across browser, services and queues",
+          "level": "pro"
+        },
+        {
+          "topic": "Follow one failed request across CDN, load balancer, app, database and provider",
+          "level": "pro"
+        },
+        {
+          "topic": "Choose metric types and keep label cardinality bounded",
+          "level": "expert"
+        },
+        {
+          "topic": "Route telemetry through an OpenTelemetry Collector to stay vendor-neutral",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "dashboards-alerting.md",
+      "title": "Dashboards and alerting",
+      "purpose": "Read when deciding what to watch and what should wake someone: uptime checks, dashboards, alert rules and probes.",
+      "leaves": [
+        {
+          "topic": "Set up external uptime checks that alert your phone",
+          "level": "core"
+        },
+        {
+          "topic": "Monitor scheduled jobs with heartbeat checks",
+          "level": "core"
+        },
+        {
+          "topic": "Alert on symptoms users feel, not on every cause",
+          "level": "core"
+        },
+        {
+          "topic": "Build one dashboard per service showing the golden signals",
+          "level": "pro"
+        },
+        {
+          "topic": "Alert on saturation: disk, memory, connections and queue depth",
+          "level": "pro"
+        },
+        {
+          "topic": "Make every page actionable and link it to a runbook",
+          "level": "pro"
+        },
+        {
+          "topic": "Run synthetic probes of critical journeys from several regions",
+          "level": "pro"
+        },
+        {
+          "topic": "Watch third-party dependencies and their status feeds",
+          "level": "pro"
+        },
+        {
+          "topic": "Alert on silent revenue drops with business-metric anomaly detection",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "slos-error-budgets.md",
+      "title": "SLOs and error budgets",
+      "purpose": "Read when setting reliability targets, deciding how reliable is reliable enough, or promising an SLA.",
+      "leaves": [
+        {
+          "topic": "Decide the reliability target a product at each stage actually needs",
+          "level": "core"
+        },
+        {
+          "topic": "Define SLOs for key user journeys from real user impact",
+          "level": "pro"
+        },
+        {
+          "topic": "Choose indicators: availability, latency, correctness and freshness",
+          "level": "pro"
+        },
+        {
+          "topic": "Use the error budget to choose between features and reliability work",
+          "level": "pro"
+        },
+        {
+          "topic": "Review SLOs regularly and adjust targets from evidence",
+          "level": "pro"
+        },
+        {
+          "topic": "Alert on error-budget burn rate over several windows",
+          "level": "expert"
+        },
+        {
+          "topic": "Offer an SLA with uptime credits you can actually meet",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "incident-response.md",
+      "title": "On-call and incident response",
+      "purpose": "Read during an outage, or when setting up paging, severity levels, on-call and status-page communication.",
+      "leaves": [
+        {
+          "topic": "Mitigate first: roll back, flag off, scale up or fail over before diagnosing",
+          "level": "core"
+        },
+        {
+          "topic": "Set up a status page and incident message templates before launch",
+          "level": "core"
+        },
+        {
+          "topic": "Design solo on-call: automatic mitigation, quiet hours and honest expectations",
+          "level": "core"
+        },
+        {
+          "topic": "Communicate through the status page and customer emails during an outage",
+          "level": "core"
+        },
+        {
+          "topic": "Run an incident: assign a lead, keep a timeline, decide in one place",
+          "level": "pro"
+        },
+        {
+          "topic": "Define severity levels and who gets woken for what",
+          "level": "pro"
+        },
+        {
+          "topic": "Set up paging and an on-call rota a small team can sustain",
+          "level": "pro"
+        },
+        {
+          "topic": "Work an incident caused by a vendor outage you cannot fix",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "postmortems-runbooks.md",
+      "title": "Postmortems, runbooks and launch readiness",
+      "purpose": "Read after an incident, before a launch, or when writing down how to handle the failures you expect.",
+      "leaves": [
+        {
+          "topic": "Run a production-readiness review before launch: backups, alerts, rollback, limits and owners",
+          "level": "core"
+        },
+        {
+          "topic": "Write a blameless postmortem and track its actions to completion",
+          "level": "pro"
+        },
+        {
+          "topic": "Find contributing causes beyond the first root cause",
+          "level": "pro"
+        },
+        {
+          "topic": "Write runbooks for the ten most likely incidents",
+          "level": "pro"
+        },
+        {
+          "topic": "Test a runbook by having someone else follow it",
+          "level": "pro"
+        },
+        {
+          "topic": "Turn the most-used runbook steps into safe scripts",
+          "level": "pro"
+        },
+        {
+          "topic": "Share a postmortem with customers when trust requires it",
+          "level": "pro"
+        },
+        {
+          "topic": "Review incident trends quarterly and fund the repeat offenders",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "capacity-scaling.md",
+      "title": "Capacity and scaling",
+      "purpose": "Read when preparing for growth or a traffic spike, removing single points of failure, or configuring autoscaling.",
+      "leaves": [
+        {
+          "topic": "Decide when scaling up is cheaper than scaling out",
+          "level": "core"
+        },
+        {
+          "topic": "Run two or more instances behind a health-checked load balancer",
+          "level": "pro"
+        },
+        {
+          "topic": "Know current headroom and which component saturates first",
+          "level": "pro"
+        },
+        {
+          "topic": "Configure autoscaling with minimums, cooldowns and maximums",
+          "level": "pro"
+        },
+        {
+          "topic": "Map dependencies and remove single points of failure",
+          "level": "pro"
+        },
+        {
+          "topic": "Spread instances and the database across availability zones with automatic failover",
+          "level": "pro"
+        },
+        {
+          "topic": "Prepare for a known spike: launch day, campaign or seasonal peak",
+          "level": "pro"
+        },
+        {
+          "topic": "Forecast capacity from growth trends and load per customer",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "disaster-recovery.md",
+      "title": "Disaster recovery and resilience testing",
+      "purpose": "Read when planning for the loss of a region, a database, a vendor or a key account, and when rehearsing that loss.",
+      "leaves": [
+        {
+          "topic": "Back up secrets, configuration and object storage, not only the database",
+          "level": "core"
+        },
+        {
+          "topic": "Define RPO and RTO per system from business impact",
+          "level": "pro"
+        },
+        {
+          "topic": "Write and rehearse a disaster recovery plan",
+          "level": "pro"
+        },
+        {
+          "topic": "Plan for losing a key account, vendor or person",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide whether multi-region failover justifies its cost against your SLA",
+          "level": "expert"
+        },
+        {
+          "topic": "Design multi-region failover against stated RPO and RTO",
+          "level": "expert"
+        },
+        {
+          "topic": "Rebuild the whole stack in a new account or region from code and backups",
+          "level": "expert"
+        },
+        {
+          "topic": "Inject failures and run game days against critical paths",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}

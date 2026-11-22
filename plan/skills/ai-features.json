@@ -1,0 +1,358 @@
+{
+  "name": "ai-features",
+  "layer": 4,
+  "order": 5,
+  "title": "AI features in the product",
+  "summary": "Design LLM-powered product features that are useful, safe and affordable: when to use a model, prompts and context, retrieval, agents and tools, evaluations, guardrails, cost and latency, streaming UX and data handling.",
+  "useWhen": [
+    "Add an AI assistant, chat or summarization feature to the product",
+    "Should this feature use RAG, a tool call, a bigger prompt or fine-tuning?",
+    "Build retrieval over our docs or our customers' data",
+    "Build an agent that takes actions for the user",
+    "The AI feature gives wrong answers and I cannot tell if my change helped",
+    "Protect the AI feature against prompt injection and data leaks",
+    "LLM costs are eating our margin, or responses are too slow",
+    "Design the chat or streaming interface for AI output",
+    "What customer data are we allowed to send to the model provider?"
+  ],
+  "notFor": [
+    {
+      "topic": "Anthropic API parameters, model IDs, tool-use syntax, caching and SDK code",
+      "use": "claude-api"
+    },
+    {
+      "topic": "Using coding agents to build the product itself",
+      "use": "ai-coding-agents"
+    },
+    {
+      "topic": "Vector indexes and search-engine setup",
+      "use": "data-stores"
+    },
+    {
+      "topic": "EU AI Act classification and legal transparency duties",
+      "use": "privacy-compliance"
+    },
+    {
+      "topic": "Exposing your own API to outside agents through MCP",
+      "use": "api-design"
+    },
+    {
+      "topic": "Pricing AI features and credit packaging",
+      "use": "pricing-monetization"
+    }
+  ],
+  "references": [
+    {
+      "file": "feature-design.md",
+      "title": "Designing an LLM feature",
+      "purpose": "Read first when an AI feature is proposed: whether a model is the right tool, which approach, which model, and how to shape the call.",
+      "leaves": [
+        {
+          "topic": "Decide which product problems need an LLM versus deterministic code",
+          "level": "core"
+        },
+        {
+          "topic": "Choose a model tier for each task by quality, latency and cost",
+          "level": "core"
+        },
+        {
+          "topic": "Write prompts with a clear role, examples, constraints and output format",
+          "level": "core"
+        },
+        {
+          "topic": "Define an LLM call's contract: inputs, structured output schema and failure handling",
+          "level": "core"
+        },
+        {
+          "topic": "Engineer context: decide what enters the window and in what order",
+          "level": "core"
+        },
+        {
+          "topic": "Diagnose a quality gap as a prompt, context, retrieval or model problem first",
+          "level": "pro"
+        },
+        {
+          "topic": "Version prompts as code and test them like code",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide when to fine-tune or self-host models instead of calling APIs",
+          "level": "expert"
+        },
+        {
+          "topic": "Run open-weight models locally or in-browser when privacy or cost demands",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "retrieval.md",
+      "title": "Retrieval over your own data",
+      "purpose": "Read when answers must be grounded in documents or customer data: ingestion, search, permissions, freshness and citation.",
+      "leaves": [
+        {
+          "topic": "Decide whether a feature needs retrieval, long context or a tool call",
+          "level": "core"
+        },
+        {
+          "topic": "Build retrieval with chunking, embeddings and source citations",
+          "level": "core"
+        },
+        {
+          "topic": "Enforce per-user and per-tenant permissions inside retrieval",
+          "level": "core"
+        },
+        {
+          "topic": "Parse PDFs, tables and HTML into clean chunks with metadata",
+          "level": "pro"
+        },
+        {
+          "topic": "Improve retrieval with hybrid search and reranking",
+          "level": "pro"
+        },
+        {
+          "topic": "Keep the index fresh as source documents change and are deleted",
+          "level": "pro"
+        },
+        {
+          "topic": "Make the model decline when sources do not cover the question",
+          "level": "pro"
+        },
+        {
+          "topic": "Evaluate retrieval separately from generation with recall and precision",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "agents-tools.md",
+      "title": "Agents and tools",
+      "purpose": "Read when a model should call tools or act over several steps: loop design, tool design, approvals, sandboxing and durability.",
+      "leaves": [
+        {
+          "topic": "Choose a fixed workflow or an autonomous agent for a task",
+          "level": "core"
+        },
+        {
+          "topic": "Require human approval before agents take irreversible actions",
+          "level": "core"
+        },
+        {
+          "topic": "Design tools that are narrow, well described, idempotent and return typed errors",
+          "level": "pro"
+        },
+        {
+          "topic": "Build an agent loop with tools, step limits and stop conditions",
+          "level": "pro"
+        },
+        {
+          "topic": "Connect tools and data through Model Context Protocol servers",
+          "level": "pro"
+        },
+        {
+          "topic": "Run long agent tasks durably with checkpoints, resume and cancel",
+          "level": "expert"
+        },
+        {
+          "topic": "Sandbox agent code execution and scope its credentials",
+          "level": "expert"
+        },
+        {
+          "topic": "Give agents memory that persists across sessions safely",
+          "level": "expert"
+        },
+        {
+          "topic": "Split work across sub-agents only when one agent demonstrably fails",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "evals.md",
+      "title": "Evaluations and quality monitoring",
+      "purpose": "Read before changing a prompt, model or retrieval setup, and when deciding how to measure whether an AI feature is good.",
+      "leaves": [
+        {
+          "topic": "Build an eval set from real user cases before tuning prompts",
+          "level": "core"
+        },
+        {
+          "topic": "Regression-test prompt and model changes against the eval set",
+          "level": "core"
+        },
+        {
+          "topic": "Choose graders: exact checks, rubrics, LLM judges or human review",
+          "level": "pro"
+        },
+        {
+          "topic": "Trace LLM calls with OpenTelemetry GenAI conventions",
+          "level": "pro"
+        },
+        {
+          "topic": "Log and review AI outputs for wrong, harmful or leaked content",
+          "level": "pro"
+        },
+        {
+          "topic": "Feed user signals (ratings, edits, retries) back into the eval set",
+          "level": "pro"
+        },
+        {
+          "topic": "Calibrate an LLM judge against human labels",
+          "level": "expert"
+        },
+        {
+          "topic": "Compare prompts or models online with guardrail metrics",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "guardrails.md",
+      "title": "Guardrails and AI security",
+      "purpose": "Read when an AI feature reads untrusted content, calls tools, or is exposed to users who may abuse it.",
+      "leaves": [
+        {
+          "topic": "Treat model output as untrusted input before rendering, executing or storing it",
+          "level": "core"
+        },
+        {
+          "topic": "Label AI output and let users report and correct it",
+          "level": "core"
+        },
+        {
+          "topic": "Defend against prompt injection in tools that read untrusted content",
+          "level": "core"
+        },
+        {
+          "topic": "Limit agent privileges: least-privilege tools, scoped data, no excessive agency",
+          "level": "pro"
+        },
+        {
+          "topic": "Filter inputs and outputs for abuse, personal data and unsafe content",
+          "level": "pro"
+        },
+        {
+          "topic": "Protect AI endpoints from scraping and free-tier farming",
+          "level": "pro"
+        },
+        {
+          "topic": "Prevent data exfiltration through tool calls, links and rendered markdown",
+          "level": "expert"
+        },
+        {
+          "topic": "Red-team an AI feature with adversarial prompts before launch",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "cost-latency.md",
+      "title": "Cost, latency and provider resilience",
+      "purpose": "Read when an AI feature is too slow or too expensive, or must survive provider outages, rate limits and model retirements.",
+      "leaves": [
+        {
+          "topic": "Set latency budgets: time to first token, total time and timeouts",
+          "level": "core"
+        },
+        {
+          "topic": "Meter AI usage per user and enforce quotas to protect margin",
+          "level": "core"
+        },
+        {
+          "topic": "Attribute token cost per feature and customer",
+          "level": "pro"
+        },
+        {
+          "topic": "Cut token cost with prompt caching, batching and context trimming",
+          "level": "pro"
+        },
+        {
+          "topic": "Send easy requests to a cheaper model and escalate the hard ones",
+          "level": "pro"
+        },
+        {
+          "topic": "Add fallbacks for model outages and rate limits",
+          "level": "pro"
+        },
+        {
+          "topic": "Plan for model deprecation: pin versions, re-evaluate, migrate",
+          "level": "pro"
+        },
+        {
+          "topic": "Cache or precompute responses where inputs repeat",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "ai-ux.md",
+      "title": "AI interaction and streaming UX",
+      "purpose": "Read when designing or building the interface for AI output: chat, inline assistance, streaming, sources and failure states.",
+      "leaves": [
+        {
+          "topic": "Choose chat, inline assist or background automation as the interaction pattern",
+          "level": "core"
+        },
+        {
+          "topic": "Stream output to the UI with cancel, retry and partial-result handling",
+          "level": "core"
+        },
+        {
+          "topic": "Design the failure states: refusal, timeout, low confidence and empty retrieval",
+          "level": "core"
+        },
+        {
+          "topic": "Show sources so users can verify an answer",
+          "level": "pro"
+        },
+        {
+          "topic": "Let users edit, regenerate and steer output rather than only accept it",
+          "level": "pro"
+        },
+        {
+          "topic": "Show what an agent is doing and let users stop it mid-task",
+          "level": "pro"
+        },
+        {
+          "topic": "Render streamed markdown, code and structured UI safely",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "ai-data-privacy.md",
+      "title": "Data handling for AI features",
+      "purpose": "Read when deciding what data may reach a model provider, how long prompts and outputs are kept, and what customers can control.",
+      "leaves": [
+        {
+          "topic": "Decide what customer data may be sent to which model providers",
+          "level": "core"
+        },
+        {
+          "topic": "Secure vendor retention and no-training terms for customer data",
+          "level": "pro"
+        },
+        {
+          "topic": "Redact or minimize personal data before it enters prompts and logs",
+          "level": "pro"
+        },
+        {
+          "topic": "Set retention for prompts, outputs and traces",
+          "level": "pro"
+        },
+        {
+          "topic": "Give customers opt-out, deletion and admin controls for AI features",
+          "level": "pro"
+        },
+        {
+          "topic": "Document AI data flows for customers' security reviews",
+          "level": "pro"
+        },
+        {
+          "topic": "Meet regional processing and residency demands for AI workloads",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}

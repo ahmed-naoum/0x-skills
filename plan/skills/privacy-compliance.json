@@ -1,0 +1,347 @@
+{
+  "name": "privacy-compliance",
+  "layer": 5,
+  "order": 3,
+  "title": "Privacy, legal and compliance",
+  "summary": "Keep the product lawful and sellable: GDPR and US privacy law, consent and cookies, data-subject requests and retention, DPAs and vendors, PCI, SOC 2 and ISO 27001, sector and consumer rules, terms and policies, and software licenses.",
+  "useWhen": [
+    "Do we need a cookie banner, and how do we make it compliant?",
+    "Write or update our privacy policy and terms of service",
+    "A user asked us to delete or export all their data",
+    "A customer wants a DPA and our subprocessor list",
+    "Are we GDPR or CCPA compliant? What do we actually have to do?",
+    "A buyer requires SOC 2 or ISO 27001; where do we start?",
+    "Can I use this GPL or AGPL library in our product?",
+    "Does HIPAA, PCI, COPPA, the EU AI Act or accessibility law apply to us?",
+    "Are there countries or customers we are not allowed to sell to?",
+    "We had a data breach; who must we notify and by when?"
+  ],
+  "notFor": [
+    {
+      "topic": "Engineering the export, deletion and retention jobs",
+      "use": "data-stores"
+    },
+    {
+      "topic": "Technical security controls and breach containment",
+      "use": "web-security"
+    },
+    {
+      "topic": "Making the interface itself accessible",
+      "use": "accessibility"
+    },
+    {
+      "topic": "Incorporation, founder agreements and employment contracts",
+      "use": "company-building"
+    },
+    {
+      "topic": "Negotiating customer contracts and answering security questionnaires",
+      "use": "sales-support"
+    },
+    {
+      "topic": "Sales tax and VAT handling",
+      "use": "payments-billing"
+    }
+  ],
+  "references": [
+    {
+      "file": "privacy-law.md",
+      "title": "GDPR, CCPA and privacy fundamentals",
+      "purpose": "Read when working out which privacy duties apply, mapping personal data, or handling transfers and breach notification.",
+      "leaves": [
+        {
+          "topic": "Map what personal data you hold, why, where and for how long",
+          "level": "core"
+        },
+        {
+          "topic": "Collect only the personal data a feature needs",
+          "level": "core"
+        },
+        {
+          "topic": "Choose a lawful basis for each processing purpose",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide whether you are controller or processor for each data flow",
+          "level": "pro"
+        },
+        {
+          "topic": "Meet CCPA and US state privacy duties, including Global Privacy Control",
+          "level": "pro"
+        },
+        {
+          "topic": "Notify regulators and affected users of a breach within legal deadlines",
+          "level": "pro"
+        },
+        {
+          "topic": "Handle cross-border transfers and EU data-residency requests",
+          "level": "expert"
+        },
+        {
+          "topic": "Run a data-protection impact assessment for high-risk processing",
+          "level": "expert"
+        },
+        {
+          "topic": "Appoint an EU or UK representative or DPO when required",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "consent-cookies.md",
+      "title": "Consent, cookies, tracking and marketing permission",
+      "purpose": "Read when adding analytics, ads, pixels, marketing email or cold outreach, or building and auditing a consent banner.",
+      "leaves": [
+        {
+          "topic": "Implement cookie consent that actually blocks non-essential trackers",
+          "level": "core"
+        },
+        {
+          "topic": "Design a consent banner with equal accept and reject and no dark patterns",
+          "level": "core"
+        },
+        {
+          "topic": "Obtain marketing-email consent and honor unsubscribe and suppression",
+          "level": "core"
+        },
+        {
+          "topic": "Record, version and honor consent across devices and sessions",
+          "level": "pro"
+        },
+        {
+          "topic": "Choose analytics that need no consent where the law allows",
+          "level": "pro"
+        },
+        {
+          "topic": "Audit third-party tags and pixels for personal-data leakage",
+          "level": "pro"
+        },
+        {
+          "topic": "Wire consent state into ad and analytics tags",
+          "level": "pro"
+        },
+        {
+          "topic": "Check anti-spam rules before sending cold outreach in each country",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "data-subject-requests.md",
+      "title": "Data-subject requests and retention policy",
+      "purpose": "Read when a person asks for access, export, correction or deletion, or when setting how long data may be kept.",
+      "leaves": [
+        {
+          "topic": "Fulfill access, deletion and export requests on deadline",
+          "level": "core"
+        },
+        {
+          "topic": "Verify a requester's identity without collecting more data",
+          "level": "pro"
+        },
+        {
+          "topic": "Write a request runbook covering every system and subprocessor",
+          "level": "pro"
+        },
+        {
+          "topic": "Set retention periods with a legal basis and legal-hold exceptions",
+          "level": "pro"
+        },
+        {
+          "topic": "Keep a request log proving timely responses",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide how deletion applies to backups, logs and analytics",
+          "level": "expert"
+        },
+        {
+          "topic": "Respond to objection, rectification and restriction requests",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "vendors-dpas.md",
+      "title": "Vendors, DPAs and subprocessors",
+      "purpose": "Read when adopting a vendor that touches customer data, or when a customer asks for your DPA and subprocessor list.",
+      "leaves": [
+        {
+          "topic": "Sign DPAs with processors and maintain a subprocessor list",
+          "level": "pro"
+        },
+        {
+          "topic": "Offer customers a DPA and notify them of subprocessor changes",
+          "level": "pro"
+        },
+        {
+          "topic": "Assess a vendor's privacy and security before sending it customer data",
+          "level": "pro"
+        },
+        {
+          "topic": "Keep a vendor inventory with owners, data categories and renewal dates",
+          "level": "pro"
+        },
+        {
+          "topic": "Publish the subprocessor list and data locations on a trust page",
+          "level": "pro"
+        },
+        {
+          "topic": "Put transfer mechanisms in place for vendors outside the EU",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "pci-soc2-iso.md",
+      "title": "PCI DSS, SOC 2 and ISO 27001",
+      "purpose": "Read when taking card payments, or when a buyer or partner asks for a security certification or audit report.",
+      "leaves": [
+        {
+          "topic": "Decide when buyers actually require SOC 2 or ISO 27001",
+          "level": "core"
+        },
+        {
+          "topic": "Determine PCI DSS scope and complete the correct self-assessment questionnaire",
+          "level": "pro"
+        },
+        {
+          "topic": "Write the minimal security policy set and actually follow it",
+          "level": "pro"
+        },
+        {
+          "topic": "Choose a compliance automation platform and auditor",
+          "level": "expert"
+        },
+        {
+          "topic": "Achieve SOC 2 Type II or ISO 27001 with automated evidence collection",
+          "level": "expert"
+        },
+        {
+          "topic": "Run access reviews, vendor reviews and risk assessments on a cadence",
+          "level": "expert"
+        },
+        {
+          "topic": "Inventory and monitor payment-page scripts per PCI DSS 6.4.3 and 11.6.1",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "sector-consumer-rules.md",
+      "title": "Other rules that may apply: sector, consumer, accessibility, AI and trade regulation",
+      "purpose": "Read before entering a regulated market, selling to another country, or shipping subscriptions, AI features or consumer products in a new jurisdiction.",
+      "leaves": [
+        {
+          "topic": "Determine whether HIPAA, COPPA, financial or other sector rules apply",
+          "level": "core"
+        },
+        {
+          "topic": "Meet consumer-law rules on auto-renewal, cancellation and price display",
+          "level": "pro"
+        },
+        {
+          "topic": "Remove dark patterns from consent, pricing and cancellation flows",
+          "level": "pro"
+        },
+        {
+          "topic": "Meet accessibility law (EAA, ADA) with audits and a public statement",
+          "level": "pro"
+        },
+        {
+          "topic": "Disclose AI-generated content and chatbots where transparency rules require",
+          "level": "pro"
+        },
+        {
+          "topic": "Block sanctioned countries and parties and check export-control rules before selling abroad",
+          "level": "pro"
+        },
+        {
+          "topic": "Classify AI features under the EU AI Act and meet the resulting duties",
+          "level": "expert"
+        },
+        {
+          "topic": "Decide whether the EU Cyber Resilience Act covers software you distribute and meet it",
+          "level": "expert"
+        },
+        {
+          "topic": "Triage and remediate an accessibility complaint or demand letter",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "terms-policies.md",
+      "title": "Terms, privacy policy and platform duties",
+      "purpose": "Read when writing or changing terms, privacy policy or acceptable-use rules, or handling takedowns and legal demands.",
+      "leaves": [
+        {
+          "topic": "Publish terms of service and a privacy policy matching actual data flows",
+          "level": "core"
+        },
+        {
+          "topic": "Write terms with liability caps and record versioned acceptance",
+          "level": "core"
+        },
+        {
+          "topic": "Decide what to template yourself and when to pay a lawyer",
+          "level": "core"
+        },
+        {
+          "topic": "Publish an acceptable use policy and enforce it",
+          "level": "pro"
+        },
+        {
+          "topic": "Change terms with notice and re-acceptance when the change is material",
+          "level": "pro"
+        },
+        {
+          "topic": "Process takedown notices (DMCA, DSA) within required timelines",
+          "level": "pro"
+        },
+        {
+          "topic": "Meet DSA and online-safety duties for user-generated content",
+          "level": "expert"
+        },
+        {
+          "topic": "Respond to a legal demand, subpoena or regulator letter with counsel",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "licenses-ip.md",
+      "title": "Open-source licenses and third-party IP",
+      "purpose": "Read when adding a dependency with an unusual license, shipping third-party assets, licensing your own code, or using AI-generated material.",
+      "leaves": [
+        {
+          "topic": "License the fonts, images, icons and data you ship",
+          "level": "core"
+        },
+        {
+          "topic": "Check dependency licenses and avoid copyleft conflicts",
+          "level": "core"
+        },
+        {
+          "topic": "Generate a license inventory and attribution notices for a release",
+          "level": "pro"
+        },
+        {
+          "topic": "Choose a license for your own code: open-source, source-available or proprietary",
+          "level": "pro"
+        },
+        {
+          "topic": "Check license and IP exposure of AI-generated code and assets",
+          "level": "pro"
+        },
+        {
+          "topic": "Respect the API terms, scraping limits and data licenses of your sources",
+          "level": "pro"
+        },
+        {
+          "topic": "Accept outside contributions with a CLA or DCO",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}

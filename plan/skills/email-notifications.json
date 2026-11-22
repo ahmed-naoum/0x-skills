@@ -1,0 +1,206 @@
+{
+  "name": "email-notifications",
+  "layer": 4,
+  "order": 3,
+  "title": "Email, SMS and push notifications",
+  "summary": "Send transactional email, SMS, push and in-app notifications that arrive, render and are wanted: provider setup, SPF, DKIM and DMARC, sender reputation, templates, channel choice and user preferences.",
+  "useWhen": [
+    "Our emails are going to spam or not arriving at all",
+    "Set up SPF, DKIM and DMARC for our sending domain",
+    "Send a receipt, verification or password-reset email from the app",
+    "Which email provider should I use, and how do I structure sending?",
+    "Build email templates that look right in Gmail, Outlook and dark mode",
+    "Add SMS codes, web push or mobile push notifications",
+    "Build notification preferences and an in-app notification inbox",
+    "Users complain they get too many notifications",
+    "Our SMS bill exploded from fake signups"
+  ],
+  "notFor": [
+    {
+      "topic": "Lifecycle, newsletter and marketing email strategy and copy",
+      "use": "growth-marketing"
+    },
+    {
+      "topic": "Dunning emails and failed-payment recovery logic",
+      "use": "payments-billing"
+    },
+    {
+      "topic": "Magic links, OTP login and reset-flow security",
+      "use": "auth-identity"
+    },
+    {
+      "topic": "DNS record mechanics beyond the mail records",
+      "use": "web-networking"
+    },
+    {
+      "topic": "Anti-spam and consent law for marketing and cold email",
+      "use": "privacy-compliance"
+    },
+    {
+      "topic": "The queue and retry machinery that sends in the background",
+      "use": "backend-architecture"
+    }
+  ],
+  "references": [
+    {
+      "file": "transactional-email.md",
+      "title": "Sending transactional email",
+      "purpose": "Read when adding or restructuring email sending in the app: provider, templates, sending path, testing and logs.",
+      "leaves": [
+        {
+          "topic": "Choose an email provider and separate transactional from marketing streams",
+          "level": "core"
+        },
+        {
+          "topic": "Send transactional email through a provider API with versioned templates",
+          "level": "core"
+        },
+        {
+          "topic": "Send from a background job, idempotently, so retries never double-send",
+          "level": "core"
+        },
+        {
+          "topic": "Write emails with a plain-text part, a clear subject and one action",
+          "level": "core"
+        },
+        {
+          "topic": "Build templates that render across mail clients and dark mode",
+          "level": "core"
+        },
+        {
+          "topic": "Preview and test emails locally and in CI without mailing real users",
+          "level": "core"
+        },
+        {
+          "topic": "Log every send and its delivery status for support lookups",
+          "level": "pro"
+        },
+        {
+          "topic": "Receive inbound email and replies through provider webhooks",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "deliverability.md",
+      "title": "Email deliverability",
+      "purpose": "Read when configuring a sending domain, when mail lands in spam, or when bounce and complaint rates rise.",
+      "leaves": [
+        {
+          "topic": "Authenticate the sending domain with SPF, DKIM and DMARC alignment",
+          "level": "core"
+        },
+        {
+          "topic": "Verify addresses at signup so the list stays clean",
+          "level": "core"
+        },
+        {
+          "topic": "Process bounces and complaints and suppress bad addresses",
+          "level": "core"
+        },
+        {
+          "topic": "Offer one-click unsubscribe and stay under mailbox-provider complaint limits",
+          "level": "core"
+        },
+        {
+          "topic": "Send from a dedicated subdomain and warm it up before volume",
+          "level": "pro"
+        },
+        {
+          "topic": "Monitor sender reputation and diagnose spam-folder placement",
+          "level": "pro"
+        },
+        {
+          "topic": "Move DMARC policy to reject using aggregate reports",
+          "level": "expert"
+        },
+        {
+          "topic": "Decide between shared and dedicated sending IPs by volume",
+          "level": "expert"
+        },
+        {
+          "topic": "Recover sender reputation after a blocklisting",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "sms-push.md",
+      "title": "SMS, push and chat channels",
+      "purpose": "Read when adding SMS, web push, mobile push or chat-app messaging, or when their cost or delivery goes wrong.",
+      "leaves": [
+        {
+          "topic": "Decide which messages deserve SMS, push, email or in-app delivery",
+          "level": "core"
+        },
+        {
+          "topic": "Ask for push permission at a moment users will accept",
+          "level": "core"
+        },
+        {
+          "topic": "Send SMS through a provider with sender registration and country rules",
+          "level": "pro"
+        },
+        {
+          "topic": "Guard SMS and OTP sending against pumping fraud with limits and geo-allowlists",
+          "level": "pro"
+        },
+        {
+          "topic": "Implement web push with a service worker and subscription cleanup",
+          "level": "pro"
+        },
+        {
+          "topic": "Send mobile push through APNs and FCM with token hygiene",
+          "level": "pro"
+        },
+        {
+          "topic": "Handle delivery receipts, failures and fallback between channels",
+          "level": "expert"
+        },
+        {
+          "topic": "Message customers through WhatsApp or other chat channels where they expect it",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "notification-system.md",
+      "title": "Notification system design",
+      "purpose": "Read when notifications span several types and channels and need preferences, an inbox, batching or measurement.",
+      "leaves": [
+        {
+          "topic": "Model notifications with types, channels and per-user preferences",
+          "level": "core"
+        },
+        {
+          "topic": "Separate required transactional messages from opt-out marketing",
+          "level": "core"
+        },
+        {
+          "topic": "Build an in-app notification inbox with read state",
+          "level": "pro"
+        },
+        {
+          "topic": "Batch and digest notifications to prevent fatigue",
+          "level": "pro"
+        },
+        {
+          "topic": "Deduplicate and throttle notifications triggered by bursts of events",
+          "level": "pro"
+        },
+        {
+          "topic": "Respect quiet hours, time zones and locale in every send",
+          "level": "pro"
+        },
+        {
+          "topic": "Measure delivery, open and action rates per notification type",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide between a notification service and in-house channel routing",
+          "level": "pro"
+        }
+      ]
+    }
+  ]
+}

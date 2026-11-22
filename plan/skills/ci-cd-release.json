@@ -1,0 +1,230 @@
+{
+  "name": "ci-cd-release",
+  "layer": 2,
+  "order": 2,
+  "title": "CI/CD, environments and releases",
+  "summary": "Get a change from a merged pull request to production safely: CI pipelines, pipeline security, environments and config, zero-downtime deploys, rollback and feature flags.",
+  "useWhen": [
+    "Set up GitHub Actions to test and deploy this project",
+    "CI takes too long; make the pipeline faster",
+    "Deploys cause downtime or I cannot roll back quickly",
+    "Set up staging and preview environments with their own config",
+    "The app crashed in production because an environment variable was missing",
+    "Add feature flags or a kill switch for a risky change",
+    "Roll this out to 5% of users first",
+    "Let CI deploy to the cloud without storing long-lived keys",
+    "Automate mobile app builds, signing and store submission",
+    "Plan the cutover to a new platform or database with a way back"
+  ],
+  "notFor": [
+    {
+      "topic": "Choosing a host, writing Dockerfiles or Terraform",
+      "use": "cloud-infrastructure"
+    },
+    {
+      "topic": "What tests to write and how to fix flaky ones",
+      "use": "code-quality"
+    },
+    {
+      "topic": "Writing the zero-downtime schema migration itself",
+      "use": "postgres-database"
+    },
+    {
+      "topic": "Secret storage, rotation, and dependency and supply-chain scanning",
+      "use": "web-security"
+    },
+    {
+      "topic": "Branching model, pull requests and version numbers",
+      "use": "git-collaboration"
+    },
+    {
+      "topic": "A/B experiment design and statistics",
+      "use": "product-analytics"
+    }
+  ],
+  "references": [
+    {
+      "file": "ci-pipelines.md",
+      "title": "CI pipelines",
+      "purpose": "Read when creating or speeding up the pipeline that checks every change and builds the deployable artifact, including mobile app builds and store submission.",
+      "leaves": [
+        {
+          "topic": "Build a pipeline that type-checks, lints, tests and builds every pull request",
+          "level": "core"
+        },
+        {
+          "topic": "Protect main with required checks and review",
+          "level": "core"
+        },
+        {
+          "topic": "Run database migrations as a gated, ordered deploy step",
+          "level": "core"
+        },
+        {
+          "topic": "Make a CI failure reproducible on a laptop",
+          "level": "core"
+        },
+        {
+          "topic": "Keep CI fast with caching, parallelism and affected-only runs",
+          "level": "pro"
+        },
+        {
+          "topic": "Build one immutable artifact and promote it through environments",
+          "level": "pro"
+        },
+        {
+          "topic": "Choose hosted or self-hosted runners and control CI spend",
+          "level": "expert"
+        },
+        {
+          "topic": "Automate mobile builds, code signing, store submission and over-the-air updates",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "pipeline-security.md",
+      "title": "Pipeline security and provenance",
+      "purpose": "Read when CI needs cloud or registry credentials, runs code from forks, or must prove what it built.",
+      "leaves": [
+        {
+          "topic": "Pin CI actions to commit SHAs and minimize token permissions",
+          "level": "core"
+        },
+        {
+          "topic": "Authenticate CI to the cloud with OIDC federation, not long-lived keys",
+          "level": "pro"
+        },
+        {
+          "topic": "Keep secrets away from fork and untrusted pull-request builds",
+          "level": "pro"
+        },
+        {
+          "topic": "Restrict who and what can deploy to production with environment protection rules",
+          "level": "pro"
+        },
+        {
+          "topic": "Sign build artifacts and verify provenance before deploy",
+          "level": "expert"
+        },
+        {
+          "topic": "Publish packages with trusted publishing instead of long-lived registry tokens",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "environments-config.md",
+      "title": "Environments and configuration",
+      "purpose": "Read when adding an environment, wiring configuration and secrets into a deploy, or chasing works-on-my-machine drift.",
+      "leaves": [
+        {
+          "topic": "Separate development, staging and production with distinct secrets and data",
+          "level": "core"
+        },
+        {
+          "topic": "Validate configuration and environment variables at startup and fail fast",
+          "level": "core"
+        },
+        {
+          "topic": "Keep local, CI and production environments close enough to trust",
+          "level": "core"
+        },
+        {
+          "topic": "Create a preview environment with its own database per pull request",
+          "level": "pro"
+        },
+        {
+          "topic": "Seed staging with safe, anonymized data",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide what staging is for and when to skip it",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "deploy-rollback.md",
+      "title": "Deploys, rollback and cutovers",
+      "purpose": "Read when making deploys automatic and zero-downtime, recovering from a bad release, or planning a risky cutover.",
+      "leaves": [
+        {
+          "topic": "Deploy automatically on merge with one-command rollback",
+          "level": "core"
+        },
+        {
+          "topic": "Roll back a bad release within minutes, knowing what its migrations allow",
+          "level": "core"
+        },
+        {
+          "topic": "Deploy without downtime using rolling or blue-green releases",
+          "level": "core"
+        },
+        {
+          "topic": "Run post-deploy smoke tests and watch error rate per release",
+          "level": "core"
+        },
+        {
+          "topic": "Keep stale cached frontends and old clients working across a deploy",
+          "level": "pro"
+        },
+        {
+          "topic": "Order deploys across database, backend and frontend changes",
+          "level": "pro"
+        },
+        {
+          "topic": "Set deploy frequency and freeze windows around risk and support cover",
+          "level": "pro"
+        },
+        {
+          "topic": "Release progressively with canaries that roll back on SLO burn",
+          "level": "expert"
+        },
+        {
+          "topic": "Plan a cutover with dual writes, shadow traffic and a rollback point",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "feature-flags.md",
+      "title": "Feature flags",
+      "purpose": "Read when hiding unfinished work, rolling out gradually, adding a kill switch, or cleaning up old flags.",
+      "leaves": [
+        {
+          "topic": "Hide unfinished work behind a flag instead of a long-lived branch",
+          "level": "core"
+        },
+        {
+          "topic": "Choose a flag service or build a minimal table-backed one",
+          "level": "core"
+        },
+        {
+          "topic": "Target flags by user, account or plan for betas and staged access",
+          "level": "pro"
+        },
+        {
+          "topic": "Ship risky changes behind a kill switch",
+          "level": "pro"
+        },
+        {
+          "topic": "Roll out by percentage or cohort while watching guardrail metrics",
+          "level": "pro"
+        },
+        {
+          "topic": "Remove stale flags on a schedule before they rot the codebase",
+          "level": "pro"
+        },
+        {
+          "topic": "Evaluate flags consistently for a user across requests, services and devices",
+          "level": "expert"
+        },
+        {
+          "topic": "Use operational flags to shed features under load",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}

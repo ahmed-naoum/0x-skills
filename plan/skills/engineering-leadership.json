@@ -1,0 +1,253 @@
+{
+  "name": "engineering-leadership",
+  "layer": 8,
+  "order": 4,
+  "title": "Engineering leadership and technical strategy",
+  "summary": "Make the technical decisions a CTO makes: technology strategy, build versus buy and vendor choice, decision records, estimation and planning, technical debt, and hiring and onboarding engineers.",
+  "useWhen": [
+    "What whole tech stack should I start this product on?",
+    "Should we build this ourselves or buy a service?",
+    "Evaluate this vendor before we commit to it",
+    "A customer wants to run our product in their own cloud or on-premises; should we offer that?",
+    "Write an ADR or design doc for this decision",
+    "How long will this take? Help me plan and scope the project",
+    "The project is slipping; what do I cut?",
+    "We have too much technical debt; how do I prioritize it?",
+    "Hire, interview or onboard my first engineers or a contractor",
+    "Prepare for technical due diligence"
+  ],
+  "notFor": [
+    {
+      "topic": "Choosing a backend runtime or designing a system's modules and services",
+      "use": "backend-architecture"
+    },
+    {
+      "topic": "Choosing the hosting platform",
+      "use": "cloud-infrastructure"
+    },
+    {
+      "topic": "General hiring, compensation, org structure, managing people and firing",
+      "use": "company-building"
+    },
+    {
+      "topic": "What the product should do and feature prioritization",
+      "use": "product-discovery"
+    },
+    {
+      "topic": "Carrying out a refactor or rewrite in the code",
+      "use": "code-quality"
+    },
+    {
+      "topic": "Vendor privacy review, DPAs and subprocessor lists",
+      "use": "privacy-compliance"
+    }
+  ],
+  "references": [
+    {
+      "file": "technical-strategy.md",
+      "title": "Technical strategy",
+      "purpose": "Read when choosing a stack, setting technical direction, deciding whether to offer self-hosted deployments, or explaining technical risk to investors, customers or co-founders.",
+      "leaves": [
+        {
+          "topic": "Pick a full default stack for a new product, with each choice's flip condition",
+          "level": "core"
+        },
+        {
+          "topic": "Choose boring, well-supported technology and spend innovation budget deliberately",
+          "level": "core"
+        },
+        {
+          "topic": "Identify the few hard-to-reverse decisions and slow down only for those",
+          "level": "core"
+        },
+        {
+          "topic": "Write a technical strategy tied to business goals and constraints",
+          "level": "pro"
+        },
+        {
+          "topic": "Split engineering time across features, reliability and debt",
+          "level": "pro"
+        },
+        {
+          "topic": "Explain technical risk and trade-offs to non-technical stakeholders",
+          "level": "pro"
+        },
+        {
+          "topic": "Plan for ten times the scale without building for it now",
+          "level": "pro"
+        },
+        {
+          "topic": "Pass technical due diligence on architecture, security, tests and bus factor",
+          "level": "expert"
+        },
+        {
+          "topic": "Decide whether to offer self-hosted or customer-cloud deployments and price their upkeep",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "build-vs-buy.md",
+      "title": "Build versus buy and vendor decisions",
+      "purpose": "Read when deciding whether to build a capability, adopt open source or pay a vendor, and when leaving one.",
+      "leaves": [
+        {
+          "topic": "Decide build versus buy from differentiation, yearly ownership cost and exit path",
+          "level": "core"
+        },
+        {
+          "topic": "Evaluate a vendor's lock-in, pricing power, viability and exit path",
+          "level": "core"
+        },
+        {
+          "topic": "Run a time-boxed spike to decide between options",
+          "level": "core"
+        },
+        {
+          "topic": "Compare self-hosted open source with a managed service on total cost",
+          "level": "pro"
+        },
+        {
+          "topic": "Negotiate SaaS contracts, startup credits and renewal terms",
+          "level": "pro"
+        },
+        {
+          "topic": "Execute a vendor migration under a hard deadline",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "decision-records.md",
+      "title": "Decision records and design docs",
+      "purpose": "Read when a technical decision should be written down, reviewed or revisited.",
+      "leaves": [
+        {
+          "topic": "Keep a lightweight decision log, even when solo",
+          "level": "core"
+        },
+        {
+          "topic": "Write architecture decision records for hard-to-reverse choices",
+          "level": "pro"
+        },
+        {
+          "topic": "Write a design doc with alternatives and risks before a large change",
+          "level": "pro"
+        },
+        {
+          "topic": "Run a design review that surfaces risks early",
+          "level": "pro"
+        },
+        {
+          "topic": "Revisit and supersede a decision when its assumptions change",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide who decides: owner, consulted and informed for technical choices",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "estimation-planning.md",
+      "title": "Estimation, planning and delivery",
+      "purpose": "Read when sizing work, planning a project, tracking delivery, or deciding what to cut when a date is at risk.",
+      "leaves": [
+        {
+          "topic": "Break work into small shippable increments with rough estimates",
+          "level": "core"
+        },
+        {
+          "topic": "Cut scope, not quality, when a project slips",
+          "level": "core"
+        },
+        {
+          "topic": "Estimate with ranges and re-forecast from actual throughput",
+          "level": "pro"
+        },
+        {
+          "topic": "Plan a multi-week project with riskiest work first and a demo each week",
+          "level": "pro"
+        },
+        {
+          "topic": "Measure delivery by deploy frequency, lead time, failure rate and recovery time",
+          "level": "pro"
+        },
+        {
+          "topic": "Negotiate commitments with stakeholders using explicit trade-offs",
+          "level": "pro"
+        },
+        {
+          "topic": "Coordinate dependencies across several teams",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "technical-debt.md",
+      "title": "Technical debt",
+      "purpose": "Read when deciding which shortcuts to take, which old ones to repay, and how to justify the time.",
+      "leaves": [
+        {
+          "topic": "Take on debt deliberately and record the trigger for repaying it",
+          "level": "core"
+        },
+        {
+          "topic": "Track technical debt in a visible register",
+          "level": "pro"
+        },
+        {
+          "topic": "Rank debt by interest: what slows or endangers the team most",
+          "level": "pro"
+        },
+        {
+          "topic": "Make the case for a refactor or migration in business terms",
+          "level": "pro"
+        },
+        {
+          "topic": "Retire systems and features that no longer pay for their upkeep",
+          "level": "pro"
+        },
+        {
+          "topic": "Spot architecture erosion early and correct it with small investments",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "hiring-engineers.md",
+      "title": "Hiring and onboarding engineers",
+      "purpose": "Read when adding engineering capacity: first hires, contractors and agencies, interviews, onboarding, norms and specialist roles.",
+      "leaves": [
+        {
+          "topic": "Decide when to make the first engineering hire and for which role",
+          "level": "pro"
+        },
+        {
+          "topic": "Interview engineers with a work sample from your own product",
+          "level": "pro"
+        },
+        {
+          "topic": "Vet a contractor or agency with a paid trial and keep code ownership",
+          "level": "pro"
+        },
+        {
+          "topic": "Onboard an engineer to a first production deploy within a week",
+          "level": "pro"
+        },
+        {
+          "topic": "Set engineering norms: review, testing bar, on-call and documentation",
+          "level": "pro"
+        },
+        {
+          "topic": "Decide when to hire platform, QA, data, security or AI specialists",
+          "level": "expert"
+        },
+        {
+          "topic": "Hire or promote a first engineering manager and define a career ladder",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}

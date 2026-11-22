@@ -1,0 +1,275 @@
+{
+  "name": "data-stores",
+  "layer": 3,
+  "order": 2,
+  "title": "Data stores beyond the primary database",
+  "summary": "Decide when a product needs more than Postgres and run what it adds: Redis caching, search, object storage, event streams, an analytics warehouse and pipelines, and the data lifecycle across all of them.",
+  "useWhen": [
+    "Do I need Redis, Elasticsearch, a vector database or Kafka for this?",
+    "Add caching to a slow read and make sure it never serves stale data",
+    "Add search with typo tolerance, filters and autocomplete",
+    "Store user files in S3 or R2 and control who can download them",
+    "Get product, billing and marketing data into one warehouse",
+    "Keep the search index or cache in sync with the database",
+    "Set data retention and delete a user's or tenant's data everywhere",
+    "Our storage bill keeps growing and nothing is ever deleted"
+  ],
+  "notFor": [
+    {
+      "topic": "Schema design, SQL, indexes, migrations and backups in Postgres",
+      "use": "postgres-database"
+    },
+    {
+      "topic": "HTTP and CDN caching headers and purging",
+      "use": "web-networking"
+    },
+    {
+      "topic": "Job queues, retries, scheduled jobs and workflows",
+      "use": "backend-architecture"
+    },
+    {
+      "topic": "The upload flow: validation, scanning and processing of user files",
+      "use": "backend-architecture"
+    },
+    {
+      "topic": "Analyzing data, writing analytics SQL and building dashboards",
+      "use": "data"
+    },
+    {
+      "topic": "Legal duties behind retention and deletion requests",
+      "use": "privacy-compliance"
+    }
+  ],
+  "references": [
+    {
+      "file": "choosing-datastores.md",
+      "title": "Choosing a datastore",
+      "purpose": "Read when someone proposes adding a new database, cache, queue or search system, or asks which store fits a workload.",
+      "leaves": [
+        {
+          "topic": "Default to Postgres and justify every additional datastore",
+          "level": "core"
+        },
+        {
+          "topic": "Decide when to add Redis, a search engine, object storage or a vector index",
+          "level": "core"
+        },
+        {
+          "topic": "Decide when a job queue must give way to a broker or event log",
+          "level": "pro"
+        },
+        {
+          "topic": "Use SQLite, libSQL or D1 where a single writer fits",
+          "level": "pro"
+        },
+        {
+          "topic": "Keep every derived store rebuildable from the source of truth",
+          "level": "pro"
+        },
+        {
+          "topic": "Choose a document, key-value or wide-column store only for a proven access pattern",
+          "level": "expert"
+        },
+        {
+          "topic": "Run analytics on a columnar engine such as ClickHouse or DuckDB",
+          "level": "expert"
+        },
+        {
+          "topic": "Choose a time-series or event store for metrics-shaped data at volume",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "caching-redis.md",
+      "title": "Application caching with Redis",
+      "purpose": "Read when adding, debugging or removing an application-level cache, or using Redis for locks, counters and rate limits.",
+      "leaves": [
+        {
+          "topic": "Decide what must never be cached: balances, entitlements, payment state",
+          "level": "core"
+        },
+        {
+          "topic": "Cache hot reads in Redis or Valkey with TTLs and explicit invalidation",
+          "level": "pro"
+        },
+        {
+          "topic": "Choose cache-aside, read-through or write-through for a use case",
+          "level": "pro"
+        },
+        {
+          "topic": "Design cache keys and versions so deploys never read stale shapes",
+          "level": "pro"
+        },
+        {
+          "topic": "Size memory, set an eviction policy and decide whether persistence matters",
+          "level": "pro"
+        },
+        {
+          "topic": "Use Redis for counters, locks and rate limits without treating it as truth",
+          "level": "pro"
+        },
+        {
+          "topic": "Measure hit rate and prove a cache earns its complexity",
+          "level": "pro"
+        },
+        {
+          "topic": "Prevent cache stampedes with locking or stale serving",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "search.md",
+      "title": "Search",
+      "purpose": "Read when adding or improving product search, autocomplete, faceted filtering or vector similarity lookup.",
+      "leaves": [
+        {
+          "topic": "Use Postgres full-text and trigram search before adding a search engine",
+          "level": "core"
+        },
+        {
+          "topic": "Enforce tenant and permission filters inside every search query",
+          "level": "core"
+        },
+        {
+          "topic": "Choose a search engine by data size, features and operating burden",
+          "level": "pro"
+        },
+        {
+          "topic": "Keep a search index in sync with the database and rebuild it without downtime",
+          "level": "pro"
+        },
+        {
+          "topic": "Build autocomplete, facets and filters that stay fast",
+          "level": "pro"
+        },
+        {
+          "topic": "Store and query embeddings with pgvector and HNSW indexes",
+          "level": "pro"
+        },
+        {
+          "topic": "Measure search quality with zero-result and click-through rates",
+          "level": "pro"
+        },
+        {
+          "topic": "Tune relevance with analyzers, typo tolerance, synonyms and ranking rules",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "object-storage.md",
+      "title": "Object storage and files",
+      "purpose": "Read when storing files in S3-compatible storage: bucket setup, access, signed URLs, lifecycle and cost.",
+      "leaves": [
+        {
+          "topic": "Store files in object storage with private buckets by default",
+          "level": "core"
+        },
+        {
+          "topic": "Issue short-lived signed URLs for private downloads",
+          "level": "core"
+        },
+        {
+          "topic": "Tie every object to a database row with keys, metadata and ownership",
+          "level": "core"
+        },
+        {
+          "topic": "Choose S3, R2 or another compatible store by egress cost and features",
+          "level": "core"
+        },
+        {
+          "topic": "Set lifecycle rules, storage classes and versioning for cost and recovery",
+          "level": "pro"
+        },
+        {
+          "topic": "Serve public assets through a CDN with immutable object keys",
+          "level": "pro"
+        },
+        {
+          "topic": "Clean up orphaned objects and enforce per-tenant storage quotas",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "streams-pipelines.md",
+      "title": "Warehouse, pipelines and event streams",
+      "purpose": "Read when moving data between systems: loading a warehouse, keeping derived data trustworthy, change data capture and event streams.",
+      "leaves": [
+        {
+          "topic": "Decide when a warehouse is needed versus querying a read replica",
+          "level": "core"
+        },
+        {
+          "topic": "Load product, billing and marketing data into one warehouse",
+          "level": "pro"
+        },
+        {
+          "topic": "Choose managed connectors or custom scripts for each data source",
+          "level": "pro"
+        },
+        {
+          "topic": "Build tested, versioned SQL transformations into trusted metric tables",
+          "level": "pro"
+        },
+        {
+          "topic": "Monitor pipelines with freshness and data-quality alerts",
+          "level": "pro"
+        },
+        {
+          "topic": "Sync warehouse segments back into CRM, email and ad tools",
+          "level": "expert"
+        },
+        {
+          "topic": "Stream database changes to search, cache and warehouse with change data capture",
+          "level": "expert"
+        },
+        {
+          "topic": "Design event streams with schemas, partition keys, ordering and replay",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "data-lifecycle.md",
+      "title": "Data lifecycle, retention and deletion",
+      "purpose": "Read when deciding how long data lives, building export or deletion, archiving, or offboarding a customer's data.",
+      "leaves": [
+        {
+          "topic": "Classify data by sensitivity and record where each class lives",
+          "level": "core"
+        },
+        {
+          "topic": "Build per-user data export and deletion that reaches every store",
+          "level": "pro"
+        },
+        {
+          "topic": "Purge expired data automatically on a retention schedule",
+          "level": "pro"
+        },
+        {
+          "topic": "Apply retention, deletion and pseudonymization rules to analytics data",
+          "level": "pro"
+        },
+        {
+          "topic": "Delete a tenant completely at contract end and prove it",
+          "level": "pro"
+        },
+        {
+          "topic": "Test that you can export your data from every datastore and SaaS vendor",
+          "level": "pro"
+        },
+        {
+          "topic": "Archive cold data to cheap storage while keeping it queryable",
+          "level": "expert"
+        },
+        {
+          "topic": "Encrypt sensitive fields at application level with managed keys",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}

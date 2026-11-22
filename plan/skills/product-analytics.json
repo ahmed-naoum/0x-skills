@@ -1,0 +1,243 @@
+{
+  "name": "product-analytics",
+  "layer": 10,
+  "order": 2,
+  "title": "Product analytics and experimentation",
+  "summary": "Instrument the product and decide what to measure: event taxonomy and tracking, funnels and activation, cohorts and retention, north-star metrics and metric trees, A/B test design and its traps, and attribution.",
+  "useWhen": [
+    "What events should we track, and how should we name them?",
+    "Set up PostHog or another analytics tool properly",
+    "Define our activation event and north-star metric",
+    "Where are users dropping off between signup and paying?",
+    "Is retention good? How should we measure it?",
+    "Design an A/B test for this change, or tell me if we have enough traffic",
+    "Which channel are our signups actually coming from?",
+    "Everyone reports a different number for the same metric"
+  ],
+  "notFor": [
+    {
+      "topic": "Running the analysis: SQL queries, statistics and dashboards from data",
+      "use": "data"
+    },
+    {
+      "topic": "Chart design and visualization choices",
+      "use": "dataviz"
+    },
+    {
+      "topic": "Cookie consent and the legal limits on tracking",
+      "use": "privacy-compliance"
+    },
+    {
+      "topic": "Warehouse loading, pipelines and data modeling",
+      "use": "data-stores"
+    },
+    {
+      "topic": "Feature-flag rollout mechanics",
+      "use": "ci-cd-release"
+    },
+    {
+      "topic": "MRR, burn, runway and financial reporting",
+      "use": "startup-finance"
+    }
+  ],
+  "references": [
+    {
+      "file": "event-tracking.md",
+      "title": "Event taxonomy and tracking",
+      "purpose": "Read when choosing an analytics tool, designing the tracking plan, or instrumenting and validating events.",
+      "leaves": [
+        {
+          "topic": "Define an event tracking plan with consistent names and properties",
+          "level": "core"
+        },
+        {
+          "topic": "Choose an analytics tool: product suite, warehouse-first or both",
+          "level": "core"
+        },
+        {
+          "topic": "Track revenue and activation events server-side, where they are facts",
+          "level": "core"
+        },
+        {
+          "topic": "Instrument analytics that respect consent and minimize personal data",
+          "level": "core"
+        },
+        {
+          "topic": "Identify users and accounts across devices and anonymous sessions",
+          "level": "core"
+        },
+        {
+          "topic": "Validate events in tests so tracking does not silently break",
+          "level": "pro"
+        },
+        {
+          "topic": "Version and govern the tracking plan as the product changes",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "funnels-activation.md",
+      "title": "Funnels and activation",
+      "purpose": "Read when finding where users drop off, defining activation, or studying how features are adopted.",
+      "leaves": [
+        {
+          "topic": "Define the activation event that predicts retention and measure it",
+          "level": "core"
+        },
+        {
+          "topic": "Find the biggest drop-off in the signup-to-paid funnel",
+          "level": "core"
+        },
+        {
+          "topic": "Build conversion funnels segmented by source, device and plan",
+          "level": "pro"
+        },
+        {
+          "topic": "Measure time to first value and what delays it",
+          "level": "pro"
+        },
+        {
+          "topic": "Analyze feature adoption and what retained users do differently",
+          "level": "pro"
+        },
+        {
+          "topic": "Separate correlation from causation in funnel findings",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "retention-cohorts.md",
+      "title": "Cohorts and retention",
+      "purpose": "Read when measuring whether users come back and keep paying, and which groups do so.",
+      "leaves": [
+        {
+          "topic": "Define active use in a way that reflects real value",
+          "level": "core"
+        },
+        {
+          "topic": "Build cohort retention curves and find where they flatten",
+          "level": "core"
+        },
+        {
+          "topic": "Track logo churn and net revenue retention by cohort",
+          "level": "pro"
+        },
+        {
+          "topic": "Segment retention by acquisition channel, plan and persona",
+          "level": "pro"
+        },
+        {
+          "topic": "Measure engagement depth: frequency, breadth and stickiness",
+          "level": "pro"
+        },
+        {
+          "topic": "Break growth into new, retained, resurrected and churned users",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "north-star-metrics.md",
+      "title": "North-star metric and metric trees",
+      "purpose": "Read when choosing the few numbers the company steers by, defining them precisely, and reviewing them.",
+      "leaves": [
+        {
+          "topic": "Choose a north-star metric and the input metrics that move it",
+          "level": "core"
+        },
+        {
+          "topic": "Specify one weekly scorecard: the few numbers, their owners and targets",
+          "level": "core"
+        },
+        {
+          "topic": "Build a metric tree linking product inputs to revenue",
+          "level": "pro"
+        },
+        {
+          "topic": "Write metric definitions once so everyone reports the same numbers",
+          "level": "pro"
+        },
+        {
+          "topic": "Set guardrail and counter-metrics so one number is not gamed",
+          "level": "pro"
+        },
+        {
+          "topic": "Run a weekly metrics review that ends in decisions",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "experiments.md",
+      "title": "A/B tests and their statistical traps",
+      "purpose": "Read before running an experiment: whether traffic allows one, how to design it, and how not to fool yourself with the result.",
+      "leaves": [
+        {
+          "topic": "Decide when traffic is too low to A/B test and what to do instead",
+          "level": "core"
+        },
+        {
+          "topic": "Design an A/B test with sample size, guardrails and a stopping rule",
+          "level": "pro"
+        },
+        {
+          "topic": "Avoid peeking, multiple-comparison and novelty-effect traps",
+          "level": "pro"
+        },
+        {
+          "topic": "Assign variants consistently and check for sample-ratio mismatch",
+          "level": "pro"
+        },
+        {
+          "topic": "Write an experiment brief and record the decision and learning",
+          "level": "pro"
+        },
+        {
+          "topic": "Choose the randomization unit: user, account or session",
+          "level": "expert"
+        },
+        {
+          "topic": "Run holdouts to measure long-term retention effects",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "attribution.md",
+      "title": "Attribution",
+      "purpose": "Read when working out which channels and campaigns produce signups and revenue.",
+      "leaves": [
+        {
+          "topic": "Capture first-touch attribution with consistent UTM conventions",
+          "level": "core"
+        },
+        {
+          "topic": "Ask new users how they heard about you and reconcile with tracked data",
+          "level": "core"
+        },
+        {
+          "topic": "Connect acquisition source to revenue and retention, not only signups",
+          "level": "pro"
+        },
+        {
+          "topic": "Choose an attribution model and know what it cannot tell you",
+          "level": "pro"
+        },
+        {
+          "topic": "Track paid conversions server-side within consent limits",
+          "level": "pro"
+        },
+        {
+          "topic": "Attribute signups despite cookie loss and AI-referral traffic",
+          "level": "expert"
+        },
+        {
+          "topic": "Measure channel incrementality with holdouts or geo tests",
+          "level": "expert"
+        }
+      ]
+    }
+  ]
+}
