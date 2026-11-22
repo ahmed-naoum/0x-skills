@@ -77,6 +77,7 @@ nc -vz -w 5 203.0.113.10 443               # from outside: refused vs timeout
 sudo tcpdump -ni any 'tcp port 443 and tcp[tcpflags] & tcp-syn != 0'   # do SYNs arrive?
 ```
 
+The `tcp[tcpflags]` test matches IPv4 packets only; for IPv6 clients capture with `ip6 and tcp port 443` and read the flags column.
 If SYNs arrive in `tcpdump` but nothing answers, the host firewall or the listener is at fault. If no SYN arrives, the block is upstream: security group, network ACL, load balancer listener, or DNS pointing elsewhere.
 
 Traps:
@@ -141,7 +142,7 @@ Both show up as "fine on fiber, terrible on the train". They need different fixe
 | Evidence | `ss -ti` on the server shows small `cwnd`, rising `retrans` | Waterfall shows parallel HTTP/2 requests stalling in lockstep; same page over HTTP/3 does not |
 | Fix | BBR on the sending host; terminate closer to the user; send fewer bytes | HTTP/3, where a lost packet stalls only its own stream |
 
-- Enable BBR on self-managed Linux senders: `sysctl -w net.ipv4.tcp_congestion_control=bbr` (persist in `/etc/sysctl.d/`). It tolerates random loss far better than CUBIC. Behind a CDN this matters only for the CDN-to-origin leg; the CDN chooses its own algorithm toward users.
+- Enable BBR on self-managed Linux senders: `sysctl -w net.ipv4.tcp_congestion_control=bbr` (persist in `/etc/sysctl.d/`; if `sysctl net.ipv4.tcp_available_congestion_control` does not list it, `modprobe tcp_bbr` first). It tolerates random loss far better than CUBIC. Behind a CDN this matters only for the CDN-to-origin leg; the CDN chooses its own algorithm toward users.
 - On a badly lossy link, HTTP/2 can be slower than HTTP/1.1 with six connections, because loss on one connection no longer stalls the others. This is the practical argument for HTTP/3 for mobile-heavy audiences.
 
 ## MTU black holes, carrier NAT and interfering proxies
@@ -151,6 +152,7 @@ It appears on paths with a smaller MTU (VPNs, tunnels, PPPoE, some cellular) whe
 
 ```bash
 ping -M do -s 1472 example.com    # Linux: 1472 + 28 header bytes = 1500; lower -s until it passes
+ping -D -s 1472 example.com       # macOS equivalent
 ```
 
 Fixes: allow ICMP type 3 code 4 and ICMPv6 Packet Too Big through every firewall you control; set `net.ipv4.tcp_mtu_probing=1` on the server; clamp MSS on tunnel and VPN gateways (`iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu`).

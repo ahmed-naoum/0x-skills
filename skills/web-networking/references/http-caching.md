@@ -4,7 +4,7 @@ Read this when: setting `Cache-Control`, `ETag` or `Vary`, designing CDN cache k
 
 ## The two failure directions
 
-Caching fails in two ways with very different costs. Serving stale content is an annoyance with a purge button. Serving one user's private response to another is a breach with a disclosure obligation. Every rule below is biased accordingly: public content must opt in to shared caching explicitly, and anything that depends on who is asking is never stored by a shared cache.
+Caching fails in two ways with very different costs. Serving stale content is an annoyance with a purge button. Serving one user's private response to another is a data breach, which in many jurisdictions brings notification duties (`0x:privacy-compliance`). Every rule below is biased accordingly: public content must opt in to shared caching explicitly, and anything that depends on who is asking is never stored by a shared cache.
 
 Three caches sit between the app and the user, and they differ in the one property that matters: whether they can be purged.
 
@@ -18,15 +18,15 @@ Consequence: give browsers short lifetimes on anything whose URL is stable, and 
 
 ## Header recipes
 
-Send an explicit `Cache-Control` on every response. A response with a validator and no `Cache-Control` is cached heuristically (a fraction of the time since `Last-Modified`), which nobody intended, and some CDNs apply their own default lifetime to header-less responses.
+Send an explicit `Cache-Control` on every response. A response with `Last-Modified` and no `Cache-Control` is cached heuristically (a fraction of the time since `Last-Modified`), which nobody intended, and some CDNs apply their own default lifetime to header-less responses.
 
 | Response | Header | Reason |
 |---|---|---|
 | Fingerprinted static asset (`app.3f9a1c.js`) | `Cache-Control: public, max-age=31536000, immutable` | Content at this URL never changes |
-| Public HTML, same for everyone | `Cache-Control: public, max-age=0, must-revalidate` plus a CDN lifetime (`s-maxage=3600` or `CDN-Cache-Control: max-age=3600`) and purge on change | Browser always revalidates; the CDN absorbs the load |
+| Public HTML, same for everyone | `Cache-Control: public, max-age=0, s-maxage=3600`, or `Cache-Control: public, max-age=0, must-revalidate` beside `CDN-Cache-Control: max-age=3600` where the CDN reads that header; purge on change | Browser always revalidates; the CDN absorbs the load |
 | Public API `GET`, slightly stale is fine | `Cache-Control: public, max-age=60, stale-while-revalidate=300` | Small freshness window, no waiting on refresh |
 | Personalized HTML or API, non-sensitive | `Cache-Control: private, no-cache` | Browser may keep it but must revalidate; shared caches must not store it |
-| Sensitive: account, billing, tokens, health or financial data, anything after login by default | `Cache-Control: no-store` | Nothing writes it to disk, including the back/forward and shared caches |
+| Sensitive: account, billing, tokens, health or financial data, anything after login by default | `Cache-Control: no-store` | Neither the browser's HTTP cache nor any shared cache keeps it. It does not reliably keep the page out of the back/forward cache (Chrome can restore it on Back while the cookies are unchanged), so logout must clear the session cookie |
 | Non-fingerprinted static file (`/logo.png`, `/robots.txt`) | `Cache-Control: public, max-age=3600` at most | It will change one day at the same URL |
 | Error responses | Short or `no-store`; never inherit the success lifetime | A cached 500 or 404 outlives the fault |
 
@@ -35,7 +35,7 @@ Directive meanings that are commonly reversed:
 - `no-cache` means "store, but revalidate before every use". `no-store` means "do not store".
 - `private` forbids shared caches only; the browser still caches. It is not a secrecy control by itself.
 - `max-age=0, must-revalidate` and `no-cache` behave alike for browsers.
-- `s-maxage` overrides `max-age` for shared caches, including a corporate proxy in front of the user. `CDN-Cache-Control` and vendor surrogate headers target only the CDN, which is cleaner when the browser and CDN lifetimes differ.
+- `s-maxage` overrides `max-age` for shared caches, including a corporate proxy in front of the user. `CDN-Cache-Control` and vendor surrogate headers target only the CDN, which is cleaner when the browser and CDN lifetimes differ; not every CDN reads `CDN-Cache-Control`, so confirm in its documentation and in the cache-status header.
 - `immutable` stops revalidation on reload; use it only on fingerprinted URLs.
 
 **Validators.** Send an `ETag` on everything cacheable so expiry costs a 304 instead of a full transfer; requirements for stable ETags are in `http.md`.
@@ -59,7 +59,7 @@ A content hash in the filename makes the URL a name for exact bytes. That is wha
 
 - Default every authenticated route to `no-store` in one place (middleware or the proxy), and relax per route where caching is deliberate. Per-handler opt-out is how one gets missed.
 - Responses with `Set-Cookie` must never be stored by a shared cache: the stored cookie is handed to every later visitor. Many CDNs refuse by default; an "ignore origin headers" or "cache everything" rule overrides that protection.
-- Shared caches treat `Authorization` requests as uncacheable by specification, but there is no such rule for cookies. A cookie-authenticated page that is marked `public`, or that sends no directive under a cache-everything rule, will be cached and served to strangers.
+- By specification a shared cache does not reuse a response to a request that carried `Authorization` unless the response opts in with `public`, `s-maxage` or `must-revalidate`. There is no such rule for cookies, and not every CDN applies the `Authorization` rule either. A cookie-authenticated page that is marked `public`, or that sends no directive under a cache-everything rule, will be cached and served to strangers.
 - `no-store` also covers signed URLs, password-reset pages, export downloads and API responses containing tokens.
 
 ## Cache keys
@@ -116,6 +116,7 @@ Cache-Control: public, max-age=60, stale-while-revalidate=600, stale-if-error=86
 - `stale-if-error`: if the origin fails (5xx or unreachable), keep serving the stored copy for the window. For public pages this converts an origin outage into slightly old content, which is the cheapest reliability feature available.
 - The origin must fail honestly: an error page returned with 200 gets cached as content and defeats `stale-if-error`.
 - Support differs by CDN and plan, and some implement serve-stale through their own settings instead of these directives. Verify by stopping the origin in staging and requesting a cached URL.
+- `must-revalidate`, `proxy-revalidate` and `no-cache` forbid serving stale, and by the letter of the specification `s-maxage` does too for shared caches; CDNs differ in how literally they read this. Keep `must-revalidate` off responses that should survive an origin outage, and put the stale directives where the CDN documents reading them.
 - Do not apply to personalized or sensitive responses, or to data whose staleness has a cost (prices at checkout, stock, permissions).
 
 ## Hit ratio

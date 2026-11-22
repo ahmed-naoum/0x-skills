@@ -73,7 +73,7 @@ Open the Network panel, enable "Disable cache" and "Preserve log", add the Proto
 Patterns worth recognizing: a staircase of requests each starting when the previous ends is a dependency chain (not a network fault; `0x:web-performance`, `loading-delivery.md`); requests marked from disk or memory cache explain "works for me" against a user's fresh load; a different Protocol value for one host shows where HTTP/3 or HTTP/2 is not negotiated.
 
 **HAR files** make a user's session inspectable. Ask for one when the fault cannot be reproduced: the Network panel's export button after reproducing with "Preserve log" on. A HAR can contain cookies, tokens and request bodies.
-Prefer the browser's sanitized export, tell the user to log out afterward so captured sessions die, and delete the file when done. In the file, each entry's `timings` holds `blocked`, `dns`, `connect`, `ssl`, `send`, `wait`, `receive` in milliseconds;
+Prefer the browser's sanitized export (Chrome's default export omits cookie and authorization headers, but tokens in URLs and bodies remain), tell the user to log out afterward so captured sessions die, and delete the file when done. In the file, each entry's `timings` holds `blocked`, `dns`, `connect`, `ssl`, `send`, `wait`, `receive` in milliseconds;
 `-1` means the phase did not happen (a reused connection), and `serverIPAddress` shows which address the user actually reached.
 
 ## Client, network or server
@@ -176,6 +176,7 @@ sudo tcpdump -ni any 'tcp port 3000 and tcp[tcpflags] & (tcp-syn|tcp-rst|tcp-fin
 sudo tcpdump -ni lo -A 'tcp port 3000'     # plaintext hop between proxy and app, readable HTTP
 ```
 
+- `tcp[tcpflags]` expressions match IPv4 packets only; for IPv6 traffic filter with `ip6 and tcp port 3000` and read the flags in the output.
 - **Capture where the traffic is plaintext** when the question is about HTTP: the loopback hop between the proxy and the app. To decrypt TLS from a client, export session keys (`SSLKEYLOGFILE=/tmp/keys.log curl ...`, or the same variable for a browser) and point Wireshark's TLS preferences at the key log file. The server's private key cannot decrypt modern forward-secret sessions.
 - Capture at both ends when possible; a packet seen leaving one side and never arriving at the other localizes the loss without inference.
 - In Wireshark, start from Statistics → Conversations to pick the stream, then "Follow TCP Stream". Useful display filters: `tcp.analysis.flags` (everything Wireshark considers abnormal), `tcp.analysis.retransmission`, `tcp.flags.reset == 1`, `tcp.analysis.zero_window`, `tls.handshake.type == 1` (ClientHello), `dns.flags.rcode != 0`, `tcp.stream eq 7`.
@@ -184,7 +185,7 @@ sudo tcpdump -ni lo -A 'tcp port 3000'     # plaintext hop between proxy and app
 
 | Seen in the capture | Meaning | Where to look |
 |---|---|---|
-| SYN repeated at 1 s, 2 s, 4 s with no SYN-ACK | Dropped SYN: firewall, route, or a full accept queue on the server | `nstat -az \| grep -i listen` for `ListenOverflows`/`ListenDrops`; firewall rules |
+| SYN repeated after gaps of 1 s, 2 s, 4 s with no SYN-ACK | Dropped SYN: firewall, route, or a full accept queue on the server | `nstat -az \| grep -i listen` for `ListenOverflows`/`ListenDrops`; firewall rules |
 | SYN answered by RST | Nothing listening on that port | `ss -tlnp` |
 | Retransmission after three duplicate ACKs, small gap | Fast retransmit of an isolated loss; harmless when rare | Rate: well under 1% is ordinary on the internet, several percent hurts (rule of thumb) |
 | Retransmission after a gap of 200 ms or more | Timeout retransmit: tail loss or heavy loss; this is what users feel as stalls | `mtr` on the path; congestion control choice (`ip-transport.md`) |

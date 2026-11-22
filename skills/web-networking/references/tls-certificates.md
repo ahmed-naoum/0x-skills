@@ -4,7 +4,7 @@ Read this when: issuing, renewing or debugging certificates, choosing protocol v
 
 ## Issuance and renewal with ACME
 
-A certificate that a person renews by hand will expire in production. Every certificate is issued and renewed by software from day one, and public certificate lifetimes are shrinking on an industry schedule (the browser/CA forum has voted a staged reduction toward under two months by the end of the decade), so manual processes get worse every year.
+A certificate that a person renews by hand will expire in production. Every certificate is issued and renewed by software from day one, and public certificate lifetimes are shrinking on an industry schedule (the CA/Browser Forum caps them at 200 days since March 2026, 100 days from March 2027 and 47 days from March 2029, and Let's Encrypt has announced 64 days from February 2027 and 45 days from February 2028; confirm the CA's current schedule), so manual processes get worse every year.
 
 Pick the least work that fits:
 
@@ -18,7 +18,7 @@ Pick the least work that fits:
 
 Challenge types:
 
-- **HTTP-01**: the CA fetches `http://<name>/.well-known/acme-challenge/<token>` on port 80. Port 80 must be open and that path must not be blocked by auth, a WAF rule, or a redirect to a different host. A redirect to HTTPS on the same name is followed.
+- **HTTP-01**: the CA fetches `http://<name>/.well-known/acme-challenge/<token>` on port 80. Port 80 must be open, and the path must not be blocked by auth, a WAF or bot challenge, a country block (CAs validate from several networks around the world), or a redirect to a host that cannot answer the challenge. A redirect to HTTPS on the same name is followed.
 - **TLS-ALPN-01**: validation on port 443 only; used by Caddy when port 80 is unavailable.
 - **DNS-01**: a `TXT` record at `_acme-challenge.<name>`. The DNS API token is powerful: scope it to the one zone, or delegate just the challenge label by `CNAME` to a throwaway zone and give the client credentials for that zone only.
 
@@ -27,20 +27,21 @@ Failure modes that recur:
 | Symptom | Cause | Fix |
 |---|---|---|
 | Renewal succeeded, site still serves the old certificate until it expires | Server never reloaded | `certbot renew --deploy-hook "systemctl reload nginx"`; verify the served certificate, not the file |
-| Validation fails though the site works in a browser | A stale `AAAA` record: the CA validates over IPv6 when one exists | Fix or remove the `AAAA` |
+| Validation fails though the site works in a browser | A stale `AAAA` record: Let's Encrypt validates over IPv6 first when one exists and retries over IPv4 only when the IPv6 connection times out, so an `AAAA` that points at some other live server fails outright | Fix or remove the `AAAA` |
 | Issuance refused | `CAA` record does not list the CA | Add the CA (below) |
 | Rate limited during setup | Repeated attempts against the production CA endpoint | Develop against the CA's staging endpoint (`certbot --staging`), then switch |
 | Works for months, then fails | Port 80 closed later, DNS token revoked, config drift | Alert on expiry from outside (next section) |
 | New container requests a certificate on every start | Certificate storage not persisted | Persist the ACME data directory (Caddy's `/data`) on a volume |
 
-Use a client that supports ACME Renewal Information (ARI), so the CA can ask for early renewal during a mass-revocation event. Prefer ECDSA P-256 keys: smaller handshakes, universally supported.
+Use a client that supports ACME Renewal Information (ARI), so the CA can ask for early renewal during a mass-revocation event. Run the client at least daily and let it decide when to renew; a fixed schedule such as "every 60 days" breaks the first time lifetimes shorten. Prefer ECDSA P-256 keys: smaller handshakes, universally supported.
 
 ## Alert on certificate and domain expiry
 
 Automation fails silently, so the monitor must look at what clients actually receive, from outside, and must not depend on emails from the CA or registrar (Let's Encrypt has ended its expiry notification emails).
 
 ```bash
-# days-left check: exit status 1 if the served certificate expires within 14 days
+# exit status 1 if the served certificate expires within 14 days (1209600 s), or if none could be fetched;
+# size the window with the threshold rule below
 echo | openssl s_client -connect example.com:443 -servername example.com 2>/dev/null \
   | openssl x509 -noout -checkend 1209600
 
@@ -48,7 +49,7 @@ echo | openssl s_client -connect example.com:443 -servername example.com 2>/dev/
   | openssl x509 -noout -enddate -issuer -ext subjectAltName
 ```
 
-- **Threshold follows the renewal schedule.** Clients renew with about a third of the lifetime left (30 days for a 90-day certificate). Alert when remaining life drops clearly below that point, for example under 20 days: it means renewal has been failing for over a week. Escalate at 7 days. Recompute when lifetimes shorten.
+- **Threshold follows the renewal schedule.** Clients renew with about a third of the lifetime left (30 days for a 90-day certificate), or earlier when ARI says so. Alert when remaining life drops clearly below that point (under 20 days of 90 means renewal has been failing for over a week) and escalate at 7 days. Scale both numbers with the lifetime: for a 45-day certificate, alert under about 10 days and escalate at 5. A threshold copied from the 90-day era either fires on healthy certificates or gets muted.
 - **Cover every name and endpoint**: apex and `www`, API, per-tenant custom domains, mail and other non-HTTP TLS ports, and each origin behind the CDN (the CDN's certificate being fine says nothing about the origin's, and with strict origin validation an expired origin certificate takes the site down).
 - **Domain expiry**: alert at 60, 30 and 7 days from the registry's RDAP/WHOIS expiry date, to someone other than the registrar's contact mailbox. Auto-renew fails on an expired card.
 - At Launch, a hosted uptime monitor that checks both certificate and domain expiry is enough. Add it to the same alert channel as downtime.
@@ -66,7 +67,8 @@ Stage it:
 5. Add `includeSubDomains` only after listing every subdomain in DNS and confirming each serves valid HTTPS: internal tools, vendor-hosted names such as status or docs pages, old marketing sites, device endpoints. One HTTP-only subdomain becomes unreachable for every browser that visited the apex.
 6. `preload` last, and only as a deliberate decision. The preload list requires a one-year `max-age`, `includeSubDomains`, the `preload` token, and a redirect from HTTP on the apex; it ships inside browsers, and removal takes months to reach users.
 
-Rules: the header counts only on HTTPS responses; send it from the apex too, including on the response that redirects to `www`, or the apex never gets protected. Emergency rollback is `max-age=0`, which works only for browsers that return over HTTPS. Never enable HSTS on a host that might need plain HTTP again, and never on `localhost`-style development hostnames shared with other projects.
+Rules: the header counts only on HTTPS responses, and a browser learns it only for hosts it actually visits over HTTPS. When `www` is canonical, a direct `http://example.com` → `https://www.example.com` redirect never shows the browser the apex's header.
+To protect the apex, and to qualify for preload, which requires it, redirect `http://example.com` → `https://example.com` first and send the header on that HTTPS response, accepting one extra hop on first visits. Emergency rollback is `max-age=0`, which works only for browsers that return over HTTPS. Never enable HSTS on a host that might need plain HTTP again, and never on `localhost`-style development hostnames shared with other projects.
 
 Default: Prototype none or short; Launch one year without `includeSubDomains` until the inventory is done; preload only when asked.
 
@@ -74,7 +76,7 @@ Default: Prototype none or short; Launch one year without `includeSubDomains` un
 
 Serve TLS 1.3 and TLS 1.2. Disable SSLv3, TLS 1.0 and TLS 1.1: no supported browser needs them and compliance scans fail on them. Keep TLS 1.2 because older Android devices, embedded clients, corporate proxies and some webhook senders still use it; dropping it is a decision to make from handshake-version logs, not by default.
 
-On a CDN or managed load balancer this is a dropdown: choose the modern or recommended policy whose minimum is TLS 1.2. Self-managed, copy from the Mozilla SSL Configuration Generator ("intermediate" profile) instead of composing cipher strings by hand:
+On a CDN or managed load balancer this is a dropdown: choose the modern or recommended policy whose minimum is TLS 1.2. Self-managed, copy from the Mozilla SSL Configuration Generator ("intermediate" profile) instead of composing cipher strings by hand. The generator's current output wins over the block below, which shows the shape:
 
 ```nginx
 ssl_protocols TLSv1.2 TLSv1.3;
@@ -138,6 +140,8 @@ Default: add at Launch once the issuing CAs are known.
 
 Each termination point holds private keys: fewer points, fewer places to patch and rotate.
 
+nginx as the re-encrypting proxy neither verifies the upstream certificate nor sends SNI unless told to: `proxy_pass https://...` alone encrypts to whoever answers. Add `proxy_ssl_verify on;`, `proxy_ssl_trusted_certificate <ca-bundle>;`, `proxy_ssl_server_name on;` and `proxy_ssl_name <expected-name>;`.
+
 ## Certificate Transparency monitoring
 
 Every publicly trusted certificate is published to CT logs, which makes them a free detector for mis-issuance and for shadow infrastructure.
@@ -155,10 +159,10 @@ For a small product inside one private network, signed tokens or a private overl
 
 If it is built:
 
-- **Private CA**, never public certificates: public CAs are dropping the client-authentication usage from server certificates, and trusting a public CA for client auth means trusting everyone that CA issues to. Use a managed private CA, `step-ca`, or cert-manager.
+- **Private CA**, never public certificates: browser root programs are phasing the client-authentication usage out of publicly trusted server certificates (several CAs have already stopped issuing it), and trusting a public CA for client auth means trusting everyone that CA issues to. Use a managed private CA, `step-ca`, or cert-manager.
 - **Short lifetimes with automatic rotation** (hours to days) instead of revocation lists, which nobody operates well.
 - **Authorize the identity, not the chain.** "Signed by our CA" proves membership, not permission. Check the SAN (a DNS name or SPIFFE URI) against an allow-list per endpoint.
-- nginx, server side: `ssl_client_certificate /etc/ssl/internal-ca.pem; ssl_verify_client on;`. As a client to an upstream: `proxy_ssl_certificate`, `proxy_ssl_certificate_key`, `proxy_ssl_trusted_certificate`, `proxy_ssl_verify on;` and `proxy_ssl_name`.
+- nginx, server side: `ssl_client_certificate /etc/ssl/internal-ca.pem; ssl_verify_client on;`. As a client to an upstream: `proxy_ssl_certificate`, `proxy_ssl_certificate_key`, `proxy_ssl_trusted_certificate`, `proxy_ssl_verify on;`, `proxy_ssl_server_name on;` and `proxy_ssl_name`.
 - **Traps:** load balancer health checks carry no client certificate, so give them a separate listener or path; rotating the CA requires distributing a bundle with old and new roots before any leaf switches; the private root's own expiry, years out, is an outage with a date on it and belongs in the expiry monitor; short-lived certificates fail on hosts with clock drift.
 
 ## Hybrid post-quantum key exchange
@@ -168,7 +172,7 @@ Recorded traffic can be decrypted later by an attacker with a quantum computer u
 - **Action for most products:** none beyond keeping TLS 1.3 on and confirming in the CDN's analytics or the browser's security panel that the hybrid group is negotiated. Then check the CDN-to-origin leg, which is separately configured.
 - **Self-managed:** it requires a TLS library that implements the group (OpenSSL 3.5 or later, recent BoringSSL and Go). Offer the hybrid first and keep classical groups as fallback; never offer hybrid only.
 - **Compatibility risk:** the hybrid key share makes the ClientHello larger than one packet. Old middleboxes and a few server stacks mishandle a split ClientHello and reset the connection. Symptom: handshake failures only from the newest browsers, or only on one corporate network.
-- **Test:** `openssl s_client -connect example.com:443 -groups X25519MLKEM768 </dev/null` with a capable OpenSSL and read the negotiated group; test outbound integrations (webhooks, payment APIs) after upgrading the client library, since the server on the other end may be the fragile one.
+- **Test:** `openssl s_client -connect example.com:443 -groups X25519MLKEM768 </dev/null` with OpenSSL 3.5 or later and read the negotiated group in the output (an older OpenSSL rejects the group name, which says nothing about the server); test outbound integrations (webhooks, payment APIs) after upgrading the client library, since the server on the other end may be the fragile one.
 - Certificates with post-quantum signatures are not yet part of the public web PKI; nothing to do there.
 
 ## Ask the user

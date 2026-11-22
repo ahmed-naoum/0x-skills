@@ -63,7 +63,7 @@ upstream app {
 
 server {
     listen 443 ssl;
-    http2 on;
+    http2 on;                      # nginx 1.25.1+; older versions: listen 443 ssl http2;
     server_name example.com;
     client_max_body_size 10m;
 
@@ -106,7 +106,7 @@ What each part prevents:
 ## Routing by host and path
 
 - **Path or host?** For one product, route by path under one origin (`/api`, `/app`): no CORS, one certificate, shared cookies. Split by host (`api.example.com`) when the backends need different caching, scaling, access rules or cookie isolation, or when one is a third party.
-- nginx `location` precedence: exact (`=`), then the longest prefix marked `^~`, then regular expressions in file order, then the longest plain prefix. Prefer prefixes; a stray regex location silently captures paths.
+- nginx `location` precedence: an exact match (`=`) wins; otherwise nginx finds the longest matching prefix and uses it at once if it is marked `^~`; otherwise the first regular expression that matches, in file order, wins; only when none matches is that longest prefix used. Prefer prefixes; a stray regex location silently captures paths.
 - **The trailing-slash trap.** `location /api/ { proxy_pass http://api; }` forwards `/api/users` unchanged. `proxy_pass http://api/;` (with a URI part) replaces the matched prefix and forwards `/users`. In Caddy, `handle /api/*` keeps the prefix and `handle_path /api/*` strips it. Decide whether the backend expects the prefix and test one deep URL.
 - A backend mounted under a prefix must generate links, redirects and cookie paths with that prefix (the framework's base-path setting).
 - Cloud load balancer rules are evaluated by priority; put specific rules first and make the default action a fixed 404, not the first backend.
@@ -133,11 +133,11 @@ process.on('SIGTERM', async () => {
   await new Promise((r) => setTimeout(r, 10_000)); // window for the load balancer to stop sending
   server.close(() => process.exit(0));             // stop accepting, finish in-flight requests
   server.closeIdleConnections();
-  setTimeout(() => process.exit(1), 20_000).unref(); // hard stop before the platform's kill
+  setTimeout(() => process.exit(1), 15_000).unref(); // hard stop: 10 s + 15 s must end before the platform's kill
 });
 ```
 
-- Budget: detection window + longest normal request < the platform's grace period (Docker's stop timeout defaults to 10 s and Kubernetes' termination grace period to 30 s; both are configurable). Raise the grace period or shorten requests; never let the platform's SIGKILL do the draining.
+- Budget: detection window + longest normal request < the platform's grace period (Docker's stop timeout defaults to 10 s and Kubernetes' termination grace period to 30 s; both are configurable, and PaaS limits vary). The snippet's 25 s total fits a 30 s grace period and not a 10 s one. Raise the grace period or shorten the numbers; never let the platform's SIGKILL do the draining.
 - A cloud load balancer's deregistration delay is often minutes by default. For short HTTP requests, 30 s is plenty and makes deploys faster.
 - **The signal must reach the app.** In a container, start the server as the main process (`CMD ["node", "server.js"]`); a shell or package-manager wrapper as PID 1 often does not forward SIGTERM, and the process is killed at the deadline with requests in flight.
 - Long-lived connections do not drain on their own: close WebSockets and streams deliberately and rely on client reconnect.
@@ -153,7 +153,7 @@ Two kinds of timeout, with opposite ordering rules.
 
 | Hop | Example budget | Setting |
 |---|---|---|
-| Browser or API client | 30 s | `AbortSignal.timeout` |
+| Browser or API client | 35 s | `AbortSignal.timeout` |
 | CDN waiting for origin | Fixed or plan-dependent; find the number | Provider setting |
 | Load balancer / nginx read timeout | 30 s | `proxy_read_timeout` |
 | App request handler | 25 s | Framework or middleware timeout |
@@ -165,7 +165,8 @@ Work that cannot fit moves to a background job with a 202 and polling (`0x:backe
 
 **Idle (keep-alive) timeouts grow toward the inside.** The side that receives connections must keep idle ones open longer than the side that reuses them, so the reuser is always the one to close. Otherwise the upstream closes a connection at the instant the proxy sends a request on it, and the proxy reports a 502.
 
-- The classic case: a load balancer with a 60 s idle timeout in front of Node.js, whose `server.keepAliveTimeout` defaults to 5 s. Fix on the app: `server.keepAliveTimeout = 65_000; server.headersTimeout = 66_000;`.
+- The classic case: a load balancer or nginx upstream pool with a 60 s idle timeout in front of Node.js, whose `server.keepAliveTimeout` defaulted to 5 s for years (through Node 24; the default was raised to 65 s in 2026).
+  Do not depend on the default: log `server.keepAliveTimeout` at startup and set it above the idle timeout in front, for example `server.keepAliveTimeout = 65_000; server.headersTimeout = 66_000;` behind a 60 s proxy (`next start --keepAliveTimeout 65000` for Next.js).
 - Apply the same rule to every pair: CDN → load balancer → proxy → app.
 
 **Retries multiply.** Three layers that each retry three times turn one failure into 27 attempts against a struggling backend. Retry at one layer only, with a cap and backoff, and only idempotent requests.
@@ -213,7 +214,9 @@ Traps of layer 4: one HTTP/2 or gRPC connection carries all of a client's reques
 A new connection per request costs a handshake each time and, under load, exhausts ephemeral ports. Verify reuse hop by hop:
 
 - **Client to edge:** HTTP/2 and HTTP/3 multiplex on one connection.
-- **nginx to upstream:** reuse requires all three of `keepalive N;` in the `upstream` block, `proxy_http_version 1.1;` and `proxy_set_header Connection "";`. Without them nginx speaks HTTP/1.0 to the upstream and opens a connection per request. `keepalive` is the number of idle connections kept per worker, not a cap on concurrency.
+- **nginx to upstream:** before nginx 1.29.7 (stable 1.30), reuse requires all three of `keepalive N;` in the `upstream` block, `proxy_http_version 1.1;` and `proxy_set_header Connection "";`; without them nginx speaks HTTP/1.0 to the upstream and opens a connection per request.
+  Newer versions keep upstream connections alive by default and the explicit lines stay harmless, so keep them and check `nginx -v` before assuming either behavior. `keepalive` is the number of idle connections kept per worker, not a cap on concurrency.
+  With reuse on, the app's keep-alive timeout must exceed nginx's upstream `keepalive_timeout` (60 s by default), per the idle-ordering rule.
 - **App to database and to other services:** pooled connections and keep-alive HTTP agents; create clients once per process, not per request.
 - **Idle ordering** as in the timeout section, at every pair.
 

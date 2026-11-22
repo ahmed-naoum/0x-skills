@@ -4,7 +4,7 @@ Read this when: putting a CDN in front of an origin, working out the real client
 
 ## What goes through the CDN, and how
 
-Default from Launch: one CDN in front of everything served over HTTP, with DNS for the proxied names on the same provider. It supplies TLS at the edge, HTTP/3, caching, DDoS absorption and a place to block traffic before it costs anything.
+Default from Launch: one CDN in front of everything served over HTTP (simplest when the same provider also hosts the DNS for the proxied names). It supplies TLS at the edge, HTTP/3, caching, DDoS absorption and a place to block traffic before it costs anything.
 If the PaaS already includes a CDN, use that one; stacking a second CDN in front doubles the purging, hides client IPs twice and creates conflicting cache rules, so add one only for a capability the first lacks.
 
 Decide per class of traffic, not for the site as a whole:
@@ -133,7 +133,7 @@ Disallow: /
 ```
 
 - Typical SaaS: allow search and AI retrieval on the marketing site and docs; disallow everything on the app and API hostnames, which require login anyway.
-- Typical content business, where the pages are the product: block training crawlers, decide retrieval case by case, and consider the CDN's pay-per-crawl or a licensing deal at Scale.
+- Typical content business, where the pages are the product: block training crawlers, decide retrieval case by case, and consider a pay-per-crawl feature, where the CDN offers one, or a licensing deal at Scale.
 - Often the real complaint is cost, not content: crawlers walk the uncached long tail and every faceted URL. Fix that with caching, canonical URLs, `Disallow` on infinite spaces (search results, filters, calendars) and a per-bot rate limit before reaching for a block.
 - Terms of service language about automated access: `0x:privacy-compliance`, `terms-policies.md`.
 

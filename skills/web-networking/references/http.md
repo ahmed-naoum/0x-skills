@@ -69,13 +69,13 @@ curl -sS -o /dev/null -w 'dns %{time_namelookup}  tcp %{time_connect}  tls %{tim
 | 307 | no | Preserved | Temporary move that must keep method and body |
 
 - **Permanent means cached.** Browsers store a 301/308 and stop asking, for a long time when no cache headers limit it. Launch a move as 302/307, verify, then switch to 301/308, and put `Cache-Control: max-age=3600` on permanent redirects while there is any chance of reversal.
-- **One hop.** `http://example.com/x` should reach `https://www.example.com/x` in a single redirect, not HTTP→HTTPS→www→trailing slash. Each hop to a new origin costs a full connection setup. Write the rule to emit the final URL directly; HSTS then removes the HTTP hop for returning visitors.
+- **One hop.** `http://example.com/x` should reach `https://www.example.com/x` in a single redirect, not HTTP→HTTPS→www→trailing slash. Each hop to a new origin costs a full connection setup. Write the rule to emit the final URL directly; HSTS then removes the HTTP hop for returning visitors. One deliberate exception: an apex that is HSTS-preloaded, or that must carry its own HSTS header, redirects to HTTPS on itself before redirecting to `www` (`tls-certificates.md`).
 - **Preserve path and query** unless the move is to a single page; dropped query strings break campaign tracking and deep links.
 - **Do not redirect API calls.** Clients handle redirected `POST` bodies inconsistently and strip `Authorization` when the redirect crosses origins. An API base URL answers at its final address; give a wrong scheme or host an error rather than a redirect.
 - Decide trailing-slash and case conventions once, and make the framework, the proxy and the CDN agree; disagreement is where loops come from.
 - A redirect target taken from a request parameter is an open redirect: `0x:web-security`.
 
-Check: `curl -sS -o /dev/null -L -w '%{num_redirects} hops -> %{url_effective}\n' http://example.com/some/path` should print 1 from any entry point.
+Check: `curl -sS -o /dev/null -L -w '%{num_redirects} hops -> %{url_effective}\n' http://example.com/some/path` should print 1 from any entry point (2 from `http://` on an HSTS-preloaded apex).
 
 ## Compression
 
@@ -121,7 +121,7 @@ How a client finds HTTP/3: it connects over TCP first, sees `Alt-Svc: h3=":443";
 Self-managed:
 
 - Caddy serves HTTP/3 by default; only UDP 443 has to be open.
-- nginx (1.25 or later, built with QUIC support):
+- nginx (1.25.1 or later with the HTTP/3 module; `nginx -V` must list `--with-http_v3_module`):
 
 ```nginx
 listen 443 ssl;
@@ -132,6 +132,7 @@ add_header Alt-Svc 'h3=":443"; ma=86400' always;
 
 - The firewall, security group and any load balancer in front must pass UDP 443 to the QUIC terminator (`ip-transport.md`). A layer-7 load balancer that does not speak HTTP/3 ends the story there: QUIC terminates at the outermost hop or not at all.
 - Start with a short `ma` (an hour) so a bad rollout ages out quickly.
+- In nginx, `reuseport` may appear on only one `listen` line per address and port across all server blocks; the other servers use `listen 443 quic;`.
 
 Verify:
 
@@ -146,10 +147,10 @@ In DevTools, add the Protocol column to the Network panel: `h3` should appear af
 
 ## Early Hints and preload instead of push or sharding
 
-- **HTTP/2 server push is dead.** Browsers removed support; delete any push configuration.
+- **HTTP/2 server push is dead.** Chrome and Firefox removed support and nginx dropped the directive; delete any push configuration.
 - **Domain sharding is harmful under HTTP/2 and HTTP/3.** Splitting assets across hostnames was a workaround for HTTP/1.1's per-host connection limit; now it adds handshakes and splits prioritization and congestion state. Consolidate onto one hostname.
 - **`103 Early Hints`** sends `Link: <...>; rel=preload` or `rel=preconnect` headers while the server is still computing the real response, so the browser starts fetching during server think time.
-  It pays off only when think time is substantial (hundreds of milliseconds) and the hinted resources are render-critical. Browsers act on it for navigations over HTTP/2 and HTTP/3. Simplest deployment: the CDN's Early Hints feature, which replays `Link` headers it saw on earlier responses.
+  It pays off only when think time is substantial (hundreds of milliseconds) and the hinted resources are render-critical. Chromium browsers and Firefox act on it, for navigations only and only over HTTP/2 or HTTP/3; do not count on Safari, and repeat the same `Link` headers on the final response so every browser gets them. Simplest deployment: the CDN's Early Hints feature, which replays `Link` headers it saw on earlier responses.
   Emitting 103 from the origin requires every proxy on the path to pass informational responses; test it, and never send it to HTTP/1.1 clients, some of which mishandle 1xx.
 - **Preload sparingly**: only resources discovered late and needed for first render. Over-preloading competes with what matters. Selection and measurement: `0x:web-performance`, `loading-delivery.md`.
 

@@ -53,20 +53,20 @@ Follow what the project and its host already use; these apply to greenfield choi
 Fixed choices at every stage:
 
 - Self-managed proxy: Caddy on a new single server; nginx where it is already in use.
-- Canonical host chosen once, the other 301-redirected in a single hop; HTTP to HTTPS in the same hop.
+- Canonical host chosen once, the other 301-redirected in a single hop; HTTP to HTTPS in the same hop, except on an HSTS-preloaded apex, which must first redirect to HTTPS on itself.
 - Compression at one layer: Brotli or zstd with gzip fallback, text only.
 - IPv6 at the CDN edge; `AAAA` at the origin only when the whole path is verified.
 - 0-RTT off; HTTP/2 push and domain sharding removed.
 - App bound to loopback or a private interface; real client IP from a configured trusted-hop count, never `trust proxy = true`.
-- Request timeout budget: client 30 s > proxy 30 s > app 25 s > database statement 20 s > outbound call 10 s; longer work becomes a job.
+- Request timeout budget: client 35 s > proxy 30 s > app 25 s > database statement 20 s > outbound call 10 s; longer work becomes a job.
 - App keep-alive idle timeout longer than the load balancer's idle timeout.
 
 ## Before you call it done
 
 1. `dig +short` for every hostname returns the intended target from the authoritative server and from two public resolvers; no record points at a deleted resource.
-2. `curl -sS -o /dev/null -L -w '%{num_redirects} %{url_effective}\n'` from `http://` on both apex and `www` reaches the canonical HTTPS URL in one hop.
+2. `curl -sS -o /dev/null -L -w '%{num_redirects} %{url_effective}\n'` from `http://` on both apex and `www` reaches the canonical HTTPS URL in one hop (two from an HSTS-preloaded apex).
 3. `openssl s_client -connect host:443 -servername host </dev/null` shows `Verify return code: 0 (ok)` with the full chain, for the edge and for the origin.
-4. TLS 1.0 and 1.1 are refused; HSTS is present on HTTPS responses with a deliberate `max-age`.
+4. TLS 1.0 and 1.1 are refused (per `testssl.sh` or an online scanner; a modern local OpenSSL cannot offer them, so its failure proves nothing); HSTS is present on HTTPS responses with a deliberate `max-age`.
 5. An external monitor alerts on certificate expiry and domain expiry, to more than one person.
 6. Every response class carries an explicit `Cache-Control`; fingerprinted assets are `immutable`; authenticated responses are `no-store` and show a non-hit cache status.
 7. A private URL with `.css` appended returns 404 or an uncached, `no-store` response; the same URL without cookies returns nothing private.
@@ -74,7 +74,7 @@ Fixed choices at every stage:
 9. The origin refuses a direct request that bypasses the CDN (`curl --resolve` to the origin address from outside).
 10. Readiness fails when the database is unreachable and passes when an optional dependency is down; liveness depends on nothing external.
 11. A request loop through a deploy shows no 5xx; SIGTERM reaches the app process and it drains.
-12. Timeouts are written down per hop and follow the two ordering rules; the Node keep-alive timeout exceeds the load balancer's idle timeout.
+12. Timeouts are written down per hop and follow the two ordering rules; the app server's keep-alive timeout is set explicitly and exceeds the idle timeout of the proxy or load balancer in front of it.
 13. Compression is on for text and off for images and streams; `Vary: Accept-Encoding` is present.
 14. HTTP/3 negotiates (`curl --http3-only`) and the site still works with UDP 443 blocked; `curl -4` and `curl -6` both succeed where `AAAA` is published.
 15. Webhook, API and health-check paths are exempt from browser challenges; WAF changes went through log mode first.

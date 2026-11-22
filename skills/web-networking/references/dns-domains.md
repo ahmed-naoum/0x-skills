@@ -16,7 +16,7 @@ Whoever controls the registrar account controls the website, the email, every pa
 | Expiry alert | Independent of the registrar's emails (see `tls-certificates.md`) | Registrar notices go to spam or to a departed person |
 | Registry lock | Only for a high-value domain at Scale; requires out-of-band verification for changes | Costly and slow by design |
 
-After expiry a domain typically stops resolving at once, passes through a grace period, then a redemption period with a steep recovery fee, then release to the public where drop-catchers take it within seconds. Periods differ by TLD. Country-code TLDs carry their own rules (residency requirements, different transfer and dispute procedures); check them before building a brand on one.
+After expiry a domain typically stops resolving at once or within days, passes through a grace period, then a redemption period with a steep recovery fee, then release to the public where drop-catchers take it within seconds. Periods differ by TLD. Country-code TLDs carry their own rules (residency requirements, different transfer and dispute procedures); check them before building a brand on one.
 
 Keeping the registrar and the DNS host as separate companies is fine and often better: a registrar is chosen for account security, a DNS host for its API, anycast network and uptime.
 
@@ -35,7 +35,7 @@ Keeping the registrar and the DNS host as separate companies is fine and often b
 
 Decisions to make once:
 
-- **Canonical host.** Pick apex or `www`, serve the site on one, and 301 the other to it. `www` keeps a plain `CNAME` available and keeps cookies off sibling subdomains; apex is shorter. If the DNS provider has no `ALIAS`-style record and the host gives only a hostname, `www` is the only correct choice.
+- **Canonical host.** Pick apex or `www`, serve the site on one, and 301 the other to it. `www` keeps a plain `CNAME` available, which every DNS host and CDN supports; apex is shorter. If the DNS provider has no `ALIAS`-style record and the host gives only a hostname, `www` is the only correct choice.
 - **Wildcards.** `*.example.com` answers for every name that has no record of its own, including typos and names an attacker invents. Use one only when the product needs it (per-tenant subdomains), and never point it at third-party infrastructure.
 - **Zone file syntax.** In a raw zone file a target without a trailing dot is relative to the zone: `CNAME target.example.net` becomes `target.example.net.example.com`. Most web UIs hide this; Terraform and BIND do not.
 - **Keep the zone in code** (Terraform/OpenTofu or DNSControl) from Launch. It gives history, review, and a rebuildable zone when changing providers.
@@ -76,7 +76,7 @@ Diagnose in this order:
 3. Right everywhere but wrong on one machine: local caches. Browser (Chrome keeps its own short-lived cache, visible at `chrome://net-internals/#dns`), OS (`sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder` on macOS, `ipconfig /flushdns` on Windows, `resolvectl flush-caches` on systemd Linux), `/etc/hosts` entries left from testing, a VPN or corporate resolver with split DNS.
 4. Right in DNS but traffic still reaches the old server: established keep-alive connections and connection pools never re-resolve. Long-running services hold old addresses until restarted or until their pool recycles. Keep the old target serving for hours after a cutover.
 
-**Negative caching** is the trap that explains "the record exists but my laptop says it does not". An `NXDOMAIN` or empty answer is cached for the lesser of the SOA record's TTL and its `MINIMUM` field, often an hour or more. Checking a name before creating it caches the absence. Create the record first, then test; or test against the authoritative server only.
+**Negative caching** is the trap that explains "the record exists but my laptop says it does not". An `NXDOMAIN` or empty answer is cached for the lesser of the SOA record's TTL and its `MINIMUM` field (read both with `dig SOA example.com`): minutes at some providers, hours at others. Checking a name before creating it caches the absence. Create the record first, then test; or test against the authoritative server only.
 
 Nameserver changes are slower than record changes: the delegation's TTL is set by the TLD registry (two days for `.com`) and cannot be lowered.
 
@@ -103,13 +103,13 @@ These are two different moves. Do them separately, DNS first.
 3. Verify before switching: for every name and type, compare `dig @old-ns` with `dig @new-ns`.
 4. If DNSSEC is on: remove the `DS` record at the registrar and wait out its TTL before changing nameservers, then re-enable signing afterward. Switching nameservers with a `DS` that points at the old provider's keys makes the domain fail for every validating resolver.
 5. Change the nameservers at the registrar.
-6. Keep the old zone live and identical for at least the delegation TTL plus a margin (three days for `.com`). Resolvers use both sets during that window, so any record edit must be made in both.
+6. Keep the old zone live and identical for at least the longer of the delegation TTL and the old zone's own `NS` TTL, plus a margin (three days for `.com`). Resolvers use both sets during that window, so any record edit must be made in both.
 7. Delete the old zone last.
 
 **Transferring registrar:**
 
 - A transfer moves the registration, not the DNS. If the losing registrar is also the DNS host, its nameservers may stop answering when the transfer completes. Move DNS to an independent provider first and let it settle.
-- Sequence: unlock, obtain the authorization (EPP) code, start the transfer at the gaining registrar, approve the confirmation. gTLD transfers can take several days unless the losing registrar releases early, usually add a year to the term, and are blocked for a period after registration or a previous transfer.
+- Sequence: unlock, obtain the authorization (EPP) code, start the transfer at the gaining registrar, approve the confirmation. gTLD transfers can take several days unless the losing registrar releases early, usually add a year to the term, and are blocked for a period after registration or a previous transfer (60 days for many years; ICANN's revised transfer policy shortens it, so read the registrar's current rule). Country-code TLDs each have their own procedure.
 - Do not start within a few weeks of expiry, and do not change registrant contact details just before: either can trigger a lock or a lapse mid-transfer.
 - Afterward re-check lock, auto-renew, MFA, and the `DS` record if DNSSEC is in use.
 
@@ -144,7 +144,7 @@ Enable it when a customer or a compliance regime asks, or when the DNS provider 
 
 - **Enable:** turn on signing at the DNS provider → confirm `dig DNSKEY example.com +short` answers from every nameserver → add the `DS` record at the registrar (automatic when registrar and DNS host are the same company).
 - **Disable or migrate:** remove the `DS` at the registrar → wait the `DS` TTL (commonly a day) → only then stop signing or change nameservers. Reversing these two steps is the standard DNSSEC outage.
-- **Key rollover:** let the provider roll zone-signing keys. For the key-signing key, publish the new `DNSKEY`, add the new `DS` beside the old one, wait both TTLs, remove the old `DS`, then retire the old key. Never replace a `DS` in one step.
+- **Key rollover:** let the provider roll zone-signing keys. For the key-signing key, publish the new `DNSKEY`, add the new `DS` beside the old one, wait both TTLs, remove the old `DS`, wait the `DS` TTL again, then retire the old key. Never replace a `DS` in one step.
 - Prefer ECDSA P-256 (algorithm 13): small signatures keep answers inside one UDP packet.
 - **Check:** `delv example.com` or `dig +dnssec example.com` (the `ad` flag from a validating resolver), a visual chain validator such as DNSViz, and `dig +cd` to prove a `SERVFAIL` is validation.
 
