@@ -95,8 +95,9 @@ By stage:
 6. Non-production environments cannot reach real recipients, and a test proves the guard.
 7. Templates render from fixtures in CI, and were viewed in Gmail, Apple Mail and Outlook on
    Windows in light and dark mode after any layout change.
-8. Bounce and complaint webhooks are signature-verified, update the send log, and suppress the
-   address; a suppressed user sees that in the product.
+8. Bounce and complaint webhooks reject unauthenticated calls (signature, or a secret credential
+   where the provider does not sign), update the send log, and suppress the address; a
+   suppressed user sees that in the product.
 9. Marketing and subscribed mail carries `List-Unsubscribe` and `List-Unsubscribe-Post`, the POST
    works without login, and GET does not unsubscribe.
 10. No link in any message performs an action on GET.

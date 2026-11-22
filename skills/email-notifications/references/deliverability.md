@@ -64,9 +64,15 @@ Traps:
 
 Mailbox providers publish sender requirements (Google and Yahoo since 2024, Microsoft's consumer
 mail since 2025): every sender needs SPF or DKIM; senders of roughly 5,000 or more messages a
-day to their users need SPF, DKIM and a DMARC record with alignment, one-click unsubscribe on
-marketing mail, and a low complaint rate. Meet the bulk rules from Launch regardless of volume;
-the threshold is counted per receiving provider and crossing it is not announced.
+day to a provider's consumer mailboxes need SPF and DKIM both passing, a DMARC record (at least
+`p=none`) with alignment, and a low complaint rate. Google and Yahoo also require one-click
+unsubscribe on marketing and subscribed mail. Non-compliant mail is junked or rejected outright.
+
+- The threshold is counted per receiving provider and crossing it is not announced. Google counts
+  all mail from the same organizational domain, so subdomains and transactional mail do not
+  split the count, and a domain that crossed it once stays a bulk sender.
+- Meet the bulk rules from Launch regardless of volume. The numbers and enforcement dates are
+  the providers' to change: read their current sender guidelines when a bounce cites them.
 
 DNS record mechanics beyond these mail records are in `0x:web-networking`.
 
@@ -130,16 +136,21 @@ volume from senders with no history.
   only as an aggregate rate in Google Postmaster Tools. A webhook complaint count of zero is not
   evidence of a clean stream.
 - Password resets and security alerts to an address that complained: still send (the user asked
-  for them), unless the address hard-bounced.
+  for them), unless the address hard-bounced. Check how the provider's own suppression list
+  treats complaints: some refuse every later send to that address on the stream or account, and
+  the reset then fails silently until the address is reactivated there.
 - Thresholds: keep hard bounces under about 2% of sends (rule of thumb) and complaints under
-  0.1%; mailbox providers treat 0.3% as the line where placement degrades. Sending providers
-  suspend accounts at their own published thresholds; check them and alert well below.
+  0.1%. Google's guidelines say to stay below 0.1% and never reach 0.3%, measured by its own
+  spam rate in Postmaster Tools, not by the sending provider's dashboard. Sending providers
+  review or suspend accounts at their own published bounce and complaint thresholds; look them
+  up and alert well below.
 - Alert on rate per stream per day, with a minimum volume so three sends and one bounce do not page.
 
 ## One-click unsubscribe
 
-Required on marketing and subscribed mail by the bulk-sender rules; not required on strictly
-transactional mail. Add both headers and make sure they are covered by the DKIM signature:
+Required on marketing and subscribed mail by Google's and Yahoo's bulk-sender rules; not required
+on strictly transactional mail. Add both headers, with an HTTPS URL, and make sure both are
+covered by the DKIM signature:
 
 ```text
 List-Unsubscribe: <https://example.com/unsubscribe/TOKEN>, <mailto:unsubscribe@example.com?subject=TOKEN>
@@ -152,7 +163,8 @@ List-Unsubscribe-Post: List-Unsubscribe=One-Click
   scanners would unsubscribe everyone.
 - Also show a visible unsubscribe link in the body. Hiding it converts unsubscribes into spam
   complaints, which cost far more.
-- Honor the request immediately in the app; the outer limit providers state is two days.
+- Honor the request immediately in the app. Google's guideline is within 48 hours; statutory
+  deadlines differ by country.
 - Most providers add these headers on broadcast streams. Verify in a received message's source
   rather than assuming.
 
@@ -161,14 +173,15 @@ Consent and anti-spam law for marketing mail is `0x:privacy-compliance`.
 ## Monitor and diagnose
 
 Set up at Launch: Google Postmaster Tools for the sending domain (spam rate, authentication and
-compliance status), the provider's bounce and complaint dashboards with alerts, and a mailbox for
+compliance status; Google retired its domain and IP reputation dashboards, so do not look for a
+reputation grade), the provider's bounce and complaint dashboards with alerts, and a mailbox for
 DMARC aggregate reports (or a report-parsing service; raw XML is not readable at any volume).
 At Scale add Microsoft SNDS (for dedicated IPs) and periodic seed-list placement tests.
 
 | Symptom | Likely cause | Check, then fix |
 |---|---|---|
 | Not in inbox or spam, provider says delivered | Corporate gateway quarantine, or a recipient-side rule | Ask the recipient's IT; add aligned DKIM; ask to be allowlisted |
-| Provider shows bounce with 550 5.7.x and "policy" or "authentication" | DMARC or SPF failure, or blocklisting | Read the diagnostic text; verify the three passes in message source |
+| Provider shows bounce with 550 5.7.x and "policy" or "authentication" (Gmail `5.7.26`, Outlook.com `5.7.515`) | DMARC, DKIM or SPF failure against the sender requirements, or blocklisting | Read the diagnostic text; verify the three passes in message source |
 | Spam at Gmail only | Domain reputation or complaint rate at Gmail | Postmaster Tools spam rate; cut volume to engaged recipients |
 | Spam at Microsoft only | IP or domain reputation there, often on a new sender | Provider support for shared IPs; Microsoft's sender support form |
 | Spam everywhere, new domain | No reputation and a volume jump | Warm up; send only confirmed addresses |
@@ -189,8 +202,10 @@ from phishing in the brand's name and is increasingly expected by enterprise buy
 2. Inventory every source sending as the domain: app provider, marketing tool, company
    mailboxes, helpdesk, CRM, invoicing, calendar and form tools. Each legitimate one needs
    aligned DKIM (preferred) or aligned SPF. The forgotten ones are the helpdesk and the billing tool.
-3. When legitimate sources pass at close to 100%, set `p=quarantine`, optionally with `pct=25`
-   as a ramp, watch reports for a week or two, then raise.
+3. When legitimate sources pass at close to 100%, set `p=quarantine`, watch reports for a week
+   or two, then raise. Do not lean on a ramp tag: `pct=25` was read inconsistently by receivers
+   and the current DMARC standard (RFC 9989, 2026) removed it in favor of `t=y`, a test flag
+   that not every receiver honors yet. The reports are the safety net.
 4. Set `p=reject`. Keep `rua` forever; a new tool added next year shows up there first.
 5. For domains that never send mail (parked domains, old brands) publish `v=spf1 -all` and
    `v=DMARC1; p=reject` at once.
@@ -199,7 +214,7 @@ Traps: indirect flows (forwarding, mailing lists that modify the message) fail D
 fault of the sender and will never reach 100%; judge by the sources under the company's control.
 Reports sent to an address on another domain need that domain to publish an authorization record,
 which report services provide. Skip BIMI until Scale: it requires enforcement policy first and,
-for most mailbox providers, a paid mark certificate.
+at most mailbox providers that show logos, a paid mark certificate.
 
 ## Shared or dedicated IPs
 
@@ -207,8 +222,9 @@ Default: the provider's shared pool. A dedicated IP has no reputation until the 
 it and loses it when volume dips, so low or bursty volume performs worse on a dedicated IP than
 on a well-run pool.
 
-Move to dedicated IPs only when all hold: volume is steady and on the order of 100,000 or more
-messages a month to consumer mailboxes (rule of thumb; follow the provider's own threshold),
+This is a Scale decision. Move to dedicated IPs only when all hold: volume is steady and at least
+on the order of 100,000 messages a month (rule of thumb; providers publish their own minimum,
+often higher, and theirs wins),
 someone will run a warm-up and watch reputation, and there is a reason (a noisy shared pool
 proven by evidence, a customer contract, or separation of high-volume streams). When moving,
 take at least two IPs or keep transactional and marketing on separate ones, and warm each.

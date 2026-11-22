@@ -52,16 +52,17 @@ user must dig through settings. The prompt is spent once, so spend it well.
 
 Default: Twilio, or the SMS product of a provider already in the stack. For login codes prefer a
 managed verification API (Twilio Verify or equivalent) over raw SMS plus hand-written code logic:
-it brings templates pre-approved in many countries, routing and fraud controls.
+it brings templates pre-approved in many countries, routing and fraud controls, and in some
+countries its own registered senders (confirm per target country before skipping registration).
 
 Sender types and registration (the part that delays launches by weeks):
 
 | Destination | Sender | Registration |
 |---|---|---|
 | United States | 10-digit long code (10DLC) | Brand and campaign registration is mandatory; unregistered traffic is blocked. Days to weeks |
-| United States, Canada | Toll-free number | Verification required before sending at volume |
+| United States, Canada | Toll-free number | Verification must be approved before anything is delivered; unverified numbers are blocked. Days to weeks, with business identity details |
 | United States | Short code | Lease and carrier approval; weeks and expensive. Only for high volume |
-| UK and much of Europe | Alphanumeric sender ID (the brand name) | Often none, some countries require pre-registration; recipients cannot reply |
+| UK, much of Europe and Asia-Pacific | Alphanumeric sender ID (the brand name) | Varies and is tightening: some countries need nothing or a letter of authorization through the provider; a growing number (Ireland, Spain, Australia and Singapore among them) run mandatory registries and block or relabel unregistered IDs. Recipients cannot reply |
 | India and several other countries | Registered sender and registered message templates | Local entity or paperwork; plan well ahead or use WhatsApp |
 
 Rules:
@@ -79,8 +80,9 @@ Rules:
   jurisdictions; consent law is `0x:privacy-compliance`.
 - Cost is per segment: 160 characters in the GSM-7 alphabet, 153 per segment once concatenated.
   One character outside GSM-7 (an emoji, a curly quote, some accented letters) switches the
-  whole message to UCS-2 at 70 characters, 67 when concatenated. Keep codes and alerts in one
-  GSM-7 segment and strip smart punctuation from templates.
+  whole message to UCS-2 at 70 characters, 67 when concatenated. A few GSM-7 characters (square
+  and curly brackets, pipe, caret, tilde, backslash, the euro sign) count as two. Keep codes and
+  alerts in one GSM-7 segment and strip smart punctuation from templates.
 - Carriers filter public link shorteners and messages that look like phishing. Use the product's
   own domain in full, name the brand at the start, and keep one link at most.
 - For web login codes, add the origin-bound last line so browsers and iOS can autofill safely:
@@ -134,10 +136,11 @@ subscription per browser, and a push library on the server (`web-push` for Node)
 
 ```js
 self.addEventListener("push", (event) => {
-  const data = event.data ? event.data.json() : {};
+  let data = {};
+  try { data = event.data?.json() ?? {}; } catch { /* not JSON: still show something */ }
   event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body, tag: data.tag, data: { url: data.url },
+    self.registration.showNotification(data.title ?? "Acme", {
+      body: data.body, tag: data.tag, data: { url: data.url ?? "/" },
     }),
   );
 });
@@ -161,10 +164,12 @@ try {
 Traps:
 
 - A push that shows nothing is treated as abuse: Chrome shows a generic "site updated in the
-  background" notification, and Safari can revoke the subscription.
-- On iOS and iPadOS, web push works only for a site added to the Home Screen as a web app. For a
-  consumer product whose users are mostly on iPhone, web push reaches few of them; plan email or
-  a native app.
+  background" notification, and Safari revokes the subscription after a few silent pushes. A
+  handler that throws before `showNotification` counts as silent.
+- On iOS and iPadOS, web push works only for a site added to the Home Screen as a web app, and
+  there is no install prompt: the user must find Share, Add to Home Screen, and the permission
+  request works only inside the installed app. For a consumer product whose users are mostly on
+  iPhone, web push reaches few of them; plan email or a native app.
 - Payloads are limited to about 4 KB and are visible on lock screens. Send a title, a short body
   and a URL; fetch detail after the click.
 - Set `TTL` to how long the message stays useful (0 means "now or never"), and use `tag` so a
@@ -177,16 +182,20 @@ Traps:
 
 | Topic | APNs (iOS) | FCM (Android, optionally iOS) |
 |---|---|---|
-| Server auth | Token-based with a `.p8` key (does not expire). Certificates expire yearly and take push down when forgotten | Service account with the HTTP v1 API; the legacy server-key API is shut down |
+| Server auth | Token-based with a `.p8` key (does not expire, can be revoked). Certificates expire yearly and take push down when forgotten | Service account with the HTTP v1 API; the legacy server-key API is shut down |
 | Environments | Sandbox and production are separate hosts with separate device tokens; mixing them returns `BadDeviceToken` | One environment; separate Firebase projects for staging |
-| Dead token signal | HTTP 410 `Unregistered` | HTTP 404 `UNREGISTERED` |
+| Dead token signal | HTTP 410 `Unregistered`; 400 `BadDeviceToken` for a malformed or wrong-environment token | HTTP 404 `UNREGISTERED`; 400 `INVALID_ARGUMENT` can mean a bad token or a bad payload, so delete on it only when the payload is known good |
 | Collapse | `apns-collapse-id` header | `collapse_key` |
 | Expiry | `apns-expiration` | `ttl` |
 | Priority | `apns-priority` 10 immediate, 5 power-saving | `high` wakes a dozing device, `normal` waits; overuse of `high` gets deprioritized |
 
 Decision: send through FCM for both platforms (one API, it relays to APNs) or through a push
 service (Expo for React Native apps, OneSignal) unless there is a reason to speak APNs directly.
-Direct APNs is worth it when iOS-specific features or delivery debugging matter.
+Direct APNs is worth it when iOS-specific features or delivery debugging matter. When speaking
+APNs directly, cache the signed provider token: Apple rejects one older than an hour
+(`ExpiredProviderToken`) and throttles a sender that mints a new one more often than about
+every 20 minutes (`TooManyProviderTokenUpdates`), which is what a token-per-request
+implementation hits in production. Send `apns-topic` and `apns-push-type` on every request.
 
 Token hygiene, which decides whether push works in month six:
 
@@ -195,8 +204,9 @@ Token hygiene, which decides whether push works in month six:
 - Send the token to the server on every app start and whenever the SDK reports a refresh; update
   `last_seen_at`. On login, reassign the token to the new user. On logout, delete it server-side.
 - Delete on the dead-token responses above, immediately. Additionally prune tokens not seen for
-  a staleness window of a month or two: FCM tokens of inactive devices keep accepting messages
-  that go nowhere before they finally expire.
+  a staleness window of a month or two (rule of thumb): FCM tokens of inactive devices keep
+  accepting messages that go nowhere until FCM expires them, which its documentation puts at
+  about nine months of inactivity on Android.
 - Do not retry permanent errors. Retry 429 and 5xx with backoff and honor `Retry-After`.
 - "Accepted by APNs or FCM" means queued for the device. There is no delivery receipt to rely
   on; devices offline, in battery saver, or with notifications disabled produce no error.
@@ -242,8 +252,11 @@ Asia) and they ask for it, or when SMS to those countries is costly and unreliab
 - Business-initiated messages must use pre-approved templates in a category (marketing, utility,
   authentication) and require the user's opt-in to WhatsApp messages specifically. Free-form
   messages are allowed only inside the 24-hour window after the user's last message.
-- Fees are charged by Meta per message by category and recipient country; check current rates.
-  Authentication and utility templates are often cheaper than SMS to the same country.
+- Meta charges per delivered template message, by category and recipient country, and revises
+  the rules often: which messages inside the service window are free, volume tiers, and
+  restrictions on marketing templates in particular countries. Read the current rate card
+  before promising a cost; authentication and utility templates are cheaper than SMS in many
+  countries, not all.
 - Meta rates sender quality from blocks and reports. Low quality pauses templates and lowers the
   daily limit, so the fatigue rules for push apply with real penalties.
 - Inbound replies arrive by webhook and open a conversation someone must answer; decide who

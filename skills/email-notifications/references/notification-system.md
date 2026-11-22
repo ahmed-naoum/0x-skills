@@ -66,12 +66,17 @@ Rules:
 - The test for "required": the user triggered it, or cannot safely use the account without it,
   and it promotes nothing. "We think they would want to know" is not required.
 - Adding an upsell block to a receipt can turn it into a marketing message for legal and
-  filtering purposes. Keep required mail free of promotion.
-- Mark `required` in the type registry and have a second person review any addition; the flag
-  bypasses user choice, so it attracts misuse ("make the launch announcement required").
+  filtering purposes. The legal test differs by jurisdiction (United States law looks at the
+  primary purpose of the message; UK and EU-style rules tend to treat any promotional content
+  as marketing), so the design that is safe everywhere is required mail with no promotion.
+- Mark `required` in the type registry and get the user's explicit sign-off on any addition; the
+  flag bypasses user choice, so it attracts misuse ("make the launch announcement required").
 - A global "unsubscribe from everything" must leave required mail working and say so on the page.
-- Onboarding sequences and trial-ending reminders are lifecycle mail: opt-out applies. Their
-  strategy is `0x:growth-marketing`; payment-failure sequences are `0x:payments-billing`; the
+- Onboarding sequences and upgrade nudges are lifecycle mail: opt-out applies. A notice that a
+  trial is about to convert to a paid charge, or that a subscription renews, is different:
+  auto-renewal rules in several jurisdictions require it, so send it as required billing mail
+  with no promotion and do not let a marketing unsubscribe silence it. Lifecycle strategy is
+  `0x:growth-marketing`; renewal and payment-failure sequences are `0x:payments-billing`; the
   legal definitions and consent rules are `0x:privacy-compliance`.
 
 ## In-app inbox
@@ -212,6 +217,7 @@ opened or seen, clicked, and **acted**: the product action the notification exis
 | Mobile push is the main channel and marketing wants segments and campaigns | A push-focused service (OneSignal or similar) for that channel |
 | Non-engineers must edit workflows and copy | A service with a workflow editor |
 
+The vendors named are examples; confirm their current features, pricing and hosting options.
 Consider before buying: the vendor sits in the delivery path of every message (keep
 authentication mail going directly to the email provider so login survives a vendor outage); it
 is another processor of user data and message content; pricing usually scales with messages or
