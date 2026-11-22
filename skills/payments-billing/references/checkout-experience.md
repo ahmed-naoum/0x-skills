@@ -34,8 +34,12 @@ displayed total, the provider's charged amount and the invoice total are identic
 
 ## Errors and declines: every code leads to an action
 
-Three classes of failure, three different treatments. Keep the provider's code in the logs and
-on the payment attempt row; show the customer a mapped message.
+Failures fall into classes that need different treatment. Keep the provider's code in the logs
+and on the payment attempt row; show the customer a mapped message. With Stripe, read the
+error `code` first and, when it is `card_declined`, the `decline_code` for the reason; a few
+reasons (`expired_card`, `incorrect_cvc`, `incorrect_number`, `processing_error`) arrive as
+the `code` itself. Whether the issuer or the provider's risk engine refused is on the charge
+(`outcome.type` of `issuer_declined` or `blocked`).
 
 | Class | Examples (Stripe codes) | Customer sees | System does |
 |---|---|---|---|
@@ -45,7 +49,7 @@ on the payment attempt row; show the customer a mapped message.
 | Issuer refused, no reason | `generic_decline`, `do_not_honor`, `transaction_not_allowed` | "Your bank declined the payment. Try another card, or contact your bank." | No automatic retry with the same card |
 | Suspected fraud or lost card | `fraudulent`, `lost_card`, `stolen_card`, `pickup_card`, blocked by fraud rules | The same generic decline message | Never reveal the reason: it teaches card testers which cards are live. Log and count |
 | Method unsupported | `card_not_supported`, `currency_not_supported` | "This card cannot be used for this purchase. Try another." | Check whether the method list is wrong for the market |
-| Transient | `processing_error`, `try_again_later`, provider 5xx, timeouts | "Something went wrong on our side. You have not been charged." only if that is known; otherwise "We are confirming your payment" | Idempotent retry or the unknown-outcome path in `checkout-integration.md` |
+| Transient | `processing_error`, `issuer_not_available`, `try_again_later`, provider 5xx, timeouts | "Something went wrong on our side. You have not been charged." only if that is known; otherwise "We are confirming your payment" | Idempotent retry or the unknown-outcome path in `checkout-integration.md` |
 | Integration bug | invalid request, auth error, rate limit | Generic apology with a reference ID | Page the developer: these are never the customer's fault |
 
 Rules:
@@ -81,9 +85,9 @@ reloaded, bookmarked and opened on another device after sign-in.
 - The order number shown is the one support can search for. Do not expose the provider's
   internal IDs as the primary reference, but store them next to it.
 - The receipt email is transactional: it is sent regardless of marketing consent, from the
-  webhook-driven fulfilment function so it is sent exactly once. Either the provider's receipt
+  webhook-driven fulfillment function so it is sent exactly once. Either the provider's receipt
   or the app's, not both. Delivery setup: `0x:email-notifications`.
-- The confirmation page must not re-trigger fulfilment or analytics purchase events on reload:
+- The confirmation page must not re-trigger fulfillment or analytics purchase events on reload:
   fire the conversion event once, keyed on the order ID.
 - For subscriptions, state the next charge date and amount and where to cancel. Customers who
   cannot find the cancel path use their bank instead.
@@ -100,7 +104,7 @@ country, currency, device and new vs returning customer:
 | Decline mix | Share of each decline code | Rise in `do_not_honor` from one country → issuer distrust; rise in input errors → form bug |
 | 3DS challenge and completion rate | Challenged ÷ attempts; completed ÷ challenged | Low completion → broken redirect or return URL |
 | Method share | Payments by method per country | A local method at zero share where it should be popular → not displayed |
-| Time to confirmation | Payment success to fulfilment | Webhook lag or failures |
+| Time to confirmation | Payment success to fulfillment | Webhook lag or failures |
 
 Instrumentation: emit one server-side event per payment attempt with the outcome, decline code,
 method, card country and amount, from the same code that updates the attempt row. Client-side
@@ -117,6 +121,9 @@ card-not-present recurring charges against one-time charges separately.
 
 ## Recovering abandoned checkouts
 
+Skip at Prototype. At Launch, do saved carts and the failed-payment message; add reminder
+emails once consent is collected and there is enough volume to see their effect.
+
 - **Saved carts first.** The cart persists server-side against the account or a long-lived
   cart token, so returning shows the same items (see `commerce.md`). A recovery link without a
   saved cart is a link to an empty page.
@@ -125,8 +132,10 @@ card-not-present recurring charges against one-time charges separately.
 - **Consent decides what may be sent.** A reminder about an unfinished purchase is marketing in
   most privacy regimes unless the customer agreed or a soft opt-in applies. Collect consent at
   the email field, or limit the message to a strictly service-related notice; the rules are in
-  `0x:privacy-compliance`. Hosted checkouts can collect promotional consent and return a
-  recovery URL on session expiry.
+  `0x:privacy-compliance`. Some hosted checkouts can show a promotional-consent checkbox and
+  hand back a recovery URL when the session expires (Stripe: `consent_collection.promotions`
+  and `after_expiration.recovery`, the URL arriving on `checkout.session.expired`). The
+  consent option is not offered in every country, so confirm it before designing around it.
 - **Sequence** (rule of thumb): one reminder about an hour after abandonment, one the next day,
   then stop. The link restores the exact cart and price; if the price or stock changed, say so
   on landing. Suppress immediately once the order is paid, on any device.
@@ -160,15 +169,17 @@ Expert territory; most of the gain comes from a few moves, in this order of payo
 
 | Decline class | Retry policy |
 |---|---|
-| Hard: stolen, lost, closed account, invalid number, "do not try again" | Never retry. Networks penalize repeated attempts on dead credentials, and issuers downgrade the merchant |
-| Soft: insufficient funds, generic decline, issuer unavailable | Retry on a schedule, not immediately: after a day, then spaced over one to two weeks, at a different time of day and near common paydays |
+| Hard: stolen, lost, closed account, invalid number, "do not try again" | Never retry. Networks charge for repeated attempts on dead credentials, and the attempts erode issuer trust in the merchant |
+| Soft: insufficient funds, generic decline, issuer unavailable | Retry on a schedule, not immediately (rule of thumb: after a day, then spaced over one to two weeks, at a different time of day and near common paydays) |
 | Authentication required | Do not retry off-session; bring the customer on-session |
 | Technical: timeout, processing error | Idempotent retry within seconds to minutes |
 
-   Card networks cap how many times one declined transaction may be reattempted within a
-   window and fine excess; the provider's built-in retry logic respects those caps, a
-   hand-rolled cron does not. Use the provider's smart retries for subscriptions before
-   building anything (see `subscriptions.md`).
+   Card networks cap how many times one declined transaction may be reattempted (on the
+   order of tens of attempts per card in 30 days, and none after a "do not retry" response)
+   and charge a fee per excess attempt. The limits differ by network and have changed, so
+   read the processor's current excessive-retry page. The provider's built-in retry logic
+   respects the caps; a hand-rolled cron does not. Use the provider's smart retries for
+   subscriptions before building anything (see `subscriptions.md`).
 7. **Local acquiring** (charging through an entity in the cardholder's country) raises approval
    for cross-border volume. It needs local entities and is a Scale decision.
 

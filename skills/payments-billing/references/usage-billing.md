@@ -59,9 +59,14 @@ One row per billable occurrence, written by the server at the point the work is 
   can be disputed (see `0x:data-stores` for retention).
 
 When forwarding to a provider meter (Stripe Billing Meters and equivalents), send the same
-deterministic identifier so the provider dedupes too, send from a job with retries, and respect
-its limits on how old an event's timestamp may be. Providers reject events older than their
-backfill window, so a multi-day outage of the forwarder needs manual invoice adjustments.
+deterministic identifier so the provider dedupes too, and send from a job with retries. Two
+limits to design around, both to be confirmed in the current docs. The provider's dedupe
+window is short (Stripe enforces identifier uniqueness over a rolling 24 hours), so a
+`forwarded_at` column on the event, not the provider, is what stops a late replay from
+billing twice. And events with old timestamps are rejected (Stripe: older than 35 days) or
+accepted too late for an invoice that has already finalized, so a forwarder outage that
+outlasts the period close needs manual invoice adjustments. Stripe's older usage-records API
+is gone from current API versions; build on meters.
 
 ## Enforcing quotas without calling the provider
 
@@ -86,8 +91,9 @@ update usage_balance
 - **Fail open or closed on counter outage**: fail open (allow, meter later) for paid plans with
   overage, where a blocked customer costs more than some unbilled usage; fail closed for free
   tiers and prepaid balances on expensive resources, where open means unbounded loss.
-- Return a specific error (HTTP 402 or 429 with a machine-readable code and the reset time or
-  top-up link), not a generic failure. Rate-limit design is `0x:api-design`.
+- Return a specific error, not a generic failure: 429 with `Retry-After` when the limit resets
+  on its own, 402 when only paying or topping up lifts it, each with a machine-readable code
+  and the reset time or top-up link. Rate-limit design is `0x:api-design`.
 - Entitlement limits come from the local plan map (see `subscriptions.md`), never from a
   provider call in the request path.
 - Abuse: a free tier on a costly resource is a target. Require a verified email or a card

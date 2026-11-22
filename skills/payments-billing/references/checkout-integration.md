@@ -13,8 +13,10 @@ Decide in this order; the first question that produces a hard "no" ends the eval
    decides the business is out of policy freezes payouts; that risk outweighs any fee difference.
 2. **Who is the seller of record?** A payment processor (Stripe, Adyen, Braintree) moves money
    and the business is the seller, liable for tax in every place it sells. A merchant of record
-   (Paddle, Lemon Squeezy, Polar) is the legal seller, resells the product, and takes on tax,
-   invoices and most dispute handling for a higher percentage. See `invoices-tax.md`.
+   (Paddle, Polar, or Stripe's own Managed Payments) is the legal seller, resells the product,
+   and takes on tax, invoices and most dispute handling for a higher percentage. Do not start
+   anything new on Lemon Squeezy: Stripe, its owner, has announced its shutdown and is moving
+   sellers to Managed Payments. See `invoices-tax.md`.
 3. **Payment methods the buyers actually use.** Cards cover the US and UK well. Elsewhere a
    missing local method costs more conversion than any fee saves (table below).
 4. **Payout terms.** Payout delay, rolling reserve, minimum payout, payout currencies and whether
@@ -79,8 +81,9 @@ const session = await stripe.checkout.sessions.create(
   provider, and put the order ID in the provider object's metadata. The webhook then has a
   deterministic way back to the row, and a crash between the two leaves a pending order, which
   is harmless, instead of a charge with no order.
-- For subscriptions also set metadata on the subscription itself (`subscription_data.metadata`);
-  session metadata does not propagate to later invoices.
+- Session metadata stays on the session. Set it again where later events will be read from:
+  `payment_intent_data.metadata` for one-time payments (refund and dispute events carry the
+  payment, not the session) and `subscription_data.metadata` for subscriptions.
 - Authenticate the caller and derive the customer from the session, never from a client-sent
   customer ID. One provider customer per account, stored in a column with a unique constraint.
 - Validate entitlement to the price server-side: a hidden or legacy price ID sent by a client
@@ -91,7 +94,7 @@ const session = await stripe.checkout.sessions.create(
 ## The webhook is the source of truth
 
 The success redirect proves only that a browser reached a URL. Customers close the tab, lose
-signal, or pay by a method that confirms hours later; a redirect can also be replayed. Fulfil
+signal, or pay by a method that confirms hours later; a redirect can also be replayed. Fulfill
 (grant access, mark paid, ship) only from a verified webhook or from a server-side fetch of the
 provider object.
 
@@ -117,11 +120,11 @@ Rules that prevent the usual incidents:
 - **Do not rely on order.** `customer.subscription.updated` can arrive before `created`. Make
   handlers converge: fetch the current object from the API and upsert its state, instead of
   applying the event payload as a delta.
-- **Fulfilment is idempotent and transactional**: `update orders set status = 'paid' where id =
+- **Fulfillment is idempotent and transactional**: `update orders set status = 'paid' where id =
   $1 and status = 'pending'`, and do the side effects only if a row changed.
 - **Return 2xx fast; do slow work in a job.** A handler that times out is retried, and after
   enough failures the provider disables the endpoint. Alert on webhook failure rate.
-- **The success page may fulfil too**, through the same idempotent function, by retrieving the
+- **The success page may fulfill too**, through the same idempotent function, by retrieving the
   session server-side. That removes the "paid but no access for a few seconds" gap without
   trusting the redirect. If the object is not yet paid, show "confirming payment" and poll the
   app's own order status.
@@ -146,8 +149,9 @@ retry of that attempt.
   loop, or from a timestamp, protects nothing.
 - A new attempt (customer changed card after a decline) gets a new row and a new key. Reusing a
   key with different parameters is an error by design.
-- Keys expire on the provider side (on the order of a day for Stripe). After that the key no
-  longer protects; query instead of retrying.
+- Keys expire on the provider side: Stripe may prune a key once it is 24 hours old, and a
+  pruned key sent again is treated as a brand-new request. Past that age, query instead of
+  retrying.
 - The provider key covers the provider call only. The app's own endpoint needs its own guard,
   below.
 
@@ -159,11 +163,11 @@ retry of that attempt.
 | Reload of a POST result page | Post/redirect/get: respond with a redirect to an order URL that only reads state |
 | Back button after paying | The checkout route loads the order first; if it is `paid` or `processing`, redirect to the confirmation page |
 | Second tab or device | One open checkout session per order: return the existing session URL if still open; expire superseded sessions via the API |
-| Two sessions both paid anyway | Webhook sees a payment for an already-paid order: record it, refund it automatically, alert |
+| Two sessions both paid anyway | Webhook sees a payment for an already-paid order: record it with a status outside the one-live-payment index (for example `duplicate`), refund it automatically, alert |
 
 The database is the final guard: a partial unique index allowing one succeeded payment per
 order (see `ledger-reconciliation.md`). UI guards reduce frequency; only the constraint makes a
-double fulfilment impossible, and the auto-refund path handles the double charge that slipped
+double fulfillment impossible, and the auto-refund path handles the double charge that slipped
 through at the provider.
 
 ## 3-D Secure and asynchronous states
@@ -175,9 +179,9 @@ states to "failed".
 |---|---|---|
 | `requires_payment_method` | Not attempted, or last attempt failed | Let the customer try again; show the decline message |
 | `requires_action` | Customer must authenticate (3DS, bank redirect, voucher) | Hand control to the provider SDK; order stays pending |
-| `processing` | Submitted, outcome not known (bank debits, some wallets) | "Payment received, confirming"; do not fulfil unless policy allows |
-| `requires_capture` | Authorized, not captured | Capture before the authorization expires (about a week for cards; check the provider) |
-| `succeeded` | Money is coming | Fulfil |
+| `processing` | Submitted, outcome not known (bank debits, some wallets) | "Payment received, confirming"; do not fulfill unless policy allows |
+| `requires_capture` | Authorized, not captured | Capture before the authorization expires: a few days for online card payments, and less than the 7 days long assumed on some networks. Read the deadline from the charge (Stripe: `payment_method_details.card.capture_before`) instead of hard-coding it |
+| `succeeded` | Money is coming | Fulfill |
 | `canceled` | Abandoned or voided | Release stock, close the order |
 
 - In Europe and the UK, strong customer authentication applies to most customer-initiated card
@@ -203,18 +207,19 @@ fresh payment at this point is how customers get charged twice.
    this for network errors when retries are enabled; confirm the setting rather than assume it.
 2. If still unknown, mark the attempt `unknown`, tell the customer "we are confirming your
    payment, do not pay again", and let them leave.
-3. A job resolves it: retrieve the provider object by its ID if one was stored, otherwise search
-   by the order ID in metadata. Found and succeeded → fulfil. Found and failed, or not found
-   after the key's lifetime → mark failed and invite a retry with a new attempt.
-4. The webhook may resolve it first; both paths call the same idempotent fulfilment function.
+3. A job resolves it: retrieve the provider object by its ID if one was stored, otherwise look
+   it up by the order ID in metadata (provider search indexes lag by a minute or more, so an
+   immediate miss does not mean "no charge"). Found and succeeded → fulfill. Found and failed,
+   or not found after the key's lifetime → mark failed and invite a retry with a new attempt.
+4. The webhook may resolve it first; both paths call the same idempotent fulfillment function.
 
 Set an explicit client timeout on provider calls (tens of seconds, above the provider's own
 processing time) so a hung request becomes a handled `unknown` instead of a platform kill.
 
 ## Wallets and local payment methods
 
-Wallets raise mobile conversion more than any other single change, because the customer types
-nothing. Turn them on at Launch.
+Wallets usually lift mobile conversion because the customer types nothing. Turn them on at
+Launch; with hosted checkout that is a dashboard setting.
 
 - Prefer the provider's dynamic method selection (dashboard-controlled, chosen by currency,
   country and device) over a hard-coded method list; a hard-coded list silently hides every
@@ -224,10 +229,13 @@ nothing. Turn them on at Launch.
   when the device has a card provisioned, so test on real devices.
 - A method is offered only if the presentment currency matches (iDEAL needs EUR, Pix needs
   BRL). Charging everyone in USD removes most local methods.
+- Availability also depends on the provider and on where the business entity is established;
+  some methods are open only to locally registered merchants. Check the provider's page for
+  the method and the entity's country before promising it.
 
 | Market | Methods worth enabling beyond cards and wallets |
 |---|---|
-| Netherlands | iDEAL |
+| Netherlands | iDEAL (co-branded with Wero and being replaced by it over 2026 to 2027; follow the provider's migration notes, especially for recurring payments) |
 | Belgium | Bancontact |
 | Germany, Austria | SEPA Direct Debit, PayPal, buy-now-pay-later for goods |
 | Poland | BLIK |

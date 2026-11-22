@@ -35,8 +35,10 @@ Entitlements after a refund, decided per product rather than left implicit:
   first purchase) is cheaper than disputes. Automate refunds inside the window for self-serve.
 - Refund abuse: track refunds per customer and payment fingerprint; repeat refunders lose the
   self-serve path.
-- **Do not refund a payment that already has an open dispute**: the bank has already taken the
-  money back, and a refund on top pays twice. Respond to the dispute instead.
+- **Do not refund a payment that already has a formal dispute (chargeback)**: the bank has
+  already taken the money back, and a refund on top pays twice; providers usually block it.
+  Respond to the dispute instead. Pre-dispute inquiries and fraud warnings are the opposite
+  case: no money has moved yet, and a refund normally closes them.
 
 ## Preventing disputes
 
@@ -56,16 +58,20 @@ to cancel. The preventive measures are cheap.
 - **Early dispute signals**: card networks and processors issue fraud warnings and pre-dispute
   alerts before a formal chargeback. For a fraud warning on a charge that is not clearly
   legitimate, refunding immediately and cutting access is usually cheaper than waiting: the
-  chargeback then normally does not follow, saving the fee and the count against the dispute
-  ratio. Automate this for low amounts. Dispute-deflection services that auto-refund on an
-  inquiry are worth enabling once dispute volume is regular.
+  chargeback then normally does not follow, which saves the dispute fee. It does not erase
+  the fraud report itself, which card networks may still count in their monitoring ratios.
+  Automate this for low amounts. Dispute-deflection services that auto-refund on an inquiry
+  charge per case; enable them once dispute volume is regular.
 - **Delivery evidence by default**: log the sign-in, IP, device and usage tied to each purchase,
   and acceptance of terms with timestamp. That log is the evidence file later.
 
 ## Contesting a chargeback
 
-When a dispute opens, the disputed amount and a dispute fee are debited immediately; winning
-returns the amount, often not the fee.
+When a dispute opens, the disputed amount and a dispute fee are debited immediately. Winning
+returns the amount but usually not that fee, and some processors charge a second fee for
+contesting that comes back only on a win (Stripe added one in 2025). Read the current fee
+schedule for the account's country before setting the amount below which fighting is not
+worth it.
 
 1. **Webhook → ticket** the same day (`charge.dispute.created`). The response deadline is set
    by the network and shown on the dispute, typically one to three weeks; it is absolute, and
@@ -74,8 +80,10 @@ returns the amount, often not the fee.
    received the goods. Accept when it is true fraud (stolen card: the cardholder is right),
    when evidence is thin, or when the amount is below the cost of the time. Accepting promptly
    is not penalized more than losing.
-3. **Suspend the account** behind the disputed payment and cancel its subscription so no
-   further charges become further disputes. Restore on a win or a withdrawn dispute.
+3. **Stop further charges.** For fraud-coded disputes and self-serve accounts, suspend the
+   account and cancel its subscription so later charges do not become later disputes; restore
+   on a win or a withdrawn dispute. For a known business customer, pause billing and talk to
+   them first (step 6).
 4. **Match the evidence to the reason code**; evidence that answers a different claim loses.
 
 | Reason | Evidence that wins |
@@ -105,11 +113,13 @@ Processors act earlier than the networks, with reserves or termination.
   against the month it arrives while the sale may be months old. A small merchant with few
   sales can cross a percentage threshold with a handful of disputes; programs have minimum
   counts, but processors' own risk teams do not wait for them.
-- Program names, formulas and thresholds change (Visa restructured its programs in 2025 to
-  combine fraud reports and disputes into one ratio). Look up the current thresholds; as a
-  durable internal alarm, treat a monthly dispute ratio approaching half a percent of card
-  transactions as an incident, well below where formal programs have historically begun (around
-  one percent).
+- Program names, formulas and thresholds change. Visa's current program (VAMP, since 2025)
+  adds fraud reports and disputes into one ratio over settled transactions, lowered its
+  merchant threshold in 2026, and applies only above a minimum monthly count; Mastercard runs
+  separate chargeback and fraud programs. Get the current figures from the processor. As an
+  internal alarm (a rule of thumb, not a network number), treat disputes plus fraud warnings
+  approaching half a percent of monthly card transactions as an incident: processors
+  commonly act at or below one percent, well before the network programs apply.
 - Track weekly: disputes ÷ transactions, fraud warnings ÷ transactions, by network, product,
   acquisition channel and country. A spike confined to one channel or affiliate is the usual
   finding.
@@ -130,7 +140,8 @@ Response, in order of speed:
    submission; rate limits per IP, per account, per device and per card fingerprint. An
    unauthenticated endpoint that creates payment or setup intents is the hole in most cases.
 2. **Velocity rules at the provider**: block after N declines per card, per IP or per email in
-   a window; block when one customer adds many distinct cards.
+   a window; block when one customer adds many distinct cards. Custom rules can be a paid
+   add-on of the provider's fraud product; the limits in step 1 cost nothing.
 3. **Raise friction where the attack lands**: require CVC and postal code checks to pass,
    request 3-D Secure for risky attempts, block card countries the product does not sell to,
    block prepaid cards only if the data supports it.
@@ -153,10 +164,11 @@ and usually the customer. Tune with data, not anecdotes.
 - For each rule, estimate what it blocks: review a sample of blocked attempts for signs of
   legitimacy (existing customer, later successful payment with another card, support contact).
   A rule whose blocks are mostly later-successful customers is costing money.
-- Compare the expected loss: `fraud prevented = blocked fraud × (amount + dispute fee + ratio
-  pressure)` against `sales lost = blocked good orders × margin × lifetime value`. For digital
-  goods with near-zero marginal cost the tolerance for fraud is higher than for physical goods
-  or anything resellable (gift cards, credits, electronics).
+- Compare both sides in money. Fraud prevented = blocked fraudulent orders × (cost of what
+  would have been delivered + dispute fee), plus the harder-to-price pressure on the dispute
+  ratio. Sales lost = blocked good orders × the margin on that customer's expected lifetime
+  purchases. For digital goods with near-zero marginal cost the tolerance for fraud is higher
+  than for physical goods or anything resellable (gift cards, credits, electronics).
 - Prefer step-up over block: send borderline attempts to 3-D Secure or manual review instead
   of declining. Authentication shifts fraud liability and keeps the good customer.
 - Test rule changes in the provider's backtest or shadow mode before enforcing, change one rule
@@ -211,11 +223,12 @@ verification requests.
 - **Keep an operating buffer outside the processor**: sweep payouts on the fastest schedule to
   the bank, and hold enough cash to cover refunds, payroll and bills for the length of a
   plausible hold (weeks to a few months). A negative processor balance from refunds during a
-  freeze is debited from the bank account.
+  freeze can be debited from the bank account.
 - Keep exportable records (customers, subscriptions, invoices) current, and the fallback from
   `checkout-integration.md` ready: a second approved account and the card-data migration path.
 - During a freeze: comply quickly and completely, keep serving customers, do not open duplicate
-  accounts under other names with the same processor (that makes closure permanent).
+  accounts under other names with the same processor (it breaches the terms and usually gets
+  every linked account closed).
 
 ## Ask the user
 

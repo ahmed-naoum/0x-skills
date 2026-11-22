@@ -64,7 +64,7 @@ ecosystem; keep product data exportable and own the domain and customer list.
   changes at the payment step cause abandonment and complaints.
 - **Freeze at order placement**: creating the order copies lines and computed totals, and that
   frozen total is what is charged. If the cart changes after a payment session was created,
-  expire that session and create a new one; a payment for a stale total must not fulfil a
+  expire that session and create a new one; a payment for a stale total must not fulfill a
   changed order.
 - Validate on every mutation: variant exists and is purchasable, quantity within limits,
   currency consistent across lines.
@@ -89,7 +89,8 @@ price(cart lines, customer, shipping address, shipping method, codes, now)
   jurisdiction; the tax engine decides, given line-level discounted amounts.
 - **Rounding**: round per line at the tax step in the currency's minor unit, sum the rounded
   lines, and allocate order-level discounts with a largest-remainder method so the parts sum
-  exactly to the whole. Refunds per line rely on this.
+  exactly to the whole. Refunds per line rely on this. Some jurisdictions prescribe rounding
+  tax per invoice instead of per line; follow the tax engine's output and never re-round it.
 - **Coupons**: validate on the server (existence, validity window, minimum spend, eligible
   items, per-customer and global redemption limits). Enforce redemption limits atomically at
   order placement (conditional increment of the redemption counter), not at apply time, or a
@@ -121,7 +122,7 @@ returning variant_id;
 |---|---|---|
 | When to reserve | At checkout start (payment session creation), with an expiry | Reserve at add-to-cart only for scarce, high-demand items (tickets, drops), with a short visible timer |
 | Reservation lifetime | Slightly longer than the payment session lifetime | Async payment methods: keep until the payment resolves |
-| On payment success | Convert the reservation: `on_hand -= qty`, `reserved -= qty`, in the fulfilment transaction | |
+| On payment success | Convert the reservation: `on_hand -= qty`, `reserved -= qty`, in the fulfillment transaction | |
 | On expiry, failure or cancel | Release: `reserved -= qty`, by a job scanning expired reservations and by the session-expired webhook | |
 | Payment succeeds after the reservation expired and stock is gone | Refund automatically and apologize, or backorder if the business allows | Rare if lifetimes are aligned; it must still be handled |
 
@@ -133,8 +134,10 @@ returning variant_id;
   `select ... for update skip locked` for "any available", or a conditional update on the
   specific seat's status for "this seat".
 - **Time-range bookings**: a Postgres exclusion constraint makes overlapping bookings of one
-  resource impossible: `exclude using gist (resource_id with =, during with &&)` on a range
-  column (needs the `btree_gist` extension). Locking details: `0x:postgres-database`.
+  resource impossible: `exclude using gist (resource_id with =, during with &&) where (status
+  <> 'canceled')` on a range column (needs the `btree_gist` extension; without the `where`,
+  canceled bookings keep blocking their slot). Use half-open ranges `[start, end)` so
+  back-to-back bookings do not collide. Locking details: `0x:postgres-database`.
 - Flash sales: the conditional update holds, but protect the database with a queue or waiting
   room in front and rate limits; hot-row contention is the bottleneck, not correctness.
 - Inventory changes are an append-only movement log (received, sold, returned, adjusted,
@@ -196,14 +199,14 @@ An order has three independent state machines; one combined status column cannot
 ## Digital goods and license keys
 
 - **Deliver from the paid transition**, not from the success page: the same idempotent
-  fulfilment function creates a `grant` row (order line, customer, product, status) and sends
+  fulfillment function creates a `grant` row (order line, customer, product, status) and sends
   the email. A replayed redirect or webhook produces no second grant.
 - **Downloads**: files in private object storage; the download route checks the grant, then
   issues a short-lived signed URL (minutes) per request. Never email a permanent file URL.
   Count downloads and cap them generously; log IP and time as delivery evidence for disputes.
 - **License keys**: generate from a CSPRNG with enough entropy that guessing is infeasible
   (at least 128 bits), formatted for typing. For keys from a pre-supplied pool, claim one with
-  `for update skip locked` inside the fulfilment transaction. Activation is server-side: an
+  `for update skip locked` inside the fulfillment transaction. Activation is server-side: an
   endpoint binds the key to a device or account and enforces the seat limit, with a
   self-service deactivation path.
 - **Offline-verifiable licenses**: a signed payload (product, expiry, limits) with an asymmetric

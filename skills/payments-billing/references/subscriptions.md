@@ -21,10 +21,20 @@ Build custom plan-change UI only when the portal cannot express the product (sea
 inside the app is the usual first case). Even then, call the provider's API and wait for the
 webhook; do not write subscription state directly from the request handler.
 
+By stage: Prototype needs checkout, the portal, the sync function and the status map. Launch
+adds the nightly re-sync, dunning configuration, entitlement overrides and the simulated-clock
+tests. Custom plan-change UI and price migrations wait until a real requirement appears.
+
 Mirror, per subscription: provider customer ID, subscription ID (unique), status, price or plan
-key, quantity, `current_period_end`, `cancel_at_period_end`, `trial_end`, pause state, and the
-provider's last-updated time. Bill the workspace or organization, not the individual user, if
-the product has teams; moving a subscription between owners later is painful.
+key, quantity, period end, scheduled cancellation time, `trial_end`, pause state, and when the
+row was last synced. Bill the workspace or organization, not the individual user, if the
+product has teams; moving a subscription between owners later is painful.
+
+Field locations move between provider API versions, so map them in the sync function only and
+pin the API version. On Stripe API versions from 2025-03-31 the period fields are on each
+subscription item (`items.data[].current_period_end`), not on the subscription, and
+`cancel_at_period_end` is deprecated in favor of `cancel_at`. Treat a subscription as
+canceling when either is set, and take the end date from `cancel_at` when it is present.
 
 ## One sync function, called from every event
 
@@ -33,7 +43,8 @@ the product has teams; moving a subscription between owners later is painful.
 async function syncSubscription(stripeSubscriptionId: string) {
   const sub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
   await db.upsertSubscriptionMirror(sub);       // keyed on sub.id
-  await recomputeEntitlements(sub.metadata.account_id);
+  // account from subscription metadata, else from the unique provider-customer-ID column
+  await recomputeEntitlements(await accountIdFor(sub));
 }
 ```
 
@@ -45,11 +56,11 @@ Events to subscribe to (Stripe names; other providers have equivalents):
 | Event | Why |
 |---|---|
 | `checkout.session.completed` | Links the new subscription and customer to the account |
-| `customer.subscription.created` / `.updated` / `.deleted` | Every status, plan, quantity and cancel-flag change |
+| `customer.subscription.created` / `.updated` / `.deleted` / `.paused` / `.resumed` | Every status, plan, quantity and cancel-flag change |
 | `invoice.paid` | Renewal succeeded; extend access, record revenue |
 | `invoice.payment_failed` | Start dunning communication |
 | `invoice.payment_action_required` | Renewal needs customer authentication; email a link |
-| `customer.subscription.trial_will_end` | Sent a few days before trial end; send the reminder |
+| `customer.subscription.trial_will_end` | Sent 3 days before trial end (at once for shorter trials); send the reminder |
 | `charge.refunded`, `charge.dispute.created` | Access decisions, see `refunds-disputes-fraud.md` |
 
 A nightly job re-syncs every non-terminal subscription from the provider as a backstop. "Paid
@@ -63,15 +74,16 @@ self-healing delay.
 | `trialing` | In trial | Full plan access |
 | `active` | Paid up (also when collection is paused) | Full |
 | `incomplete` | First payment not yet completed (3DS or failure) | None; prompt to finish payment |
-| `incomplete_expired` | First payment never completed within the provider's window | None; treat as never subscribed |
+| `incomplete_expired` | First payment never completed within the provider's window (about a day) | None; treat as never subscribed |
 | `past_due` | A renewal failed; retries in progress | Full during a grace period, with a banner |
 | `unpaid` | Retries exhausted, subscription kept open | Restricted: read-only or export-only |
 | `paused` | Trial ended without a payment method, where configured | None or free tier |
 | `canceled` | Ended | Free tier; keep the data for a stated retention period |
 
 Decide the grace period explicitly; the default is to keep full access while the provider's
-retry schedule runs (commonly one to three weeks), then downgrade. Cutting access on the first
-failed charge punishes expired cards; never cutting it gives the product away. Keep
+retry schedule runs (two weeks on Stripe's recommended setting), then downgrade. Cutting
+access on the first failed charge punishes expired cards; never cutting it gives the product
+away. Keep
 `current_period_end` out of access checks for `active` subscriptions: the renewal webhook can
 lag the timestamp by minutes to hours, so status decides and the date is display only.
 
@@ -84,9 +96,11 @@ lag the timestamp by minutes to hours, so status decides and the date is display
 | Card up front | Checkout collects the card, first charge at trial end | Fewer sign-ups, higher conversion, more disputes without a reminder |
 
 With card-up-front trials, send a reminder before the first charge stating amount and date,
-and make cancel one click. Card networks require specific disclosures and reminders for trials
-that convert to paid, and surprise trial charges are a leading dispute source. Prevent trial
-farming with one trial per account and per payment-method fingerprint, not per email.
+and make cancel one click. Card networks set disclosure, consent and reminder rules for trials
+that convert to paid, and consumer law in several markets adds its own. The provider's
+subscription settings can send the reminder email; turn that on instead of assuming it.
+Surprise trial charges are a common dispute source. Prevent trial farming with one trial per
+account and per payment-method fingerprint, not per email.
 
 ## Plan changes
 
@@ -104,8 +118,10 @@ farming with one trial per account and per payment-method fingerprint, not per e
   the next invoice, `none`). Show the customer the amount first using the provider's invoice
   preview endpoint; never compute proration by hand in the UI.
 - An upgrade whose immediate payment fails must not leave the customer on the higher plan.
-  Use the provider option that keeps the old state until payment succeeds, or roll back on
-  failure, and test this path.
+  Use the provider option that keeps the old state until payment succeeds (Stripe:
+  `payment_behavior: "pending_if_incomplete"`, which limits what else the same update may
+  change), or roll back on failure, and test this path. Without it the update applies and
+  the subscription sits `past_due` on the higher plan.
 - Scheduled changes (Stripe subscription schedules, or a `pending_plan` column applied on the
   renewal event) must be visible in the UI: "Changes to Basic on 3 March".
 - Downgrades can leave the account over the new plan's limits. Decide per limit: block the
@@ -151,11 +167,13 @@ status logic still lives in the app.
 
 ## Failed renewals
 
-Involuntary churn from failed cards is commonly a large share of total churn in subscription
-businesses and is the cheapest to recover. Configure, in this order:
+Churn from failed cards is the cheapest churn to recover, because the customer never decided
+to leave. Configure, in this order:
 
-1. **Provider smart retries**, with the schedule spread over two to three weeks. Do not write a
-   retry cron; network retry caps and hard-decline rules are easy to violate.
+1. **Provider smart retries**. Stripe's recommended default is 8 attempts within 2 weeks, and
+   the window is configurable; confirm it is on, and what happens after the last attempt
+   (cancel, mark unpaid, or leave past due). Do not write a retry cron; network retry caps
+   and hard-decline rules are easy to violate.
 2. **Card account updater and network tokens**, on by default with some providers; verify.
 3. **Dunning emails**: on first failure (reason in plain words, link to update the card), midway,
    and a final notice before downgrade. The link goes to the portal's payment-method page or a
@@ -201,8 +219,11 @@ Scenarios to script before Launch, asserting the mirror and entitlements after e
 8. Refund and dispute on a subscription payment.
 
 Use the provider's test cards for declines and 3DS, and forward webhooks to the local server
-with the provider's CLI. Customers on a simulated clock are test-mode only and cannot be mixed
-with normally-clocked objects.
+with the provider's CLI. Traps: a clock advances asynchronously, so wait until it reports
+ready and the webhooks have drained before asserting; one advance may jump only a limited
+distance (two billing intervals of the shortest subscription on Stripe), so step through long
+scenarios; and customers on a simulated clock are test-mode only and cannot be mixed with
+normally-clocked objects.
 
 ## Migrating subscribers between prices
 
@@ -222,7 +243,9 @@ migration of subscriptions.
    sample from each cohort.
 
 Traps: annual subscribers must not be changed mid-term; subscriptions with coupons, add-ons or
-custom prices need their own cohorts; currency cannot change on an existing subscription.
+custom prices need their own cohorts; currency cannot change on an existing subscription (it
+is cancel and re-create, and on Stripe one customer cannot hold active subscriptions in two
+currencies).
 
 ## Ask the user
 

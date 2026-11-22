@@ -16,7 +16,7 @@ from the first sale.
 
 | Option | What it is | Takes on | Cost and limits |
 |---|---|---|---|
-| Merchant of record (Paddle, Lemon Squeezy, Polar and similar) | The provider is the legal seller and resells the product | Tax registration, collection, remittance and invoices worldwide; much of fraud and dispute handling | Higher percentage fee; their checkout, invoice format, payout schedule and acceptable-use rules; customers see their name on statements; weaker fit for sales-led B2B and marketplaces |
+| Merchant of record (Paddle, Polar, Stripe Managed Payments and similar) | The provider is the legal seller and resells the product | Tax registration, collection, remittance and invoices in the countries it covers; much of fraud and dispute handling | Higher percentage fee; their checkout, invoice format, payout schedule and acceptable-use rules; their name on customer statements; eligibility limits (commonly digital products only, a list of supported seller countries, no marketplaces); weaker fit for sales-led B2B |
 | Processor + tax engine (Stripe + Stripe Tax, or a tax API) | The business is the seller; software computes tax and tracks thresholds | Calculation and reports only. Registration and filing remain the business's job (add a filing service or accountant) | Lower fee, full control, real ongoing obligations |
 | Processor, no tax handling | Ignore tax | Nothing | Accrues liability with penalties and interest; acceptable only at Prototype with no real revenue |
 
@@ -27,19 +27,24 @@ contracts or a marketplace → processor plus tax engine plus an accountant. Swi
 means migrating subscriptions and cards, so decide before Launch, not after.
 
 A merchant of record does not remove the business's own income tax or its obligations in its
-home country for the payouts it receives; it removes the customer-facing indirect tax.
+home country for the payouts it receives; it removes the customer-facing indirect tax. Before
+committing, confirm the candidate still takes new sellers and covers the product type and the
+entity's country: this market consolidates (Stripe is closing Lemon Squeezy, which it bought,
+and moving its sellers to Managed Payments).
 
 ## Registering, collecting, remitting
 
 The mechanics by region, as background for the conversation with an accountant:
 
 - **EU**: B2C digital services are taxed at the customer's country's VAT rate. A seller
-  established in the EU has a small EU-wide annual threshold for cross-border B2C sales below
-  which home-country VAT applies; sellers outside the EU have no threshold. The One Stop Shop
+  established in one EU country has a small EU-wide annual threshold for cross-border B2C
+  sales (EUR 10,000; confirm it is current) below which home-country VAT applies; sellers
+  outside the EU have no threshold. The One Stop Shop
   (OSS) lets a seller register once and file one quarterly return for all member states
-  instead of registering in each. B2B sales to a customer with a valid VAT ID in another
-  member state are reverse-charged: no VAT charged, a note on the invoice, the buyer accounts
-  for it.
+  instead of registering in each; a non-EU seller picks one member state to register through.
+  B2B sales to a customer with a valid VAT ID in another member state, or from a seller
+  outside the EU, are generally reverse-charged: no VAT charged, a note on the invoice, the
+  buyer accounts for it.
 - **UK, Norway, Switzerland, Australia, New Zealand, India, Canada, Japan and many others**:
   their own rules for foreign sellers of digital services, with thresholds from zero to
   substantial. Each is a separate registration.
@@ -58,8 +63,8 @@ Sequence when handling it in-house:
 1. Turn on the tax engine in monitoring mode from the first sale, so it tracks where sales
    accumulate. Give every product the right tax code; the default code is often wrong for SaaS
    versus downloadable software versus services.
-2. Register *before* charging tax in a jurisdiction. Collecting tax without a registration is
-   itself an offense in many places.
+2. Register *before* charging tax in a jurisdiction. Charging tax with no registration to
+   remit it under is unlawful in many places, and the amount is owed to the authority anyway.
 3. Add the registration to the engine; it then charges tax there. Decide per market whether
    existing prices absorb the tax (inclusive) or it is added on top (exclusive).
 4. File and remit on the jurisdiction's schedule even when the amount is zero. Missed zero
@@ -97,9 +102,9 @@ and its required content is set by law. Commonly required fields:
 - Generate the invoice from an immutable snapshot of the order at finalization: customer
   details, line items, tax rates as charged. Regenerating from current data rewrites history
   when a customer edits their address.
-- Store the rendered PDF and the structured data. Retention periods for invoices are long
-  (commonly six to ten years); they are exempt from deletion requests for that reason, see
-  `0x:privacy-compliance`.
+- Store the rendered PDF and the structured data. Statutory retention periods for invoices
+  are long and set per country (several years, up to about ten); a legal retention duty
+  generally overrides a deletion request for those records, see `0x:privacy-compliance`.
 - Give customers a self-serve invoice history. B2B customers ask for invoices monthly.
 - Let customers add billing details *before* purchase; after finalization, changes go through
   a credit note (below), with a narrow exception for provider-supported address edits on
@@ -113,21 +118,23 @@ and its required content is set by law. Commonly required fields:
   format hint. Hosted checkouts have a tax-ID collection option; use it.
 - **Validate, do not just format-check.** For EU VAT numbers, validate against the VIES service
   and store the result, timestamp and consultation reference; the zero-rating is defensible
-  only with proof of validation at the time of sale. Other countries have their own registries.
+  only with proof of validation at the time of sale. Other countries have their own registries
+  (UK numbers are checked with HMRC's service, not VIES).
 - Validation services go down. On failure, either charge tax and refund it when validation
   later succeeds, or accept provisionally and re-validate in a job; never block the sale
   indefinitely and never zero-rate on an unvalidated number without a recheck.
 - A valid ID changes tax treatment only in the cases the law defines (cross-border B2B in the
   EU). A domestic business customer is still charged VAT, with the ID printed on the invoice.
-- The ID's country must match the billing country. Mismatches are either mistakes or evasion.
+- The ID's country should match the billing country. Hold a mismatch for review: usually a
+  mistake, sometimes evasion, occasionally a company registered in several countries.
 - US exempt buyers (resellers, nonprofits) provide exemption certificates per state; store them
   and mark the customer exempt in the tax engine.
 - Re-validate stored IDs periodically for subscriptions; companies deregister.
 
 ## Credit notes, not edits
 
-A finalized invoice is immutable. Changing it destroys the audit trail and, in jurisdictions
-with sequential numbering, is illegal.
+A finalized invoice is immutable. Changing it destroys the audit trail and, where the law
+requires sequential numbering and retention, is generally not permitted.
 
 | Situation | Action |
 |---|---|
@@ -147,8 +154,11 @@ A growing number of countries require invoices to be issued as structured data, 
 government platform or a certified network, rather than as a PDF. Models differ: clearance
 (the tax authority approves each invoice before it is valid, as in Italy and much of Latin
 America), and network exchange with reporting (Peppol-based systems in several European and
-Asia-Pacific countries). The EU has adopted a move toward mandatory structured e-invoicing for
-cross-border B2B, with member states phasing in domestic mandates on their own timelines.
+Asia-Pacific countries). The EU's VAT in the Digital Age package makes structured e-invoicing
+mandatory for cross-border B2B within the EU from 2030, and member states are phasing in
+domestic B2B mandates before that on their own timelines (Belgium, Poland, France and Germany
+among them, in steps between 2025 and 2028, often by company size). Dates have slipped more
+than once; check the current schedule for the entity's country.
 
 - The obligation usually depends on where the *seller* is established and sometimes on the
   buyer (public-sector buyers often require e-invoices first). A foreign seller with no local
@@ -194,8 +204,9 @@ Three different currencies are in play: presentment (what the customer is charge
   numbers) rather than converting live; live conversion makes prices drift and look arbitrary.
   Provider-side automatic local-currency conversion at checkout is the low-effort alternative,
   with the customer usually bearing a conversion markup.
-- **Lock currency per customer.** A subscription cannot change currency; a customer who
-  relocates gets a new subscription. Choose the currency from billing country, not IP alone.
+- **Lock currency per customer.** A subscription cannot change currency, and with Stripe one
+  customer cannot hold active subscriptions in two currencies; a customer who relocates
+  cancels and resubscribes. Choose the currency from billing country, not IP alone.
 - **Settlement**: when presentment and settlement currencies differ, the processor converts at
   its rate plus a fee. Above meaningful volume in a currency, open a bank account in it and
   settle like-for-like.

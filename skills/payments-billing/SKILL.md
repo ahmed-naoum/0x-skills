@@ -1,6 +1,6 @@
 ---
 name: payments-billing
-description: "Takes money correctly in a web product: checkout integration and payment webhooks, subscriptions and entitlements, usage and credit billing, invoices and tax, refunds, chargebacks and fraud, ledger and reconciliation, carts and inventory. Use when integrating Stripe or Paddle, adding subscriptions or trials, fixing double charges or paid-but-no-access, or handling VAT, disputes, failed renewals or payouts."
+description: "Takes money correctly: checkout integration and payment webhooks, subscriptions and entitlements, usage and credit billing, invoices and tax, refunds, chargebacks and fraud, ledger and reconciliation, carts and inventory. Use when integrating Stripe or Paddle, adding subscriptions or trials, fixing double charges or paid-but-no-access, or handling VAT or sales tax, disputes, failed renewals or payouts."
 ---
 
 # Payments, billing and commerce
@@ -59,7 +59,7 @@ work within it. The defaults below are for new decisions.
 |---|---|---|
 | Provider | Stripe | Founder wants tax handled, or the entity's country is unsupported → merchant of record (Paddle or similar) |
 | Checkout surface | Provider-hosted checkout page | A concrete layout or flow requirement → provider-hosted fields with PaymentIntents |
-| Fulfilment trigger | Verified webhook, plus the success page calling the same idempotent function after a server-side fetch | Never the redirect alone |
+| Fulfillment trigger | Verified webhook, plus the success page calling the same idempotent function after a server-side fetch | Never the redirect alone |
 | Idempotency | Key = persisted payment-attempt ID, reused on retries | New attempt after a decline → new row, new key |
 | Money in the database | Integer minor units + ISO currency code | No exceptions |
 | Subscription management | Hosted checkout, provider customer portal, webhook-synced mirror | Seat management in-app or unusual plans → custom UI calling the provider API |

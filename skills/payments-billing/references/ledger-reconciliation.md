@@ -43,7 +43,8 @@ Rules for every money column:
 Layered guards; the database constraint is the one that cannot be bypassed by a bug elsewhere.
 
 ```sql
--- At most one live payment per order.
+-- At most one live payment per order. A second provider payment for the same order is
+-- stored with status 'duplicate' (outside this index) and then refunded.
 create unique index one_live_payment_per_order
   on payments (order_id)
   where status in ('processing', 'succeeded');
@@ -58,7 +59,7 @@ update orders set status = 'paid', paid_at = now()
 |---|---|
 | Request | One open attempt per order: take `select ... for update` on the order row, refuse or return the existing attempt when one is in flight |
 | Provider call | Idempotency key = attempt ID, persisted first (see `checkout-integration.md`) |
-| Webhook | Event ID unique in `provider_events`; fulfilment through the guarded transition |
+| Webhook | Event ID unique in `provider_events`; fulfillment through the guarded transition |
 | Database | Unique provider payment ID; the partial unique index above; `check (amount > 0)`; refunds sum ≤ payment amount enforced under a lock |
 | Subscriptions | One active subscription per account: partial unique index on `account_id` where status is live; reuse the existing provider customer instead of creating another |
 | After the fact | Reconciliation finds two succeeded provider payments carrying the same order ID in metadata, refunds the later one, alerts |
@@ -81,7 +82,7 @@ Most reports are not double charges. Establish facts before refunding anything.
 | Two succeeded payments, same order ID | True duplicate | Refund the later one now; find the missing guard |
 | Two succeeded payments, different orders | Customer submitted twice (two tabs, back button), or two accounts | Refund if unwanted; add the guard from `checkout-integration.md` |
 | Two subscription invoices | Two subscriptions on one customer, or upgrade proration plus renewal | Cancel the duplicate and refund; or explain the proration |
-| A charge the database does not know about | Missed webhook, or a payment created outside the app | Reconcile, fulfil or refund |
+| A charge the database does not know about | Missed webhook, or a payment created outside the app | Reconcile, fulfill or refund |
 
 3. **Database**: attempts and payments for the order; do the provider IDs match the dashboard?
 4. **Logs and `provider_events`**, filtered by the order and payment IDs: were two create calls
@@ -125,7 +126,8 @@ refunds, disputes and adjustments, and it does not line up with calendar-day sal
 - The provider records every movement of the balance as a balance transaction with a type
   (charge, refund, dispute, fee, payout, adjustment), gross amount, fee and net. Each payout
   can be expanded into the balance transactions it contains (Stripe: list balance transactions
-  filtered by payout, or the payout reconciliation report).
+  filtered by payout, which works for automatic payouts only, or the payout reconciliation
+  report).
 - For each payout: `sum(net of its balance transactions) = payout amount = bank deposit`. Store
   the payout ID on each payment, refund and dispute row once known. Three-way match: bank
   deposit ↔ payout ↔ ledger rows.
@@ -161,7 +163,7 @@ Balances are derived, never stored as the only copy.
 create table ledger_accounts (
   id bigint generated always as identity primary key,
   owner_type text not null,           -- 'platform', 'customer', 'seller', 'provider'
-  owner_id text,
+  owner_id text not null default '',  -- '' for platform accounts: null would defeat the unique key
   kind text not null,                 -- 'cash_at_provider', 'customer_credit', 'seller_payable', 'revenue', 'fees'
   currency char(3) not null,
   unique (owner_type, owner_id, kind, currency)
@@ -188,10 +190,14 @@ create table ledger_entries (
   transaction that references the original.
 - **Balanced**: all entries of a transaction are inserted in one database transaction through a
   single function that checks `sum(amount) = 0` per currency before commit. A deferred
-  constraint trigger enforces it against direct writes.
+  constraint trigger (`create constraint trigger ... after insert on ledger_entries deferrable
+  initially deferred`) that raises when a transaction's entries do not sum to zero enforces
+  it against direct writes.
 - **Idempotent**: the unique key on `ledger_transactions` makes a replayed webhook a no-op.
-- **Balances**: `sum(amount)` per account. When that gets slow, keep a balance row updated in
-  the same transaction, and verify it against the sum in reconciliation.
+- **Balances**: `sum(amount)` per account. With this sign convention, liability and revenue
+  accounts (customer credit, seller payable) carry negative sums: negate for display, and
+  write overdraft checks with the sign in mind. When summing gets slow, keep a balance row
+  updated in the same transaction, and verify it against the sum in reconciliation.
 - **No overdraft**: lock the account row (`for update`) before checking and spending, or put a
   check constraint on the cached balance, so two concurrent spends cannot both pass.
 - **Cross-currency** movements go through explicit FX accounts with both legs recorded; a
@@ -225,8 +231,8 @@ each seller, and performs payouts.
   seller's balance is empty (debit their bank, net against future sales, or platform absorbs).
   A reserve or delayed payout for new sellers limits this.
 - Sellers need tax documents and reporting in many countries, and platforms increasingly have
-  their own reporting duties about seller income; the provider's tooling covers part. Ask an
-  accountant which apply.
+  their own reporting duties about seller income (US Form 1099-K and the EU's DAC7 are the
+  best-known examples); the provider's tooling covers part. Ask an accountant which apply.
 - Payouts are blocked until the seller completes verification; surface the provider's
   requirements status in the seller dashboard and by email, or support will hear about it.
 
