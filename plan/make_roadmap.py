@@ -95,7 +95,28 @@ def built(skill):
     return os.path.isfile(os.path.join(out_root, "skills", skill["name"], "SKILL.md"))
 
 
-done = [s for s in skills if built(s)]
+def reviewed_names():
+    """Skills whose adversarial review is committed, read from the git history."""
+    import subprocess
+    try:
+        log = subprocess.run(["git", "-C", out_root, "log", "--format=%s"], capture_output=True, text=True, timeout=30).stdout
+    except Exception:
+        return set()
+    return {m.group(1) for m in re.finditer(r"^Review the ([a-z0-9-]+) skill", log, flags=re.M)}
+
+
+reviewed = reviewed_names()
+
+
+def status_of(skill):
+    if skill.get("existing"):
+        return "built and tested"
+    if not built(skill):
+        return "planned"
+    return "built and reviewed" if skill["name"] in reviewed else "draft, review pending"
+
+
+done = [s for s in skills if status_of(s).startswith("built")]
 readme = [
     "# 0x skills",
     "",
@@ -136,7 +157,7 @@ readme += [
     "",
     "## Skills",
     "",
-    (f"{len(done)} of {len(skills)} are built so far; the rest are being written in the order of the build queue. " if len(done) < len(skills) else f"All {len(skills)} are built. ")
+    (f"{len(done)} of {len(skills)} are finished so far; the rest are being written and reviewed, the most used first. " if len(done) < len(skills) else f"All {len(skills)} are built and reviewed. ")
     + ("`roadmap`, the map of the set, is built too." if os.path.isfile(os.path.join(out_root, "skills", "roadmap", "SKILL.md")) else "`roadmap`, the map of the set, is written last."),
     "",
     "| Skill | What it covers | Reference files | Competencies | Status |",
@@ -144,7 +165,7 @@ readme += [
 ]
 for s in skills:
     n_refs = "engine + templates" if s.get("existing") else str(len(s["references"]))
-    status = "built" if built(s) else "planned"
+    status = status_of(s)
     link = f"[`{s['name']}`](skills/{s['name']}/SKILL.md)" if built(s) else f"`{s['name']}`"
     readme.append(f"| {link} | {s['summary']} | {n_refs} | {len(leaves_of(s))} | {status} |")
 readme += [
