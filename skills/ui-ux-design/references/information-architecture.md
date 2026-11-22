@@ -82,7 +82,8 @@ Pick the mechanism by collection size and how users recall items.
 - On opening, show recent items and recent searches before any typing.
 - The zero-result state states the query, suggests a fix (check spelling, clear filters, search everywhere) and offers creation when that makes sense ("Create customer 'Acme'").
 - Scope must be visible: searching within this project or across everything.
-- Search technology belongs to the data and backend skills; choose the design first.
+- Results, suggestions, counts and recents show only what this user may open, filtered inside the query and not after it; a title in an autocomplete list is a leak even when the click is refused.
+- Search technology belongs to `0x:data-stores`; choose the design first.
 
 **Filters**
 
@@ -118,10 +119,10 @@ A URL is part of the interface: users read, share, bookmark and edit it.
 - **Path for identity and hierarchy; query string for view state** (filters, sort, page, selected tab if it is only a view toggle, search query).
 - **Every meaningful state has a URL**: tabs, an open detail panel, a modal that represents an object (opening an item in a dialog over the list). Test: copy the URL into a new tab; the same thing must appear. Transient states (an open menu, a confirmation dialog) do not get one.
 - **Use the glossary's nouns**, plural for collections, lowercase with hyphens. The URL word and the navigation label should match.
-- **IDs**: an opaque stable ID in the path survives renames; add a readable slug only for content that is shared publicly, and redirect when the slug changes. Do not put personal data such as email addresses in paths; URLs end up in logs, analytics and referrers.
+- **IDs**: an opaque stable ID in the path survives renames; add a readable slug only for content that is shared publicly, and redirect when the slug changes. Do not put personal data such as email addresses, or long-lived secrets such as API keys and session tokens, in paths or query strings; URLs end up in browser history, logs, analytics and referrers. An ID that is hard to guess is not access control: every URL is checked against the signed-in user's permissions on the server (`0x:auth-identity`).
 - **Multi-tenant scope** is explicit in the URL (`/acme/projects/...` or a subdomain) when users belong to several workspaces; otherwise a shared link opens in the wrong workspace or fails mysteriously. Tenancy design belongs to `0x:backend-architecture`.
 - **Back button**: navigating to a page pushes history; changing a filter usually replaces the entry, so Back leaves the list instead of unwinding ten filter changes.
-- **URLs are promises.** When structure changes, redirect old paths permanently. Signed-out visits return to the requested URL after sign-in.
+- **URLs are promises.** When structure changes, redirect old paths permanently. Signed-out visits return to the requested URL after sign-in; accept only a same-site relative path as that return target, because an unchecked "return to" parameter lets a crafted link bounce users from the real sign-in page to a fake one (`0x:web-security`).
 - Routing implementation belongs to `0x:react-nextjs`.
 
 ## The home screen
@@ -144,7 +145,7 @@ The home screen answers "what needs my attention, and where was I?" It is not a 
 
 ## Validating structure: card sorting and tree testing
 
-Worth doing when the product has roughly 30 or more destinations or content items, before a navigation redesign, or when "cannot find X" dominates support. Below that, a tree test is still cheap; card sorting is usually unnecessary.
+Usually a Scale activity. Worth doing when the product has roughly 30 or more destinations or content items, before a navigation redesign, or when "cannot find X" dominates support. Below that, a tree test is still cheap; card sorting is usually unnecessary.
 
 | Method | Question it answers | How |
 |---|---|---|
@@ -153,7 +154,7 @@ Worth doing when the product has roughly 30 or more destinations or content item
 | Tree test | Can users find things in this hierarchy, with no visual design to help? | Text-only tree; 8 to 10 tasks ("Where would you change who receives invoices?"); measure success, directness and first choice |
 
 - **Sequence**: open sort to generate, draft the tree, tree test to verify, revise, retest the failing tasks.
-- **Sample sizes (rules of thumb)**: about 15 to 20 participants for a card sort to see stable groupings; about 30 to 50 for a tree test to trust the percentages. Five moderated participants thinking aloud still expose the worst labels.
+- **Sample sizes (rules of thumb)**: about 15 to 30 participants for a card sort to see stable groupings; about 30 to 50 for a tree test before the percentages mean anything. Five moderated participants thinking aloud still expose the worst labels.
 - **Task wording must not contain the label being tested**; describe the goal in other words, as in `usability-testing.md`.
 - **Reading results**: the first click predicts the outcome; a task where people start in the wrong branch points at a top-level label problem. Items that are split between two groups either need a clearer name or legitimately belong in both (cross-link them).
 - **Trap**: card sorts show how people group, not how they search for something during a task. Never ship a structure from a card sort without a tree test.

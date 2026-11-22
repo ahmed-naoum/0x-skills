@@ -22,7 +22,7 @@ Rules for the switcher:
 
 Implementation points that are design decisions:
 
-- **No flash of the wrong theme.** The theme must be resolved before first paint (a small inline script in the document head that sets the class or attribute, or a cookie read on the server). A white flash on every load in dark mode is the most reported dark-mode defect. A maintained helper such as `next-themes` handles this in Next.js projects.
+- **No flash of the wrong theme.** The theme must be resolved before first paint: a small blocking inline script in the document head that reads the stored choice and sets the attribute, or a cookie read on the server. A cookie can carry only an explicit Light or Dark choice; the server cannot see the system preference on most browsers, so "System" resolves in CSS (`prefers-color-scheme`) or in that inline script. Under a strict Content Security Policy the inline script needs a nonce or hash, or it is blocked silently and the flash returns (`0x:web-security`). A white flash on every load is the dark-mode defect users notice first. Helper libraries exist (`next-themes` is the long-standing one for Next.js); before adding one, check that it is still maintained and runs without warnings on the React version in use, because the whole job is about ten lines of script.
 - **Tell the browser the scheme** so scrollbars, form controls and default backgrounds match:
 
 ```css
@@ -31,11 +31,14 @@ Implementation points that are design decisions:
 :root[data-theme="dark"] { color-scheme: dark; }
 ```
 
-- With Tailwind v4 the `dark:` variant follows the system preference by default; to drive it from a class or attribute, declare the variant:
+- With Tailwind v4 the `dark:` variant follows the system preference by default; to drive it from a class or attribute, declare the variant (here with the same attribute as above; a kit that toggles a `.dark` class uses that selector in both places):
 
 ```css
-@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 ```
+
+  Once the variant is tied to the attribute it no longer follows the system by itself. In System mode the script must write the resolved value (`light` or `dark`) to the attribute and update it when the system setting changes; otherwise native controls go dark while `dark:` styles stay light.
+- With `color-scheme` set per theme as above, `light-dark(lightValue, darkValue)` lets one token declaration carry both values; confirm it is supported by the oldest browser the product commits to.
 
 Prefer tokens that change value per theme over `dark:` variants scattered through components; a component that needs `dark:` on most of its classes is using primitive colors. Mechanics belong to `0x:frontend-foundations`.
 
@@ -65,9 +68,9 @@ Inverting the light theme produces the washed-out or glaring result. Dark themes
 
 | Aspect | Light theme | Dark theme |
 |---|---|---|
-| Base background | White or near-white | Dark gray, not pure black: roughly 8 to 14% lightness, slightly tinted toward the brand hue |
+| Base background | White or near-white | Dark gray, not pure black: about #121212 to #242424 (roughly 7 to 14% HSL lightness, 0.18 to 0.26 OKLCH lightness), slightly tinted toward the brand hue |
 | Elevation | Shadows; higher is the same color with a deeper shadow | Lightness; higher surfaces are lighter. Each level steps up a few percent |
-| Text | Near-black on white | Off-white, not pure white: primary text around 87 to 93% lightness; secondary and disabled progressively dimmer |
+| Text | Near-black on white | Off-white, not pure white: primary text around #E0E0E0 to #EDEDED (roughly 88 to 93% lightness); secondary dimmer but still 4.5:1 on the lightest raised surface |
 | Borders | Light gray lines | Slightly lighter than the surface, low contrast; borders do more work because shadows do less |
 | Accent and status colors | Mid-to-dark steps (600 to 700) | Lighter, less saturated steps (300 to 400) for text and icons; filled buttons may keep a mid step if the on-color passes |
 | Shadows | Soft, visible | Nearly invisible on dark; make them darker and tighter, and rely on surface lightness and a hairline border |
@@ -138,7 +141,7 @@ What breaks in forced-colors mode, and the fix:
 - **`forced-color-adjust: none`** opts an element out; reserve it for content where color is the information (a color swatch, a chart with another accessible alternative), never for whole components.
 - **Test** by emulating forced colors in browser developer tools (the rendering emulation settings in Chromium-based browsers) and, before a claim of support, on Windows with a contrast theme enabled.
 
-Stage: using real borders and outlines costs nothing and should be the habit from Prototype. A full forced-colors pass belongs at Launch for products sold to the public sector, education or large enterprises, and at Scale otherwise. A dedicated high-contrast theme is optional when the default themes already meet AA. Conformance scope belongs to `0x:accessibility`.
+Stage: using real borders and outlines costs nothing and should be the habit from Prototype. A full forced-colors pass belongs at Launch for products sold to the public sector, education or large enterprises, and at Scale otherwise. For those buyers accessibility is often a legal or procurement requirement rather than a preference, and which rules apply depends on the market. A dedicated high-contrast theme is optional when the default themes already meet AA. Conformance scope belongs to `0x:accessibility`.
 
 ## Per-customer branded themes
 
@@ -160,6 +163,7 @@ Rules:
 - **Neutrals stay the product's.** Tinting the gray ramp per customer multiplies testing for little visible gain.
 - **Apply at the root, scoped by tenant**: emit the tenant's token values as custom properties on the root element from the server, so the first paint is branded and there is no flash of the default brand. Cache the generated values with the tenant record.
 - **Treat theme values as untrusted input.** Validate each as a color (or as a value from an allowed list) before writing it into a style block; never interpolate free text into CSS, and do not accept arbitrary customer CSS or remote font URLs without a review path. Injection risks belong to `0x:web-security`.
+- **A customer's logo is an upload, with an upload's risks.** SVG files can carry script: accept raster formats, or sanitize the SVG and serve it from a separate origin, and render it as an image, never inline. Fix the dimensions and the file size. Upload handling belongs to `0x:web-security`.
 - **Both schemes.** Either derive a dark variant from the same inputs or state that branded spaces are light-only; do not leave dark mode showing the default brand.
 - **Where the brand appears**: logo slot with fixed bounding box and padding, primary actions, links, selection, emails and public or customer-facing pages. Internal admin screens can stay in the product's own theme.
 - **Give a live preview** on real screens (a form, a table, a dialog), not on a swatch.

@@ -30,7 +30,7 @@ The better plan is several small rounds: test five, fix, test five more on the r
 
 1. **Decide the questions** (three at most): "Can a new user create and send an invoice without help?"
 2. **Write three to five tasks** as scenarios (next section) with a success definition for each.
-3. **Prepare the prototype or build** with realistic data and a test account that can be reset between sessions.
+3. **Prepare the prototype or build** with realistic but invented data and a test account that can be reset between sessions. Never a real customer's records: the session is recorded and the participant is a stranger.
 4. **Pilot once** with anyone available. The pilot always finds a broken link, an ambiguous task or a missing state; fix those before real participants.
 5. **Recruit five**, plus one spare for no-shows.
 6. **Run sessions** of 30 to 45 minutes, recorded with consent (screen, voice, and face if agreed).
@@ -105,10 +105,10 @@ Match behavior, not demographics: people who do the job the product serves, at t
 | Anyone nearby (hallway test) | Catching gross problems in labels and layout | Not valid for domain-specific tasks |
 
 - **Screener**: three to five questions that identify behavior without revealing the wanted answer. Ask "Which of these did you do in the past month?" with distractors, not "Do you send invoices?". Include one open question; a thoughtful answer predicts a useful participant.
-- **Incentive**: pay for people's time at a rate appropriate to their profession; gift cards or account credit are common. Busy professionals need more; existing customers often accept credit or early access.
+- **Incentive**: pay for people's time at a rate appropriate to their profession; gift cards or account credit are common. Busy professionals need more; existing customers often accept credit or early access. Two traps: employees of public bodies and of some regulated companies may not accept gifts at all, so ask before sending one; and payments to individuals can carry tax-reporting duties above thresholds that differ by country, which matters once incentives are large or repeated.
 - **Logistics**: schedule with a booking link, send a reminder the day before, over-recruit by one, keep sessions remote by default (video call with screen share) and test their ability to share a screen in the first minute.
 - **Do not reuse the same participants for first-run tests**; they are no longer new.
-- **Consent and data**: get explicit agreement to record, say how the recording is used and for how long it is kept, and store it with access limits. Recordings are personal data; requirements belong to `0x:privacy-compliance`.
+- **Consent and data**: get explicit agreement before recording starts, in writing or spoken on the recording; say how the recording is used, who sees it and for how long it is kept, and store it with access limits. Do not publish clips or named quotes without separate permission. Recruit adults only unless minors are the audience, which needs a guardian's consent and legal advice. Recordings are personal data; requirements belong to `0x:privacy-compliance`.
 
 ## Session replays
 
@@ -126,6 +126,8 @@ Start from a signal, not from random sessions:
 What replays reveal well: elements that look clickable and are not, controls that are missed, fields that cause repeated correction, loops between two pages, layout breakage at real viewport sizes, confusing error states. What they do not reveal: intent, expectations, and anything about people who never arrived.
 
 Traps: watching without a question (hours gone, nothing decided); generalizing from the few most dramatic sessions; ignoring that replays record only consenting, non-blocked users. Mask all input fields and sensitive on-screen text by default, and exclude payment and authentication pages; replay tools capture personal data and need the same care as any other processor.
+
+Replay is also the analytics feature most likely to create legal exposure. In the EU and UK it generally needs the visitor's consent before recording starts. In the United States it has drawn many lawsuits under wiretapping and interception laws, with courts disagreeing on the outcome; the recurring allegation is recording that began before any consent was given. Design for the mechanism: the recorder loads only after whatever consent the visitor's jurisdiction requires, the privacy notice names the tool, and masking is on by default. Which rule applies to this product's visitors is a question for `0x:privacy-compliance`, and for a lawyer where the product handles health, financial or children's data.
 
 ## Heuristic review
 
@@ -169,7 +171,7 @@ Use unmoderated tests when the question is narrow and numbers matter, or when sc
 - **Unmoderated task test**: participants follow written tasks on a prototype or live site, recorded. Write tasks even more carefully than for moderated tests, one at a time, with an unambiguous end condition. Limit to three to five tasks and about 15 minutes.
   Pilot with two people first; an unclear task wastes the whole batch. For rough completion rates use 20 or more participants per variant, as a rule of thumb; five to eight suffice when only watching recordings for problems.
 - **First-click test**: show a screenshot or mockup, give a task, record where the participant clicks first and how long it takes. A correct first click strongly predicts eventual task success, so this is a cheap check of layout and labels before anything is built.
-  Reading results: clustered clicks on the right target is the goal; scattered clicks mean no clear affordance; a cluster on a wrong element means that element promises the wrong thing. Use roughly 30 or more participants per design to compare two layouts.
+  Reading results: clustered clicks on the right target is the goal; scattered clicks mean no clear affordance; a cluster on a wrong element means that element promises the wrong thing. Use roughly 30 or more participants per design to compare two layouts, as a rule of thumb; at that size only a large difference is real, so treat a close result as a tie.
 - **Five-second test**: show a screen for five seconds and ask what it was about and what could be done there. Checks first impression and hierarchy; unsuitable for evaluating flows.
 - **Quality control**: add an attention-check question, discard sessions completed implausibly fast, and screen as for moderated tests.
 - Testing platforms and their panels change often; compare current options and prices when needed rather than assuming one.

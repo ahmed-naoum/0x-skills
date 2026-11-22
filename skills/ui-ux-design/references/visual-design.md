@@ -23,22 +23,24 @@ Amateur screens are rarely ugly in one place. They are inconsistent everywhere. 
 
 When reporting a critique, name the element, the rule it breaks and the token it should use ("card padding is 14px; use space-4, 16px"). "Feels cluttered" is not a finding.
 
+By stage: at Prototype, keep the kit's look, set the tokens once and fix only rows 1 to 4, which carry most of the effect. At Launch, run the whole table on every screen between signup and first value and write the one-page brand kit. Custom typefaces, illustration and a density toggle wait for Scale.
+
 ## Hierarchy: one primary action
 
 - **Squint test.** Blur the screen or view it at 25% zoom. The thing that still stands out must be the thing the user came to do. If two things stand out, one must be demoted.
 - **Button ladder.** One filled (primary) button per view or per dialog. Secondary actions are outlined or tinted, tertiary are text-only. Destructive actions are not primary by default: a red filled button belongs only in the confirmation step, not on the list row.
-- **Three text emphasis levels are enough**: primary (near-black), secondary (about 60 to 70% of that contrast), tertiary or disabled. Add a level only when a real screen needs it.
+- **Three text emphasis levels are enough**: primary (near-black), secondary (a mid gray that still passes 4.5:1 on every surface it sits on), and tertiary for disabled text and decoration only. Add a level only when a real screen needs it.
 - **De-emphasize instead of emphasizing.** When the important item does not stand out, make its neighbors quieter rather than making it louder. Loudness escalates; quiet does not.
 - **Order of tools**: position and size of the region, then weight, then color, then font size. Bigger text is the last resort.
 - **Semantics are separate from looks.** An `h2` can be visually small; choose the heading level by document structure and the size by hierarchy.
 
 ## Type: scale, measure, rhythm
 
-Default scale for product UI, in px on a 16px root: **12, 14, 16, 18, 20, 24, 30, 36, 48**. A product screen normally uses four of these: 12 or 13 for captions and meta, 14 for dense UI text, 16 for body and inputs, 20 to 24 for the page title. Marketing pages reach for 36 and above; app screens almost never should.
+Default scale for product UI, in px on a 16px root: **12, 14, 16, 18, 20, 24, 30, 36, 48**. A product screen normally uses four of these: 12 for captions and meta, 14 for dense UI text, 16 for body and inputs, 20 to 24 for the page title. Marketing pages reach for 36 and above; app screens almost never should.
 
 | Setting | Value | Reason |
 |---|---|---|
-| Body size | 16px for reading; 14px acceptable for dense app UI on desktop | Below 14px reading speed drops and low-vision users suffer |
+| Body size | 16px for reading; 14px acceptable for dense app UI on desktop | Smaller text tires readers and excludes low-vision users; keep 12px for short secondary labels, never for sentences |
 | Input text on mobile | At least 16px | iOS Safari zooms the page when a focused input has a smaller font size |
 | Line length | 45 to 75 characters; `max-width: 65ch` on prose | Longer lines lose the reader on the return sweep |
 | Line height | About 1.5 for body, 1.2 to 1.3 for 20 to 30px, 1.05 to 1.15 for display sizes | Line height shrinks as size grows |
@@ -55,7 +57,8 @@ Sizes are specified in `rem` so user font-size settings scale the interface. Flu
 ### Choosing and pairing typefaces
 
 - **Default: one sans family** with a wide weight range, ideally variable. Proven screen faces: Inter, Geist, IBM Plex Sans, Source Sans 3, or the platform stack via `system-ui`. The system stack costs zero bytes and looks native, but looks different on each OS; pick it for tools and admin, pick a web font when brand consistency matters.
-- **What to check before committing**: a tall x-height (legible at 12 to 14px); distinguishable `I l 1` and `O 0`; tabular figures available; at least 400, 500 or 600, and 700; the character sets for every language the product ships in; a license that covers web embedding and, if needed, app embedding and self-hosting.
+- **What to check before committing**: a tall x-height (legible at 12 to 14px); distinguishable `I l 1` and `O 0`; tabular figures available; at least 400, 500 or 600, and 700; the character sets for every language the product ships in; a license that covers web embedding and, if needed, app embedding and self-hosting (the faces named above are openly licensed; read the license of any other before shipping it).
+- **Self-host the font files.** Loading them from a third-party font host sends every visitor's IP address to that host, which has drawn privacy claims in the EU, and adds a connection before text can render. Loading strategy belongs to `0x:web-performance`.
 - **Pairing rule**: a second family is justified only by a second job. Common jobs: a display or serif face for marketing headings; a monospace for code, IDs and keys. Pair by contrast (serif with sans, or text face with a distinct display face), never two similar sans faces. Three families is a mistake.
 - **Personality comes from the heading face, weight and tracking**, not from the body face. Body text must be boring.
 - Test candidates on the real screen, at real sizes, on a low-density Windows monitor as well as a Retina display. Thin weights that look elegant on a Mac break up on standard-density screens.
@@ -71,7 +74,7 @@ Build the palette in this order:
 
 Generate ramps in a perceptually uniform space (OKLCH) so that step 600 of every hue has similar visual lightness; ramps built in HSL have a yellow that glows and a blue that sinks at the same nominal lightness. Lower chroma toward both ends of a ramp. Starting from an existing library (Radix Colors, Tailwind's default palette) is the fastest correct route.
 
-Proportion: roughly 60% background neutrals, 30% surface and text neutrals, 10% or less accent. If the accent covers more than that, it has stopped signaling anything.
+Proportion, as a rule of thumb: roughly 60% background neutrals, 30% surface and text neutrals, 10% or less accent. If the accent covers more than that, it has stopped signaling anything.
 
 ### Contrast numbers (WCAG 2.x AA)
 
@@ -84,10 +87,11 @@ Proportion: roughly 60% background neutrals, 30% surface and text neutrals, 10% 
 
 Traps:
 
-- **Muted text is where contrast fails.** Check the lightest gray used for text on the darkest background it sits on (table stripes, hover rows, tinted cards), not on white.
+- **Muted text is where contrast fails.** Check the lightest gray used for text on the darkest background it sits on (table stripes, hover rows, tinted cards), not on white. In a dark theme the pair to check is the dimmest text on the lightest raised surface.
 - **White on brand color.** Mid-lightness brand hues (orange, light green, cyan, yellow) fail with white text. Either darken the button step until white passes, or use dark text on it. Decide once and record it as `on-primary`.
-- **Color is never the only signal.** Status needs an icon or text as well as a hue; roughly one man in twelve has some red-green color deficiency. Links inside body text need an underline or another non-color cue.
+- **Color is never the only signal.** Status needs an icon or text as well as a hue; red-green color deficiency is common (the usual estimate is about one man in twelve, and far fewer women). Links inside body text need an underline or another non-color cue.
 - **Text on photos** needs a scrim or a solid plate; contrast over an image cannot be guaranteed otherwise.
+- **Translucent text and surfaces** are measured after blending: text set with opacity, or sitting on a semi-transparent layer, has the contrast of the composited result, which a check of the token values does not see.
 - Checking: browser DevTools shows the ratio in the color picker; automated audits catch plain text but not text over gradients or images. Full conformance work belongs to `0x:accessibility`.
 
 ## Spacing and grid
@@ -96,7 +100,7 @@ Scale on a 4px base: **4, 8, 12, 16, 24, 32, 48, 64, 96**. No value outside the 
 
 - **Proximity rule**: the gap inside a group is at most half the gap between groups. Label to input 4 to 8px; field to field 16 to 24px; section to section 32 to 48px. This single rule does most of the work of making forms and cards readable.
 - **Padding scales with the container**: controls 8 to 12px vertical; cards 16 to 24px; page gutters 16px on phones, 24 to 32px on desktop.
-- **Control heights**: 32px compact, 36 to 40px default, 44 to 48px for touch-first. All controls in a row share a height. Pointer targets must be at least 24 by 24 CSS px to meet WCAG 2.2 AA; design touch targets at 44px or more.
+- **Control heights**: 32px compact, 36 to 40px default, 44 to 48px for touch-first. All controls in a row share a height. WCAG 2.2 AA asks for pointer targets of at least 24 by 24 CSS px, or smaller ones spaced so that 24px circles centered on them do not overlap (links inside sentences are exempt); design touch targets at 44px or more.
 - **Grid**: 12 columns on desktop with 16 to 24px gutters, collapsing to 4 columns on phones. Constrain the content: about 1200 to 1280px for app content, about 640 to 720px for forms and prose. A form stretched across a 1440px screen is a classic amateur tell.
 - **Optical alignment beats mathematical alignment**: align text by its left edge, not the edge of its padding box; nudge icons to look centered in buttons.
 - **Radius**: pick a scale such as 4, 8, 12 and full. Nested radii follow inner radius = outer radius minus padding; otherwise corners look pinched.
@@ -104,7 +108,7 @@ Scale on a 4px base: **4, 8, 12, 16, 24, 32, 48, 64, 96**. No value outside the 
 
 ## Data-dense screens: tables, filters, dashboards
 
-Dense is not the same as cramped. Density comes from removing chrome and decoration, not from shrinking text below 12 to 13px.
+Dense is not the same as cramped. Density comes from removing chrome and decoration, not from shrinking text below 12px.
 
 **Tables**
 
@@ -123,7 +127,7 @@ Dense is not the same as cramped. Density comes from removing chrome and decorat
 
 ## Icons and imagery
 
-- **One icon set** for the whole product. Lucide is the default with Radix-style kits; Heroicons, Phosphor and Tabler are sound alternatives. Mixing sets shows immediately as mismatched stroke weight and corner style.
+- **One icon set** for the whole product. Lucide is the default with Radix-style kits; Heroicons, Phosphor and Tabler are sound alternatives. Mixing sets shows immediately as mismatched stroke weight and corner style. Those four are open source; for any other icon set, font, photo or illustration, stock or generated, confirm that the license allows commercial use and record any attribution duty in the brand kit.
 - Rules to write down: outline or filled (use filled only to mark the active state); stroke width (1.5 or 2px, constant); sizes 16, 20 and 24px only; color inherits `currentColor`; icon-to-label gap 6 to 8px.
 - **Icons need labels.** Only a handful are understood without text (search, close, plus, settings gear, trash, home, menu). Icon-only buttons need a tooltip and an accessible name. An icon next to every menu item adds noise unless users scan by icon.
 - Do not use emoji as interface icons: they render differently on every platform and cannot take the theme color.
@@ -145,12 +149,14 @@ A solo founder needs one page, not a brand book. It must contain:
 
 Store the kit in the repository next to the tokens so the product, the marketing site, emails and social images draw from the same values. Skip custom illustration, a mascot and motion branding until Scale.
 
+A name or mark that resembles one already used in the same field is a trademark risk that no design rule catches. Search before the logo goes on everything; a real doubt is a question for a professional, and a forced rename after Launch costs far more than one before.
+
 ## Checks
 
 - Squint test passes: exactly one element dominates each screen.
 - A search of the stylesheet or class names finds no spacing, size, radius or color value outside the scales.
 - No more than four text sizes and three weights on any one screen.
-- The lightest text color passes 4.5:1 on the darkest surface it appears on; input borders and meaningful icons pass 3:1.
+- The lowest-contrast text and surface pair in use (usually muted text on a tinted, striped or hovered surface) passes 4.5:1; input borders and meaningful icons pass 3:1.
 - Prose never exceeds about 75 characters per line at any viewport width.
 - The screen still reads correctly in grayscale (hierarchy does not depend on hue).
 - Checked with real content: the longest realistic name, a zero value, a seven-digit number, a missing avatar.

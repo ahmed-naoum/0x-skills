@@ -8,7 +8,7 @@ For a solo founder the answer is almost always: adopt accessible headless primit
 
 | Situation | Choose | Why |
 |---|---|---|
-| Product UI, any stage, Tailwind project | Headless primitives (Radix, React Aria, Base UI) with a copy-in component set (shadcn/ui style) | Behavior and accessibility solved; the code lives in the repository, so every pixel is editable |
+| Product UI, any stage, Tailwind project | Headless primitives (Base UI, Radix or React Aria) with a copy-in component set (shadcn/ui style) | Behavior and accessibility solved; the code lives in the repository, so every pixel is editable |
 | Internal tool or admin, speed over identity | A full styled kit (Mantine, MUI, Ant Design) | Largest inventory out of the box; accept its look |
 | Brand is the product (consumer, design-led marketing) | Custom visuals on headless primitives | Custom skin, borrowed behavior |
 | A component no kit offers (timeline editor, canvas, spreadsheet grid) | Custom, scoped to that component | Build only the part that differentiates |
@@ -20,6 +20,9 @@ Traps:
 - **Unthemed defaults.** A copy-in kit left on its default tokens makes the product look like every other product built that month. Changing the neutral tint, accent, radius, font and density takes an hour and removes the resemblance.
 - **Custom behavior for standard controls.** A hand-built select or modal that lacks typeahead, escape handling, focus return and screen-reader semantics is a regression users feel. Custom is for looks, not for interaction contracts.
 - **Kit sprawl.** Adding a second library for one component (a date picker, a table) is acceptable; record it and wrap it so the import does not spread.
+- **Two primitive libraries.** Copy-in kits let the primitive library be chosen at setup, and their default changes over time (shadcn/ui made Base UI the default for new projects in 2026 and still supports Radix). Keep what the project has; for a new project take the kit's current default. Mixing two gives overlays whose focus trapping, portals and layering disagree.
+- **Copy-in means owning the updates.** Copied component files do not improve when a package is bumped; only the primitives underneath do. When a copied component misbehaves, compare it with the kit's current version before patching by hand.
+- **Paid tiers.** Several kits keep the data grid, date-range picker, scheduler or charts under a commercial license priced per developer (MUI X and AG Grid are examples). Read the license and the current price before designing a screen around such a component.
 
 ## Inventory before screens
 
@@ -115,7 +118,7 @@ A component is specified when every state below has a defined look and behavior.
 | Active or pressed | Immediate change within 100ms: darker step or slight scale | No press feedback, so users click twice |
 | Selected, checked, current | Distinct from hover and from focus; not color alone | Selected and hover looking identical |
 | Disabled | Reduced contrast, no hover, not focusable for native disabled; reason available nearby | Disabling the submit button with no explanation of what is missing |
-| Loading | Control keeps its width; label replaced or joined by a spinner; repeat activation blocked | Button resizes or the form can be submitted twice |
+| Loading | Control keeps its width; label replaced or joined by a spinner; repeat activation blocked | Button resizes or the form can be submitted twice. Blocking the button is a courtesy, not protection: anything that creates a record or charges money also needs the server to reject the duplicate (`0x:api-design`) |
 | Error or invalid | Border and icon plus a text message tied to the field; shown after blur or submit, not on first keystroke | Red border only; message far from the field |
 | Read-only | Looks like text, not a faded input; still selectable and focusable | Using disabled for read-only, which blocks copying |
 | Empty and overflow | Placeholder or empty look; truncation, wrapping or scrolling for long content | Designed only with ideal-length text |
@@ -145,9 +148,9 @@ Practices that keep the two aligned at any size:
 - **Same names on both sides.** The design component is called what the code component is called, with the same variant names. Translation tables rot.
 - **Tokens flow one way.** Never edit a generated file; change the source and rebuild.
 - **The coded component is the truth for behavior**; a design file cannot express focus order, loading or overflow. Review real components in the browser, not pictures of them.
-- **Visual regression on the state-matrix page** catches unintended changes; set it up at Launch if the UI changes weekly, otherwise at Scale. Test setup belongs to the testing skill.
+- **Visual regression on the state-matrix page** catches unintended changes; set it up at Launch if the UI changes weekly, otherwise at Scale. Test setup belongs to `0x:code-quality`.
 
-The token interchange format and design-tool sync features change quickly; check the current documentation of the tools in use before building a pipeline. For one developer the pipeline is not worth building.
+The Design Tokens Community Group format has had a stable version since late 2025, but how completely each transformer and design tool reads and writes it still varies; check the current documentation of the tools in use before building a pipeline. For one developer the pipeline is not worth building.
 
 ## Governance
 
@@ -177,3 +180,4 @@ Until there is a second contributor, governance is three habits: no raw values i
 - **Is a designer working in a design tool, now or soon?** Decides whether a token sync pipeline is worth building. Default: code is the only source of truth.
 - **Will more than one product or platform (web, native, email) share these tokens?** If yes, keep tokens as platform-neutral data. Default: one web product; CSS custom properties are enough.
 - **How dense should the interface be?** Sets control heights and spacing tokens for everything. Default: 36 to 40px controls on desktop, 44px or more on touch layouts.
+- **Is a paid component license acceptable (a commercial data grid, scheduler or chart tier)?** It is a recurring per-developer cost and a dependency on one vendor. Default: no; open-source components only, and simplify the screen before buying a grid.

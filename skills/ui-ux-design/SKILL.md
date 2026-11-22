@@ -48,7 +48,7 @@ A request to design a whole feature usually needs `ux-flows.md` first, then `mic
 | Spacing | 4px-based scale: 4, 8, 12, 16, 24, 32, 48, 64, 96; gaps inside a group at most half the gaps between groups | |
 | Color | Tinted neutral ramp, one accent, four status hues, generated in a perceptual space; roles with paired on-colors | |
 | Contrast | 4.5:1 text, 3:1 large text and meaningful non-text elements | |
-| Icons | One set (Lucide with Radix-style kits), sizes 16, 20, 24, with labels | |
+| Icons | One set (Lucide, the usual default of shadcn-style kits), sizes 16, 20, 24, with labels | |
 | Navigation | Sidebar listing objects, two levels deep, tabs inside objects; every view has a URL | Three to six fixed destinations: top bar. Phone: bottom tabs |
 | Onboarding | Straight into the product with a strong first-use empty state, optional checklist; no tooltip tour | Setup required before value: short wizard |
 | Destructive actions | Immediate with undo and soft delete; dialog with verb-labeled buttons only for irreversible actions; type-to-confirm for large blast radius | |
@@ -60,8 +60,8 @@ A request to design a whole feature usually needs `ux-flows.md` first, then `mic
 
 By stage:
 
-- **Prototype**: adopt a kit, set tokens once, design the core flow with all its states, write real copy, one theme. Skip brand books, custom illustration, motion polish, design-file sync and governance.
-- **Launch**: test signup through first value with five users and fix the blockers; complete empty, error and loading states everywhere; dark theme if the category expects it; motion tokens; a one-page brand kit and voice guide; glossary in the repository.
+- **Prototype**: adopt a kit, set tokens once, design the core flow with all its states, write real copy with one name per object in a short glossary, one theme. Skip brand books, custom illustration, motion polish, design-file sync and governance.
+- **Launch**: test signup through first value with five users and fix the blockers; complete empty, error and loading states everywhere; dark theme if the category expects it; motion tokens; a one-page brand kit and voice guide; consent-gated, masked session replay if replay is used; cancel and delete-account flows as easy as signup.
 - **Scale**: navigation restructured around objects with saved views and a command palette; tree testing; visual regression on a component state page; system versioning, contribution and deprecation rules; forced-colors pass; customer theming if sold.
 
 ## Before you call it done
@@ -70,9 +70,9 @@ By stage:
 2. Every data view has designed first-use empty, no-results, loading, error and success states.
 3. No raw color, spacing, radius, duration or font-size values in component code; only tokens from the scales.
 4. No more than four text sizes and three weights on any one screen; prose lines stay under about 75 characters.
-5. The lightest text on the darkest surface it sits on passes 4.5:1; input borders, meaningful icons and focus rings pass 3:1, in every theme.
+5. In every theme, the lowest-contrast text and surface pair actually used (muted text on a tinted, striped or raised surface) passes 4.5:1; input borders, meaningful icons and focus rings pass 3:1.
 6. Every interactive element shows hover, focus-visible, pressed, disabled and loading states, and works by touch without hover.
-7. Every button is verb plus object; no dialog says "Yes", "No" or a bare "OK"; every error says what happened and what to do and keeps the user's input.
+7. Every button is verb plus object; no dialog says "Yes", "No" or a bare "OK"; every error says what happened and what to do and keeps the user's input; text beside a payment, trial, consent or cancel control states what the system actually does.
 8. Each object has one name across navigation, titles, buttons, emails and URLs; each navigation label equals its page title.
 9. Every tab, filter state and detail view survives pasting its URL into a new tab, refresh and the back button.
 10. Each destructive action is classified by reversibility and blast radius and has the matching pattern (undo, dialog or type-to-confirm).

@@ -13,7 +13,9 @@ Design the flow before any screen, and the screen's states before its styling. T
 5. **Walk the flow with real content and the unhappy paths.**
 6. **Prototype only what is uncertain**, test it (see `usability-testing.md`), then build.
 
-Steps 1 to 5 take an hour or two for a typical feature and can be done as text and ASCII or as a plain unstyled route. Skipping them moves the same decisions into code review, where they cost ten times more.
+Steps 1 to 5 take an hour or two for a typical feature and can be done as text and ASCII or as a plain unstyled route. Skipping them moves the same decisions into code review, where each one costs a rewrite instead of an edit.
+
+By stage: at Prototype, do steps 1 to 5 for the one core flow, as text. At Launch, do them for every flow that touches signup, money, invitations or deletion, and test signup through first value with people. At Scale, prototype and test before changing navigation or any flow most users run daily.
 
 ## Journey: first visit to repeated value
 
@@ -71,8 +73,8 @@ The first-use empty state is the most valuable screen in a new product: every us
 
 For each step, decision and field ask, in order: can it be removed, inferred, defaulted, or deferred until after first value?
 
-- **Remove**: fields nobody reads downstream. Check where each field is used; unused fields are common.
-- **Infer**: country and currency from locale, time zone from the browser, company from the email domain, name from the sign-in provider, card type from the number.
+- **Remove**: fields nobody reads downstream. Check where each field is used; unused fields are common. Every personal field kept is also data to secure, disclose and delete on request, so "we might want it later" is a cost, not a free option.
+- **Infer**: country and currency from locale, time zone from the browser, company from the email domain, name from the sign-in provider, card type from the number. Show what was inferred and let the user change it. A guess is not evidence: the country used for tax, invoices or legal terms must be confirmed by the user or the payment provider (`0x:payments-billing`).
 - **Default**: pre-select the choice most users make and let them change it. A good default turns a decision into a confirmation.
 - **Defer**: ask at the moment the answer is needed (billing details at upgrade, notification permission at the first event worth a notification, team invites after the first success).
 - **Split or merge**: one long form is fine when fields are few and related; split into steps when there are more than about seven fields, when later questions depend on earlier answers, or when early steps give value by themselves. Show progress and allow going back without losing data.
@@ -138,10 +140,12 @@ Choose by reversibility and blast radius, not by how nervous the action feels.
 | Reversible but disruptive (bulk changes, sending to many, changing a role) | Confirmation that states the scope in numbers ("Archive 42 projects?"); undo afterward if possible |
 | Irreversible, contained (permanently delete one record, revoke an API key) | Confirmation dialog naming the object and the consequence; button labeled with the verb; default focus on Cancel |
 | Irreversible, large blast radius (delete workspace, delete account, drop production data) | Type the object's name to confirm; state what is lost and what is kept; consider a grace period during which it can be restored |
-| External and irreversible (send email, charge a card, publish) | Review step showing exactly what will happen; a short delayed-send window with cancel where feasible |
+| External and irreversible (send email, charge a card, publish) | Review step showing exactly what will happen; a short delayed-send window with cancel where feasible; the server refuses a repeated submit, because a double click here costs money or reputation |
 
 - **Confirmation dialogs wear out.** A dialog on every delete trains users to press Enter. Reserve dialogs for the rows above that need them; use undo for the rest.
-- **Undo requires backend support**: soft delete or delayed execution. Decide during design, because it changes the data model; see `0x:backend-architecture` and the data skills for the implementation.
+- **Undo requires backend support**: soft delete or delayed execution. Decide during design, because it changes the data model; see `0x:backend-architecture` and `0x:postgres-database` for the implementation.
+- **The toast is not the only way back.** A window of a few seconds is missed by anyone who looked away or uses a screen reader; the trash or an activity entry must offer the same restore after the toast has gone.
+- **Soft delete is not deletion.** Say "moved to trash" when that is what happens and "permanently deleted" only when it is. When a person asks for their data to be erased, a hidden row does not satisfy the request, while some records (invoices, audit logs) may have to be kept; both duties depend on the jurisdiction, so the delete-account flow needs a real purge path designed with `0x:privacy-compliance`.
 - **Protect work in progress**: autosave drafts; warn before leaving a form with unsaved changes; never clear a form on a failed submit; restore state after a session expiry and re-login.
 - **Separate destructive controls physically** from frequent ones; a Delete next to Save is an accident waiting.
 - **Make state visible so mistakes are noticed**: show what was changed, by whom and when, for anything shared.
@@ -153,9 +157,11 @@ Choose by reversibility and blast radius, not by how nervous the action feels.
 - **Save model**: toggles and selects apply immediately with visible confirmation; text fields and anything risky save with an explicit button per section. Do not mix both models in one section.
 - **Scale path**: a single page until about 15 settings; then sections with a side navigation; add settings search past roughly 50. Every settings page has a stable URL so support can link to it.
 - **Roles**: start with two or three fixed roles (owner, admin, member; add viewer or billing when asked). Custom roles and per-resource permissions are Scale features driven by enterprise deals. Show what each role can do in a plain table at the point of choosing. The authorization model belongs to `0x:auth-identity`.
-- **Invitations**: accept several emails at once, set the role in the invite, show pending invites with resend and revoke, handle the invitee who already has an account and the one who signs up with a different email, and land the invitee in the workspace, not in a new empty one.
+- **Invitations**: accept several emails at once, set the role in the invite, show pending invites with resend and revoke, handle the invitee who already has an account and the one who signs up with a different email, and land the invitee in the workspace, not in a new empty one. Invitation links expire, work once, and show the workspace and role they grant before acceptance; whether an invite may be accepted from a different email address is a security decision (default: no) owned by `0x:auth-identity`.
 - **Guard the last owner**: the last owner cannot leave or demote themselves; ownership transfer is an explicit flow.
 - **Permission-denied is a designed state**: say what is needed and who to ask; offer "request access" when that is cheap to build.
+- **Hiding a control is not access control.** Role-aware screens are a courtesy to the user; every action and every URL must be checked on the server for the same role, or the hidden button is one pasted link away (`0x:auth-identity`).
+- **Leaving is a flow too.** Cancel subscription, downgrade, export data and delete account must be findable in settings and take no more effort than signing up. A cancellation path that is hidden, needs a phone call or runs through repeated offers is treated as a deceptive pattern by consumer regulators in several jurisdictions, with rules that differ by country; one retention offer, clearly skippable, is the safe limit. Billing mechanics belong to `0x:payments-billing`.
 - **Danger zone** at the bottom of workspace settings, each action with the confirmation level from the table above.
 
 ## Prototyping
@@ -188,6 +194,6 @@ Keep prototype code out of production unless it is rewritten deliberately: fake 
 - **What is the one outcome that makes a new user say the product works?** Onboarding is built toward it. Default: the first completed core object with the user's own data.
 - **What must be collected at signup for legal, billing or technical reasons?** Everything else is deferred. Default: email and authentication only.
 - **How much real work happens on phones?** Decides whether mobile gets full design effort or a usable fallback. Default: desktop-first B2B, with check, approve and reply flows designed for phones.
-- **Which deletions must be recoverable, and for how long?** A product and sometimes a legal choice that shapes the data model. Default: soft delete with a 30-day restore for user content; confirm retention duties with `0x:privacy-compliance`.
+- **Which deletions must be recoverable, and for how long?** A product and sometimes a legal choice that shapes the data model. Default: soft delete with a restore window for user content (30 days is a common convention, not a legal figure), then a real purge; confirm retention and erasure duties with `0x:privacy-compliance`.
 - **Who administers a customer account, and which roles exist in their organization?** Drives the roles and team flows. Default: owner, admin and member.
 - **Is sample data acceptable in a new account?** Some domains must never show fake records. Default: yes, clearly labeled and removable in one action.

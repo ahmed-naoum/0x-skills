@@ -20,7 +20,7 @@ Rules that decide most cases:
 - **Keyboard-driven actions are instant or nearly so.** A command palette that eases in over 300ms feels slow to exactly the users who chose the keyboard for speed.
 - **Animate the cause, near the cause.** The thing the user touched responds first; consequences follow.
 - **One thing moves at a time for attention.** Two simultaneous attention-seeking animations cancel each other.
-- **No looping or autoplaying motion beside content.** Anything that moves by itself for more than five seconds alongside other content needs a way to pause or stop it (a WCAG Level A requirement), and nothing may flash more than three times per second.
+- **No looping or autoplaying motion beside content.** Anything that moves by itself for more than five seconds alongside other content needs a way to pause, stop or hide it, and nothing may flash more than three times in any one second, which can trigger seizures (both are WCAG Level A requirements).
 - **Marketing pages and product UI have different budgets.** Scroll-driven effects and large entrances can suit a landing page; inside the app they slow work.
 
 At Prototype, the kit's built-in transitions plus correct loading feedback are enough. Define motion tokens at Launch. Choreographed page transitions are optional at every stage.
@@ -57,7 +57,7 @@ Traps:
 - **Blocking the whole screen** for one slow region. Load regions independently.
 - **Button loading**: keep the width, show a spinner with the label or a progressive label ("Saving..."), block double submission, and restore the label with the result.
 - **Fake progress** that stalls at 99% destroys trust; prefer honest indeterminate feedback plus text.
-- A real speed problem is not solved by animation; measuring and fixing latency belongs to the performance skills.
+- A real speed problem is not solved by animation; measuring and fixing latency belongs to `0x:web-performance`.
 
 ## Duration and easing
 
@@ -73,7 +73,7 @@ Duration scales with the distance traveled and the size of the element; easing d
 | Anything in product UI | Rarely over 500ms |
 
 - **Exits are faster than entrances**, by roughly a quarter to a third: the user has decided, so get out of the way.
-- **Phones use the stated values; large desktop distances can take slightly longer; small watch-size surfaces shorter.** The eye judges speed, not time.
+- **Scale with the distance covered, not with the device.** The eye judges speed, not time: a sheet crossing a large screen takes the top of its range, a small popover the bottom, whatever the device.
 - **Opacity and color need less time than movement.**
 
 | Movement | Easing | Why |
@@ -119,7 +119,7 @@ Consistency of direction and order is what makes motion explain structure.
 | New content arriving | Fades or slides in at its position; if the user has scrolled away, show a "New items" pill instead of moving the page |
 | Number changes | Update instantly for values users read precisely; a brief count animation only on dashboards and with tabular figures |
 
-Every drag interaction needs a non-drag alternative (move up and down controls or a menu); this is a WCAG 2.2 requirement and also serves touch and keyboard users. Details belong to `0x:accessibility`.
+Every drag interaction needs a non-drag alternative (move up and down controls or a menu); this is a WCAG 2.2 Level AA requirement and also serves touch and keyboard users. Details belong to `0x:accessibility`.
 
 Sound and haptics: off by default in web products; haptics only in packaged mobile apps and only for confirmations.
 
@@ -136,14 +136,19 @@ Tokens keep timing consistent and give one place to switch motion down.
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --motion-travel: 1; /* multiplies distances and scale changes */
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :root {
-    --duration-fast: 0.01ms;
-    --duration-base: 0.01ms;
-    --duration-slow: 0.01ms;
-  }
+  :root { --motion-travel: 0; }
+}
+
+.sheet {
+  transition: opacity var(--duration-base) var(--ease-out), translate var(--duration-base) var(--ease-out);
+}
+.sheet[data-state="closed"] {
+  opacity: 0;
+  translate: calc(100% * var(--motion-travel)) 0;
 }
 ```
 
@@ -159,8 +164,8 @@ Tokens keep timing consistent and give one place to switch motion down.
 | Opacity fades, color changes, focus ring | Keep |
 | Progress indicators and spinners | Keep; they convey status. Simplify a shimmering skeleton to a static block |
 
-- The near-zero duration in the example makes token-driven transitions effectively instant; for the patterns in the left column, prefer an explicit alternative (a fade) written under the media query over simply zeroing time, so state changes stay perceivable.
-- Do not blanket-disable every animation and transition with a universal selector when scripts wait for animation end events; components that depend on those events can hang. Test each overlay in reduced-motion mode.
+- The travel multiplier in the example removes the movement and keeps the fade, so the sheet still visibly arrives; that is the variant to prefer. Setting every duration to zero is the blunt alternative: fades are lost with the slides and state changes become abrupt.
+- If durations are cut anyway, use a tiny non-zero value such as 0.01ms, not `0s` or `transition: none`. A transition with no duration never starts, so its end event never fires, and components that wait for that event before unmounting (dialogs, toasts, menus) stay stuck. Test each overlay in reduced-motion mode.
 - An in-app "reduce motion" setting is worth adding only for motion-heavy products; otherwise follow the system preference.
 - Essential motion (a progress bar's advance, a video the user played) is unaffected by the preference.
 
