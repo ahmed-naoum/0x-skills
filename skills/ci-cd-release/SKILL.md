@@ -1,6 +1,6 @@
 ---
 name: ci-cd-release
-description: Gets a change from a merged pull request to production safely, covering CI pipelines, pipeline security, environments and config, zero-downtime deploys, rollback, cutovers and feature flags. Use when setting up or speeding up GitHub Actions, fixing deploy downtime or rollback, adding staging or preview environments, a missing environment variable crashed production, or adding feature flags or a kill switch.
+description: Gets a merged change to production, covering CI pipelines, pipeline security, environments and config, zero-downtime deploys, rollback, cutovers and feature flags. Use when setting up or speeding up GitHub Actions, replacing stored CI keys with OIDC, fixing deploy downtime or rollback, adding staging or preview environments, a missing environment variable crashed production, or adding feature flags or a kill switch.
 ---
 
 # CI/CD, environments and releases

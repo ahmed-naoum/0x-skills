@@ -80,7 +80,7 @@ read-only; old repositories may still default to read-write.
   `env` and quote the variable:
 
 ```yaml
-      - run: echo "Title: $TITLE"
+      - run: echo "$TITLE"
         env:
           TITLE: ${{ github.event.pull_request.title }}
 ```
