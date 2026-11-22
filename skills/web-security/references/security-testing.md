@@ -128,6 +128,7 @@ Wiring rules:
 - Keep pull-request security checks to a few minutes; move slow scans to a schedule.
 - One inbox for findings (the host's code-scanning view or pull-request comments), not five dashboards.
 - Triage each finding within its deadline. Exploitable: fix. Real but unreachable: fix when cheap, otherwise document. False positive: suppress inline with the rule ID and a reason, never by disabling the rule globally. A rule that is mostly noise after a month is tuned or removed.
+- Scanners are dependencies with access to the pipeline. Pin their actions to a commit SHA and their images or binaries to a version or digest, and run them in jobs that hold no deploy credentials: widely used CI actions, security scanners among them, have been hijacked to steal pipeline secrets.
 - The highest-value rules encode the project's own invariants:
 
 ```yaml

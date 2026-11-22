@@ -22,7 +22,7 @@ Realistic attackers: indiscriminate bots and scanners (constant), a curious or h
 
 Produce three lists from the code, not from memory. A text table in `docs/security/threat-model.md` is enough; diagram tools add nothing at this size.
 
-1. **Entry points**: every place outside input arrives. Route handlers, server actions, pages with parameters, webhooks, OAuth callbacks, file uploads, inbound email, queue consumers, cron endpoints, admin tools, websocket channels, API keys. In Next.js every server action and route handler is a public HTTP endpoint whether or not any UI links to it.
+1. **Entry points**: every place outside input arrives. Route handlers, server actions, pages with parameters, webhooks, OAuth callbacks, file uploads, inbound email, queue consumers, cron endpoints, admin tools, websocket channels, API keys. In Next.js treat every server action and route handler as a public HTTP endpoint whether or not any UI links to it: action IDs are obscured, not access-controlled.
 2. **Stores and copies**: database, object storage, cache, search index, queue payloads, logs, error tracker, analytics, warehouse, backups, staging refreshes, exports on laptops.
 3. **Outbound**: every third-party API, webhook delivery, URL fetch, email and LLM call, with the data that leaves.
 

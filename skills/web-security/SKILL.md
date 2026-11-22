@@ -55,7 +55,7 @@ the cheapest way to it), then as the engineer.
 | Dependencies | Committed lockfile, frozen installs, alerts on. At Launch add a 7-day release cooldown, install scripts off and patch deadlines | Prototype |
 | Input | A Zod schema at every entry point, with size bounds; a per-operation allow-list of writable fields | Prototype |
 | Queries and output | Parameterized queries only; framework escaping; an allow-list sanitizer at render for any user HTML | Prototype |
-| Authorization | Session and ownership checked in every handler and server action, and again at the data layer; a two-account test suite | Launch |
+| Authorization | Session and ownership checked in every handler and server action, and again at the data layer. At Launch add the two-account test suite | Prototype |
 | Browser | Baseline headers on every response; same-origin API, so no CORS; nonce-based CSP on app pages, rolled out report-only first | Launch |
 | Server-side fetch of user URLs | Avoid; otherwise resolve, block private ranges, connect to the checked address, no redirects | Launch |
 | Crypto | 32 random bytes for tokens; SHA-256 to store issued tokens; HMAC-SHA-256 for webhooks; AES-256-GCM or libsodium to encrypt; Ed25519 to sign; passwords through the auth library | Any |

@@ -31,7 +31,7 @@ The lockfile pins every transitive version with an integrity hash. Without froze
 
 Traps:
 
-- A Dockerfile that copies `package.json` without the lockfile, or runs a plain install.
+- A Dockerfile that copies `package.json` without the lockfile, or runs a plain install. With pnpm, copy `pnpm-workspace.yaml` too: since pnpm 11 it holds the settings (overrides, build allow-list, release-age rule), and an install without it ignores them.
 - `npx <tool>` or `pnpm dlx <tool>` in CI, scripts or documentation runs the latest release outside the lockfile. Add the tool as a development dependency and call it with `pnpm exec`.
 - `curl ... | bash` installers in CI: pin a version and verify a checksum.
 - Mutable references elsewhere in the chain. Third-party GitHub Actions referenced by tag: pin to a full commit SHA (`0x:ci-cd-release`, `pipeline-security.md`). Base images referenced by tag: pin production images by digest (`node:22-slim@sha256:...`) and let the update bot bump the digest.
@@ -39,7 +39,7 @@ Traps:
 - Lockfile changes in a pull request from outside the team: a `resolved` URL pointing off the registry, or a changed integrity hash for an unchanged version, is an attack and not noise.
 - Internal package names without a scope: an attacker publishes the same name publicly with a higher version (dependency confusion). Put internal packages under an owned scope and map that scope to the private registry in `.npmrc`.
 
-When a direct dependency has not caught up with a fix, force the patched transitive version with `pnpm.overrides` (`overrides` in npm), and delete the override once it has.
+When a direct dependency has not caught up with a fix, force the patched transitive version with `overrides` (in `pnpm-workspace.yaml` for pnpm, which stopped reading the `pnpm` field of `package.json` in version 11; in `package.json` for npm), and delete the override once it has.
 
 ## Before adding a dependency
 
@@ -68,8 +68,8 @@ Rule: depend when the problem is hard to get right, the project has more than on
 
 Dependency lifecycle scripts (`preinstall`, `postinstall`) run arbitrary code with the installing user's access, on every laptop and CI runner.
 
-- pnpm 10 and later does not run dependency build scripts unless the package is on the project's allow-list; `pnpm approve-builds` reviews and records them. Keep the list to packages that compile or download binaries (typically a bundler's native binary, an image library, a database driver, the ORM's engine), and review every addition in the pull request.
-- npm: `ignore-scripts=true` in `.npmrc`, then `npm rebuild <package>` for the few that need a build. Bun skips dependency scripts by default and has a `trustedDependencies` allow-list. Yarn Berry: `enableScripts: false`.
+- pnpm 10 and later does not run dependency build scripts unless the package is on the project's allow-list; `pnpm approve-builds` reviews and records them (the setting's name has changed between majors, so let the command write it). Keep the list to packages that compile or download binaries (typically a bundler's native binary, an image library, a database driver, the ORM's engine), and review every addition in the pull request.
+- npm 12 and later skips dependency install scripts unless the package is approved (`npm approve-scripts`). A skipped script only warns by default, so a native module can end up unbuilt; turn on the strict setting in CI (see `npm help config`). On npm 11 and earlier set `ignore-scripts=true` in `.npmrc` and run `npm rebuild <package> --ignore-scripts=false` for the few that need a build. Bun skips dependency scripts by default and has a `trustedDependencies` allow-list. Yarn Berry: `enableScripts: false`.
 - Scripts off filters the common trigger only; malicious code can still run when the module is imported. The cooldown and credential scoping cover that case.
 - On CI, install in a step whose environment holds no deploy or publish credentials. Run unfamiliar repositories and take-home code in a container, not on the machine that holds cloud and registry logins.
 
@@ -92,7 +92,7 @@ updates:
         update-types: ["minor", "patch"]
 ```
 
-The Renovate equivalent is `"minimumReleaseAge": "7 days"`. Enforce the same rule at install time, so that a manual `pnpm add` or `pnpm update` obeys it: pnpm's `minimumReleaseAge` setting in `pnpm-workspace.yaml` (in minutes; 10080 is 7 days), with its exclude list for packages that must bypass it. Other package managers have equivalents under their own names.
+The Renovate equivalent is `"minimumReleaseAge": "7 days"`. Dependabot's cooldown delays version updates only; its security updates still arrive at once. Enforce the same rule at install time, so that a manual `pnpm add` or `pnpm update` obeys it: pnpm's `minimumReleaseAge` setting in `pnpm-workspace.yaml` (in minutes; 10080 is 7 days; pnpm 11 and later default to one day), with its exclude list for packages that must bypass it. The other managers have the same control under their own names and units (npm `min-release-age`, Yarn `npmMinimalAgeGate`, Bun `minimumReleaseAge`); read the unit in the manager's documentation before setting a number.
 
 Policy:
 
@@ -106,7 +106,7 @@ Policy:
 | What | Tool | Where |
 |---|---|---|
 | Dependency advisories, always on | The source host's dependency alerts with automatic security pull requests | Repository settings |
-| Gate | `pnpm audit --prod --audit-level=high`, or `osv-scanner` against the lockfile | CI on pull requests, plus a scheduled daily run, because new advisories appear against unchanged code |
+| Gate | `pnpm audit --prod --audit-level=high` (needs pnpm 11 or later: the registry retired the audit endpoints that older versions call, so they fail), or `osv-scanner` against the lockfile | CI on pull requests, plus a scheduled daily run, because new advisories appear against unchanged code |
 | Container images | `trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 <image>` | CI after the build; rebuild weekly to pick up base-image fixes |
 | Registry signatures | `npm audit signatures` | CI, optional |
 
@@ -133,7 +133,7 @@ A version past end of life receives no security fixes, and libraries drop it soo
 
 | Component | Rule |
 |---|---|
-| Node.js | Production runs a release line that is in LTS. Move to the next LTS line within about six months of its promotion, and be off a line at least a quarter before its end-of-life date |
+| Node.js | Production runs a release line that is in LTS. Move to the next LTS line within about six months of its promotion, and be off a line at least a quarter before its end-of-life date. The cadence changes with Node 27 in 2027 (one major a year, each becoming LTS), so read the dates from the project's release schedule, not from the old even-numbered pattern |
 | PostgreSQL | One major release a year, each supported for five years. Managed hosts force upgrades at end of life; schedule the upgrade before they do (`0x:postgres-database`, `postgres-operations.md`) |
 | Framework | Stay within one major of current; security fixes are backported only to recent majors |
 | Base image and OS | Track the distribution's support window; rebuild weekly |

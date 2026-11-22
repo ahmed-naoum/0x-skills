@@ -31,7 +31,11 @@ Rules for every stage: one source of truth instead of five dashboards edited by 
 
 ```bash
 # after a production build: must print nothing
-rg -l -e 'sk_live_' -e 'AKIA[0-9A-Z]{16}' -e 'PRIVATE KEY' -e 'service_role' .next/static
+rg -l -e '[sr]k_live_' -e 'AKIA[0-9A-Z]{16}' -e 'PRIVATE KEY' -e 'sb_secret_' .next/static
+# prefixes catch known formats only; the complete check is each server secret's real value (bash)
+for v in DATABASE_URL STRIPE_SECRET_KEY SESSION_SECRET; do
+  [ -n "${!v}" ] && rg -q -F -- "${!v}" .next/static && echo "LEAKED: $v"
+done
 ```
 
 ```dockerfile
@@ -57,7 +61,7 @@ docker build --secret id=npm_token,env=NPM_TOKEN .
 Order matters. The usual mistake is cleaning the history first.
 
 1. **Treat it as compromised from the moment of exposure.** Public repositories are harvested by bots within minutes. A private repository, a CI log or a chat message counts too when more identities can read it than should hold the key.
-2. **Revoke or rotate now.** Issue a new credential, deploy it, verify traffic on it, revoke the old one. If abuse is in progress or deployment is slow, revoke immediately and accept the outage.
+2. **Revoke or rotate now.** Issue a new credential, deploy it, verify traffic on it, revoke the old one. If the exposure was public, abuse is in progress or deployment is slow, revoke immediately and accept the outage.
 3. **Rotate the neighbors.** Everything in the same file, commit, CI environment or machine was readable in the same act.
 4. **Audit use during the exposure window** in the provider's logs, filtered by the credential's ID: cloud audit trail, payment-provider request log, source-host audit log, database connection log, LLM and email provider usage. Look for new users, keys, roles and tokens (persistence), resources created in any region, data reads and exports, changed webhooks or payout details, and usage spikes.
 5. **Remove what the attacker added**: credentials, OAuth apps, deploy keys, forwarding rules, webhooks.
@@ -190,10 +194,10 @@ export function verifyHmac(secret: string, rawBody: Buffer, signatureHex: string
 
 Traps:
 
-- GCM fails catastrophically when an IV repeats under one key: confidentiality and forgery resistance are both lost. Use a fresh random 12-byte IV per message and rotate the key long before billions of messages; XChaCha20-Poly1305's 24-byte nonce removes the concern.
+- GCM fails catastrophically when an IV repeats under one key: confidentiality and forgery resistance are both lost. Use a fresh random 12-byte IV per message and rotate the key well before 2^32 (about four billion) messages, the limit usually quoted for random IVs; XChaCha20-Poly1305's 24-byte nonce removes the concern.
 - `timingSafeEqual` throws on unequal lengths; compare lengths first.
 - Base64, hex and JWT payloads are encodings, readable by anyone. A JWT is signed, not encrypted; pin the accepted algorithm on verification (`0x:auth-identity`, `sessions-tokens.md`).
-- A random UUID (v4) is acceptable as an unguessable token; time-ordered UUIDs (v1, v7) are identifiers, not secrets.
+- A version 4 UUID from `crypto.randomUUID()` (122 random bits from the CSPRNG) is acceptable as an unguessable token; v4 UUIDs from other generators carry no such guarantee, and time-ordered UUIDs (v1, v7) are identifiers, not secrets.
 - Never design a protocol, a padding scheme or a comparison. If the need is not in the table, the answer is a maintained library (libsodium) or a provider feature.
 
 ## Ask the user

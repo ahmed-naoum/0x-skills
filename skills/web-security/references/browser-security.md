@@ -67,7 +67,7 @@ Traps:
 - Error responses and redirects need the headers too. "No Access-Control-Allow-Origin header" on a request that works in curl usually means the handler threw and the 500 came from a layer that sets no CORS headers.
 - Cookies not arriving: it takes `credentials: "include"` on the client, `Access-Control-Allow-Credentials: true` on the server, and a cookie the browser is willing to send. Sibling subdomains of one registrable domain are same-site, so `SameSite=Lax` works there; different sites need `SameSite=None; Secure` and then run into third-party-cookie blocking. Keep app and API same-site.
 
-A request is preflighted when it uses a method other than GET, HEAD or POST, a non-safelisted header such as `Authorization`, or a `Content-Type` other than form-encoded, multipart or `text/plain`; JSON requests therefore are. Browsers cap `Access-Control-Max-Age` (Chromium at two hours), and without the header a preflight is cached for only seconds.
+A request is preflighted when it uses a method other than GET, HEAD or POST, a non-safelisted header such as `Authorization`, or a `Content-Type` other than form-encoded, multipart or `text/plain`; JSON requests therefore are. Browsers cap `Access-Control-Max-Age` (Chromium at two hours, Firefox at 24), and without the header a preflight is cached for only seconds.
 
 Check both directions:
 
@@ -111,13 +111,13 @@ Content-Security-Policy:
 
 Cost: a nonce requires rendering the HTML per request, so pages under a nonce policy cannot be statically generated or cached as HTML at the CDN. Decide per route group. Dynamic, authenticated app pages get the nonce policy. Static marketing pages get a hash-based or host-based policy without a nonce, with the same `object-src`, `base-uri` and `frame-ancestors`.
 
-Next.js pattern: generate the nonce in middleware and set the policy on both the forwarded request headers and the response. The framework reads the nonce from the request's CSP header and applies it to its own scripts.
+Next.js pattern: generate the nonce in the proxy (called middleware before Next.js 16) and set the policy on both the forwarded request headers and the response. The framework reads the nonce from the request's CSP header and applies it to its own scripts.
 
 ```ts
-// middleware.ts (in Next.js versions that renamed the file: proxy.ts, exporting `proxy`)
+// proxy.ts (Next.js 16 and later). In Next.js 15 and earlier: middleware.ts, exporting `middleware`.
 import { NextResponse, type NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
   const csp = buildCsp(nonce); // the directives above; add 'unsafe-eval' to script-src in development only
 
@@ -131,7 +131,7 @@ export function middleware(request: NextRequest) {
 }
 ```
 
-Read `x-nonce` with `headers()` in the root layout to pass `nonce` to `<Script>` components for third-party tags. Exclude static assets and prefetch requests in the matcher.
+Read it in the root layout with `(await headers()).get("x-nonce")` and pass `nonce` to `<Script>` components for third-party tags. Exclude static assets and prefetch requests in the matcher, as the framework's CSP guide shows; a prefetched or cached page would otherwise carry a nonce that no longer matches its header.
 
 A `<meta http-equiv>` policy works when the host gives no header control, with limits: no `frame-ancestors`, no reporting, and it must precede every script.
 
@@ -222,7 +222,7 @@ const policy = window.trustedTypes?.createPolicy("app-sanitizer", {
 - Roll out in Report-Only like any CSP change; each violation names the offending sink with file and line. Third-party scripts that write to sinks are the main cost.
 - Libraries that create their own policies (DOMPurify does) must be listed by policy name in `trusted-types`.
 - Do not define a pass-through `default` policy; it re-authorizes every string. A `default` policy that sanitizes is acceptable as a migration aid.
-- Browsers without support ignore the directive, so enforcing is safe everywhere and protects where supported. Check current engine support before counting on it for all users.
+- Browsers without support ignore the directive, so enforcing is safe everywhere and protects where supported. All major engines now ship it, Firefox and Safari only in recent versions, so users on older browsers are not covered.
 
 ## Cross-origin isolation: COOP, COEP, CORP
 

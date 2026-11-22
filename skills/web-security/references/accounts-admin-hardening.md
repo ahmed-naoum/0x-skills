@@ -47,7 +47,7 @@ Migration order when accounts sit in personal names:
 | Step | Account | Note |
 |---|---|---|
 | 1 | Email and identity provider | Everything else will point here |
-| 2 | Registrar | Move the domain into a company registrar account. A registrant change or transfer can start a lock period during which the domain cannot move again; do it well clear of a launch |
+| 2 | Registrar | Move the domain into a company registrar account. A registrant change or transfer can start a lock period during which the domain cannot move again. Its length depends on the registry and the transfer policy in force, so ask the registrar first, and do it well clear of a launch |
 | 3 | Source hosting | Transfer repositories into an organization. Old URLs redirect, but CI secrets, deploy keys and webhooks must be re-created |
 | 4 | Cloud and hosting | Change the root or owner email to the role address, or move workloads into a company organization |
 | 5 | Payments | A change of legal entity usually means a new account and a migration handled with the provider's support: `0x:payments-billing` |
@@ -67,7 +67,7 @@ Classify every route first: list all pages, route handlers and server actions an
 | Machine endpoints | Cron and queue triggers, internal webhooks, metrics | Require a secret or signature; cron routes verify the scheduler's authorization header |
 | Files served by accident | `/.env`, `/.git/`, database dumps and archives in the web root, directory listings, public source maps when the source is meant to stay private | 404 from outside |
 | Forgotten hosts | Staging and preview deployments with real data or production keys, old API versions, admin UIs for queues and databases, dangling DNS records | Gate behind access control or delete; staging that holds production data is production |
-| Network exposure | Database, cache and search ports reachable from the internet; a container port published on all interfaces, which bypasses the host firewall | Private networking or an allow-list; publish as `127.0.0.1:5432:5432` (`0x:linux-server`) |
+| Network exposure | Database, cache and search ports reachable from the internet; a container port published on all interfaces, which Docker opens through its own packet-filter rules, past a ufw-style host firewall | Private networking or an allow-list; publish as `127.0.0.1:5432:5432` (`0x:linux-server`) |
 | Storage | Public buckets, listable prefixes, long-lived public URLs to private files | Block public access at the account level; presigned URLs |
 
 Checks from outside:
