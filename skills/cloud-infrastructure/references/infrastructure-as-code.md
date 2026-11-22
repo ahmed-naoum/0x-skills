@@ -16,7 +16,10 @@ Infrastructure code is worth its upkeep when it prevents an expensive mistake or
 | One-off experiments | Console, in a sandbox account with a budget, deleted afterwards |
 | Application deploys (which image is running) | Not Terraform's job. CI deploys images; Terraform owns the service's shape. Mark the image attribute as ignored (below) or pass it as a variable from the pipeline |
 
-Tool choice: Terraform or OpenTofu by default (largest provider and example base; the two remain close enough that the choice is about licensing preference and specific features such as OpenTofu's state encryption). Pulumi when the team strongly prefers writing TypeScript to HCL; everything below about state, plans, protection and review applies unchanged. The cloud's own tool (CloudFormation/CDK, Bicep) is fine if the project already uses it; do not mix two tools over the same resources.
+Tool choice: Terraform or OpenTofu by default (largest provider and example base; the two remain close enough that the choice is about licensing
+preference and specific features such as OpenTofu's state encryption). Pulumi when the team strongly prefers writing TypeScript to HCL; everything
+below about state, plans, protection and review applies unchanged. The cloud's own tool (CloudFormation/CDK, Bicep) is fine if the project already
+uses it; do not mix two tools over the same resources.
 
 ## State, layout and modules
 
@@ -175,9 +178,17 @@ Run it nightly per state and alert on exit code 2. Use `ignore_changes` only for
 | Misconfigurations in the live account, including what was never codified | The cloud's posture service (Security Hub, Security Command Center, Defender for Cloud) or Prowler | Scheduled, weekly at Launch |
 | Secrets committed in `.tf` or `.tfvars` | The repository's secret scanner | Pre-commit and CI |
 
-Scanner output is noisy. Triage rule: fix immediately anything that makes data reachable or readable by the public (open security groups on non-web ports, public buckets, public snapshots, unauthenticated endpoints), wildcard IAM, and disabled encryption or logging on data stores. Suppress the rest explicitly, inline with a reason, so the gate stays meaningful; a scan nobody can pass gets switched off.
+Scanner output is noisy. Triage rule: fix immediately anything that makes data reachable or readable by the public (open security groups on non-web
+ports, public buckets, public snapshots, unauthenticated endpoints), wildcard IAM, and disabled encryption or logging on data stores. Suppress the
+rest explicitly, inline with a reason, so the gate stays meaningful; a scan nobody can pass gets switched off.
 
-**Policy as code** is the next step when more than a couple of people write infrastructure, or an auditor asks how rules are enforced: write the team's own non-negotiables as tests against the plan JSON (OPA with Conftest, Checkov custom policies, or the hosted runner's policy engine) and require them in CI. Start with five or fewer, such as: no security group open to the world except 80/443 on load balancers; no storage bucket without the public-access block; every resource carries the required tags; no database without deletion protection and backups; no IAM policy with `Action: "*"` on `Resource: "*"`. Policy in CI checks proposed changes; organization guardrails (`iam-accounts.md`) stop the action whatever tool attempts it; scheduled drift detection and posture scans catch what bypassed both. All three are needed at Scale; the scanner defaults plus guardrails are enough at Launch.
+**Policy as code** is the next step when more than a couple of people write infrastructure, or an auditor asks how rules are enforced: write the
+team's own non-negotiables as tests against the plan JSON (OPA with Conftest, Checkov custom policies, or the hosted runner's policy engine) and
+require them in CI. Start with five or fewer, such as: no security group open to the world except 80/443 on load balancers; no storage bucket without
+the public-access block; every resource carries the required tags; no database without deletion protection and backups; no IAM policy with `Action:
+"*"` on `Resource: "*"`. Policy in CI checks proposed changes; organization guardrails (`iam-accounts.md`) stop the action whatever tool attempts it;
+scheduled drift detection and posture scans catch what bypassed both. All three are needed at Scale; the scanner defaults plus guardrails are enough
+at Launch.
 
 ## Rebuilding an environment from code
 
@@ -190,7 +201,9 @@ The claim "we can rebuild from Terraform" is false until it has been done. What 
 - **Global names**: bucket names and some identifiers are globally unique and may be held for a while after deletion; parameterize by environment and account.
 - **Data**: restoring the database and object storage is a separate, timed procedure.
 
-Rehearse at Launch and then twice a year: stand up a complete throwaway environment in a fresh account or project from an empty state, deploy the application, run the smoke tests, record how long it took and every manual step hit, fix the code, then destroy it. The same code path gives ephemeral preview or load-test environments later. Recovery objectives and disaster-recovery planning belong to `0x:site-reliability`.
+Rehearse at Launch and then twice a year: stand up a complete throwaway environment in a fresh account or project from an empty state, deploy the
+application, run the smoke tests, record how long it took and every manual step hit, fix the code, then destroy it. The same code path gives ephemeral
+preview or load-test environments later. Recovery objectives and disaster-recovery planning belong to `0x:site-reliability`.
 
 ## Ask the user
 

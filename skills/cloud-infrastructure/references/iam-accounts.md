@@ -151,7 +151,9 @@ Enable once, at the organization level, at Launch:
 | Account-wide public-access block | S3 Block Public Access at account level; block public snapshots and images | Organization policy enforcing public access prevention on storage | Disallow public blob access at the storage-account level |
 | Threat detection on the audit stream | GuardDuty | Security Command Center | Defender for Cloud |
 
-Quarterly review, about an hour: every external-access finding is either intended (documented) or removed; every access key older than 90 days is rotated or deleted; roles unused for 90 days are deleted; humans with admin are still the right humans; no security group is open to the world on non-web ports (`cloud-networking.md`). Fix public exposure the day it is found; trim unused permissions on a schedule.
+Quarterly review, about an hour: every external-access finding is either intended (documented) or removed; every access key older than 90 days is
+rotated or deleted; roles unused for 90 days are deleted; humans with admin are still the right humans; no security group is open to the world on
+non-web ports (`cloud-networking.md`). Fix public exposure the day it is found; trim unused permissions on a schedule.
 
 When a bucket must be public (static assets), make that one bucket public through a CDN with origin access rather than disabling the account-level block.
 
@@ -169,7 +171,9 @@ Guardrails are deny rules set above the accounts that no account administrator c
 | GCP: disable service account key creation, restrict policy members to the company's domain, enforce public access prevention, restrict VM external IPs | Same intents in GCP's constraint model |
 | Cap expensive resource types (large GPU instances) unless explicitly allowed | Bounds the cost of a compromise |
 
-Traps: AWS service control policies do not apply to the management account, another reason nothing runs there. Test a new guardrail on a sandbox account or organizational unit first; a region deny without exemptions for global services (IAM, the CDN, DNS, billing, support) breaks consoles and deployments in confusing ways. Guardrails do not replace least privilege; they bound the damage when it fails.
+Traps: AWS service control policies do not apply to the management account, another reason nothing runs there. Test a new guardrail on a sandbox
+account or organizational unit first; a region deny without exemptions for global services (IAM, the CDN, DNS, billing, support) breaks consoles and
+deployments in confusing ways. Guardrails do not replace least privilege; they bound the damage when it fails.
 
 ## Ask the user
 

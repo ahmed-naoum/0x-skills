@@ -4,7 +4,10 @@ Read this when: deciding or revisiting the hosting model, provider or region for
 
 ## First: what already exists
 
-Check the repo before recommending anything: `vercel.json`, `fly.toml`, `render.yaml`, `railway.json`, `Dockerfile`, `config/deploy.yml` (Kamal), `*.tf`, `serverless.yml`, `wrangler.toml`, Helm charts. A working platform is worth more than a better one. A migration costs one to four weeks of a solo founder's attention and produces no customer-visible value, so recommend one only when a named limit is being hit (see "Signals to move"), not on taste.
+Check the repo before recommending anything: `vercel.json`, `fly.toml`, `render.yaml`, `railway.json`, `Dockerfile`, `config/deploy.yml` (Kamal),
+`*.tf`, `serverless.yml`, `wrangler.toml`, Helm charts. A working platform is worth more than a better one. A migration costs one to four weeks of a
+solo founder's attention and produces no customer-visible value, so recommend one only when a named limit is being hit (see "Signals to move"), not on
+taste.
 
 ## Hosting model by stage
 
@@ -16,7 +19,10 @@ Check the repo before recommending anything: `vercel.json`, `fly.toml`, `render.
 | One or a few VPS | Hetzner, DigitalOcean, OVH with Kamal or Coolify | Cost-sensitive, steady load, comfortable with a server, or needs big RAM/CPU cheaply | Medium: patching, backups, monitoring are yours | Need multi-zone availability or many services |
 | Kubernetes (managed) | EKS, GKE, AKS | Many services, several engineers, at least one person whose job includes the cluster | High, and continuous | n/a |
 
-Default path: **Prototype** on a PaaS. **Launch** on the same PaaS unless a signal below fires. **Scale** on managed containers in one cloud, with managed Postgres. Kubernetes is not a stage on this path; it is a choice a team makes when it has roughly ten or more services or needs something only the Kubernetes ecosystem provides (operators, custom scheduling, portability across clouds for a contract), and has someone to upgrade it three times a year.
+Default path: **Prototype** on a PaaS. **Launch** on the same PaaS unless a signal below fires. **Scale** on managed containers in one cloud, with
+managed Postgres. Kubernetes is not a stage on this path; it is a choice a team makes when it has roughly ten or more services or needs something only
+the Kubernetes ecosystem provides (operators, custom scheduling, portability across clouds for a contract), and has someone to upgrade it three times
+a year.
 
 A VPS with Kamal is a legitimate Launch choice, not a step backwards: it is the cheapest way to run a steady workload and avoids usage-priced surprises. Its cost is paid in attention: patching, backups, disk-full pages. Choose it when the founder has run a Linux server before; otherwise the PaaS premium is the cheapest operations hire available.
 
@@ -35,7 +41,10 @@ Move one workload at a time. A common stable shape at Launch is a frontend PaaS 
 
 ### Kubernetes: the honest test
 
-Say yes only if all hold: more than a handful of independently deployed services; someone on the team has operated a cluster through a version upgrade; a managed control plane is used; and the alternative (ECS, Cloud Run) was considered and found missing a specific capability. "Avoids lock-in" is not such a capability for a small team: Kubernetes replaces lock-in to a cloud's simple API with lock-in to a large body of YAML, controllers and operational habit.
+Say yes only if all hold: more than a handful of independently deployed services; someone on the team has operated a cluster through a version
+upgrade; a managed control plane is used; and the alternative (ECS, Cloud Run) was considered and found missing a specific capability. "Avoids
+lock-in" is not such a capability for a small team: Kubernetes replaces lock-in to a cloud's simple API with lock-in to a large body of YAML,
+controllers and operational habit.
 
 ## Workload unit: container, function, isolate or VM
 
@@ -66,18 +75,27 @@ Rules that settle most cases:
 | Legacy app that expects a shared POSIX directory across instances | Network file (EFS, Filestore) | Last resort. Slow on many small files, priced high per GB, latency per operation. Rewrite to object storage when possible |
 | Scratch during a request or job | Container's ephemeral disk or `/tmp` | Gone on restart; size-capped on functions; never the only copy |
 
-Traps: writing uploads to the container's local disk works on one instance and loses files on the first deploy or second instance. SQLite on a network file system corrupts or crawls; SQLite needs a block volume and a single writer (and a replication tool such as Litestream for backup). Object storage is not a file system: no atomic rename, no append, list operations are slow and billed; design keys so that listing is rarely needed.
+Traps: writing uploads to the container's local disk works on one instance and loses files on the first deploy or second instance. SQLite on a network
+file system corrupts or crawls; SQLite needs a block volume and a single writer (and a replication tool such as Litestream for backup). Object storage
+is not a file system: no atomic rename, no append, list operations are slow and billed; design keys so that listing is rarely needed.
 
 ## Regions
 
 Order of decisions:
 
-1. **Legal and contractual constraints first.** If customers or regulation require data to stay in a jurisdiction (EU, UK, Australia, Canada, India and others each have their own rules or customer expectations), pick a region there. Residency (where bytes are stored) is different from sovereignty (whose law can compel access): an EU region of a US provider satisfies most residency clauses but not a strict sovereignty requirement, which calls for an EU-headquartered provider or a sovereign cloud offering. Which applies is a legal question; ask the user what their contracts say and suggest counsel if a regulated sector is involved.
+1. **Legal and contractual constraints first.** If customers or regulation require data to stay in a jurisdiction (EU, UK, Australia, Canada, India and
+   others each have their own rules or customer expectations), pick a region there. Residency (where bytes are stored) is different from sovereignty
+   (whose law can compel access): an EU region of a US provider satisfies most residency clauses but not a strict sovereignty requirement, which calls
+   for an EU-headquartered provider or a sovereign cloud offering. Which applies is a legal question; ask the user what their contracts say and suggest
+   counsel if a regulated sector is involved.
 2. **Database region = where most users are.** Everything else follows the database.
 3. **Compute in the same region as the database**, including the PaaS functions region. Platforms default to a US region; check it explicitly.
 4. **Check what else stores data**: logs, error tracker, analytics, email provider, LLM API, backups. A residency promise covers all of them, not only the database.
 
-Other region rules: choose a large, old region over a new one (more services, more capacity, fewer quota surprises); prices differ by region by a noticeable margin, so compare before choosing between two acceptable ones; stay in one region until Scale. Multi-region active-active is a database problem first and is rarely justified before a contractual uptime commitment demands it; multi-zone within one region is the right availability target at Launch. Disaster recovery design belongs to `0x:site-reliability`.
+Other region rules: choose a large, old region over a new one (more services, more capacity, fewer quota surprises); prices differ by region by a
+noticeable margin, so compare before choosing between two acceptable ones; stay in one region until Scale. Multi-region active-active is a database
+problem first and is rarely justified before a contractual uptime commitment demands it; multi-zone within one region is the right availability target
+at Launch. Disaster recovery design belongs to `0x:site-reliability`.
 
 A CDN in front solves global latency for static and cacheable content without multi-region compute. For dynamic, per-user responses from far-away users, measure first: 150 to 250 ms of added round trip is noticeable on chatty pages and tolerable on well-batched ones.
 
@@ -95,13 +113,19 @@ container cost / month = N × hourly_price × 730
 R = requests per month, D = average duration in seconds, M = memory in GB
 ```
 
-Worked example with illustrative list prices (take current ones from the provider's calculator): 10 million requests a month, 200 ms each, 512 MB. Compute charge is 10M × 0.2 s × 0.5 GB = 1M GB-seconds; at a price in the region of $0.0000167 per GB-second plus about $0.20 per million requests this is roughly $19 a month. Ten million requests a month is under 4 requests per second on average, which one small container handles. So for this profile the two cost about the same at 10 million requests and the container wins beyond it; at 100 million requests the function bill is ten times larger and the container count has perhaps doubled.
+Worked example with illustrative list prices (take current ones from the provider's calculator): 10 million requests a month, 200 ms each, 512 MB.
+Compute charge is 10M × 0.2 s × 0.5 GB = 1M GB-seconds; at a price in the region of $0.0000167 per GB-second plus about $0.20 per million requests
+this is roughly $19 a month. Ten million requests a month is under 4 requests per second on average, which one small container handles. So for this
+profile the two cost about the same at 10 million requests and the container wins beyond it; at 100 million requests the function bill is ten times
+larger and the container count has perhaps doubled.
 
 Rules of thumb:
 
 - Below about a million requests a month, functions are effectively free and the comparison is not worth making.
 - Sustained traffic with average utilization above roughly 20 to 30 percent of an always-on instance favors the container.
-- Slow requests (LLM calls, streaming, long upstream waits) hit the break-even far earlier, because the function bills for the whole wait. Platforms that bill active CPU or allow multiple concurrent requests per instance (Cloud Run concurrency, Vercel's concurrent function model, Cloudflare Workers CPU-time billing) change this substantially; check which billing model the platform uses before calculating.
+- Slow requests (LLM calls, streaming, long upstream waits) hit the break-even far earlier, because the function bills for the whole wait. Platforms
+  that bill active CPU or allow multiple concurrent requests per instance (Cloud Run concurrency, Vercel's concurrent function model, Cloudflare Workers
+  CPU-time billing) change this substantially; check which billing model the platform uses before calculating.
 - An API gateway in front of functions can cost more per request than the functions do. Include it.
 - Include the non-compute lines on frontend PaaS: bandwidth, image optimization, build minutes, per-seat fees. They are often the larger part of the bill.
 
@@ -118,7 +142,9 @@ Lock-in is a price, not a sin. Estimate the exit in engineer-weeks and decide wh
 | Auth provider holding password hashes | Weeks, plus user friction if hashes cannot be exported | Confirm hash export before adopting; see `0x:auth-identity` |
 | Proprietary workflow or state-machine definitions, vendor-specific IAM woven through code | Months | Keep business logic in plain code that the workflow calls |
 
-Before adopting a proprietary service, answer in writing: can the data be exported in bulk in a standard format, and has it been tried once? Is there a second implementation of the interface (an S3-compatible store, a Postgres-compatible host)? What is billed on exit (egress per GB is the usual exit tax; some providers waive it on request when leaving)? What is the smallest wrapper that keeps the SDK out of business logic?
+Before adopting a proprietary service, answer in writing: can the data be exported in bulk in a standard format, and has it been tried once? Is there
+a second implementation of the interface (an S3-compatible store, a Postgres-compatible host)? What is billed on exit (egress per GB is the usual exit
+tax; some providers waive it on request when leaving)? What is the smallest wrapper that keeps the SDK out of business logic?
 
 Do not pay for portability that will not be used: a "cloud-agnostic" abstraction layer over three clouds costs more than the migration it insures against. The exception is data: keep it in formats and engines that exist elsewhere.
 
@@ -130,7 +156,10 @@ Do not pay for portability that will not be used: a "cloud-agnostic" abstraction
 | Budget cloud or rented dedicated servers (Hetzner, OVH) | Steady compute-, RAM- or bandwidth-heavy workload; price-sensitive product; team can run Postgres or accepts a separate managed DB | Fewer managed services, hardware failure means a rebuild, fewer regions, thinner compliance paperwork |
 | Colocation, owned hardware | Cloud bill in the high six figures a year with a flat, predictable base load, and staff to run it | Capital outlay, lead times, hardware lifecycle, on-call for physical failure |
 
-Rule of thumb: rented dedicated hardware is several times cheaper per core and per GB of RAM than hyperscaler on-demand, and bandwidth is cheaper by a larger factor still. That saving is real only if the managed services being given up (database failover, backups, load balancers, zonal redundancy) are either unnecessary or rebuilt and operated, and operating them is someone's time. Before a solo founder leaves a hyperscaler for cost, exhaust the cheaper moves first: rightsizing, commitments, ARM instances, removing NAT and egress waste (`cost-control.md`).
+Rule of thumb: rented dedicated hardware is several times cheaper per core and per GB of RAM than hyperscaler on-demand, and bandwidth is cheaper by a
+larger factor still. That saving is real only if the managed services being given up (database failover, backups, load balancers, zonal redundancy)
+are either unnecessary or rebuilt and operated, and operating them is someone's time. Before a solo founder leaves a hyperscaler for cost, exhaust the
+cheaper moves first: rightsizing, commitments, ARM instances, removing NAT and egress waste (`cost-control.md`).
 
 A hybrid that works for small teams: stateless compute on cheap servers, database on a managed service in a nearby region of the same metro, object storage on a zero-egress provider. Measure latency between them before committing; cross-provider traffic crosses the public internet and is billed as egress on the managed side.
 

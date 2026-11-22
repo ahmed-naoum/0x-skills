@@ -116,7 +116,9 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
 
 The Dockerfile `HEALTHCHECK` is used by Docker and Compose. Kubernetes ignores it and ECS reads the check from the task definition, so define it there too.
 
-Limits: a container with no memory limit can take the host down; one with a limit and a leak restarts alone. Set a memory limit on everything, sized from observed peak plus about 25 percent headroom, and a CPU limit or share on anything that can spin. Exit code 137 with `OOMKilled: true` in `docker inspect` means the limit was hit. Cgroup mechanics are in `0x:linux-server` `container-internals.md`.
+Limits: a container with no memory limit can take the host down; one with a limit and a leak restarts alone. Set a memory limit on everything, sized
+from observed peak plus about 25 percent headroom, and a CPU limit or share on anything that can spin. Exit code 137 with `OOMKilled: true` in `docker
+inspect` means the limit was hit. Cgroup mechanics are in `0x:linux-server` `container-internals.md`.
 
 ## Local stack with Compose
 
@@ -187,7 +189,10 @@ docker buildx build --platform linux/amd64,linux/arm64 -t registry.example.com/a
 | Coolify | Self-hosted PaaS with a web UI on the server; git-push deploys, managed databases with backups, built-in reverse proxy and certificates | A Heroku-like panel is wanted, several small apps on one box |
 | Plain Compose on the server | `docker compose pull && docker compose up -d` | Internal tools where a few seconds of downtime per deploy is acceptable |
 
-Zero-downtime on one host needs four things, whichever tool: a reverse proxy that owns ports 80 and 443; the new container started alongside the old; traffic switched only after the new one passes its health check; the old one drained on SIGTERM before removal. Kamal's proxy does this by default and expects a health endpoint (by default `GET /up` returning 200, configurable). In Coolify, configure a health check on the application; without one, a rolling update cannot know when to switch.
+Zero-downtime on one host needs four things, whichever tool: a reverse proxy that owns ports 80 and 443; the new container started alongside the old;
+traffic switched only after the new one passes its health check; the old one drained on SIGTERM before removal. Kamal's proxy does this by default and
+expects a health endpoint (by default `GET /up` returning 200, configurable). In Coolify, configure a health check on the application; without one, a
+rolling update cannot know when to switch.
 
 Sequence for a first Kamal deploy: fresh server with SSH key access and nothing on ports 80/443; DNS A record pointing at it; registry credentials and app secrets supplied through Kamal's secrets file from the environment or a password manager, not committed; `kamal setup` once; `kamal deploy` thereafter; `kamal rollback <version>` to return to a previous image that is still on the host.
 

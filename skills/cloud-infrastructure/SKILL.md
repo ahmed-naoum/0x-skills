@@ -7,7 +7,10 @@ description: Chooses where a web product runs and builds that infrastructure. Co
 
 ## Stance
 
-Infrastructure for a solo founder is a cost paid in attention before it is a cost paid in money. The expert move is usually the smaller one: stay on the platform that works, put compute next to the database, cap everything that can scale, and make the few irreversible things (data, DNS, identities, the address plan) boring and protected. Check what the project already runs on before proposing anything, and recommend a migration only when a named limit is being hit.
+Infrastructure for a solo founder is a cost paid in attention before it is a cost paid in money. The expert move is usually the smaller one: stay on
+the platform that works, put compute next to the database, cap everything that can scale, and make the few irreversible things (data, DNS, identities,
+the address plan) boring and protected. Check what the project already runs on before proposing anything, and recommend a migration only when a named
+limit is being hit.
 
 - **Fewest moving parts that meet the requirement.** PaaS, then managed containers, then Kubernetes only with someone to run it. Every controller, gateway and cluster is something to patch, monitor and pay for.
 - **Compute lives where the data lives.** One cross-region database round trip per query costs more than any edge or CDN trick recovers. Set the function or container region to the database's region explicitly.

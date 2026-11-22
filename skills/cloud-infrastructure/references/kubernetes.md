@@ -66,10 +66,17 @@ spec:
 
 Why each non-obvious line is there:
 
-- **Three probes with different jobs.** Startup gives a slow boot up to `periodSeconds × failureThreshold` (60 s here) before liveness applies. Readiness removes the pod from Service endpoints without restarting it; it may check dependencies. Liveness restarts the container; it must check only the process itself. A liveness probe that queries the database turns a database blip into a cluster-wide restart storm.
+- **Three probes with different jobs.** Startup gives a slow boot up to `periodSeconds × failureThreshold` (60 s here) before liveness applies.
+  Readiness removes the pod from Service endpoints without restarting it; it may check dependencies. Liveness restarts the container; it must check only
+  the process itself. A liveness probe that queries the database turns a database blip into a cluster-wide restart storm.
 - **`maxUnavailable: 0`, `maxSurge: 1`** keeps full capacity during rollout. With two replicas, the default 25 percent rounds in ways that can drop to one.
-- **`preStop` sleep plus grace period.** Endpoint removal and SIGTERM happen in parallel; without a pause the pod stops listening while load balancers still send to it, producing 502s on every deploy. Sleep 5 to 15 s, then the app drains on SIGTERM; `terminationGracePeriodSeconds` must exceed sleep plus the longest request. The image needs a `sleep` binary for the exec form; recent Kubernetes versions offer a built-in `preStop: { sleep: { seconds: 10 } }` that works in distroless images.
-- **Config outside the image.** Non-secret settings in a ConfigMap, secrets in a Secret synced from the cloud's secret manager (External Secrets Operator) or encrypted in git (SOPS, Sealed Secrets). Pods do not restart when a ConfigMap or Secret consumed as environment changes: put a checksum annotation on the pod template or name the ConfigMap by content hash (Kustomize `configMapGenerator` does this).
+- **`preStop` sleep plus grace period.** Endpoint removal and SIGTERM happen in parallel; without a pause the pod stops listening while load balancers
+  still send to it, producing 502s on every deploy. Sleep 5 to 15 s, then the app drains on SIGTERM; `terminationGracePeriodSeconds` must exceed sleep
+  plus the longest request. The image needs a `sleep` binary for the exec form; recent Kubernetes versions offer a built-in `preStop: { sleep: {
+  seconds: 10 } }` that works in distroless images.
+- **Config outside the image.** Non-secret settings in a ConfigMap, secrets in a Secret synced from the cloud's secret manager (External Secrets
+  Operator) or encrypted in git (SOPS, Sealed Secrets). Pods do not restart when a ConfigMap or Secret consumed as environment changes: put a checksum
+  annotation on the pod template or name the ConfigMap by content hash (Kustomize `configMapGenerator` does this).
 - **Image by digest or immutable SHA tag.** `:latest` with the default pull policy makes rollbacks and node replacements nondeterministic.
 - **`readOnlyRootFilesystem`** needs an `emptyDir` mounted wherever the app writes (`/tmp`, a framework cache directory).
 
@@ -143,7 +150,9 @@ Scaling policy and capacity planning beyond the mechanics belong to `0x:site-rel
 - New clusters: use **Gateway API** (`Gateway` plus `HTTPRoute`) with the cloud's managed implementation or a maintained controller (Envoy Gateway, Cilium, Traefik, NGINX Gateway Fabric). It separates the infrastructure object (Gateway, owned by whoever runs the cluster) from routes (owned by the app) and is where new development goes.
 - Existing clusters on the `Ingress` API: it remains supported; migrate when convenient. Check the status of the specific controller, though: the community `ingress-nginx` controller has been retired by the Kubernetes project, so a cluster running it needs a migration plan to another controller or to Gateway API rather than further investment.
 - Expose one Gateway or ingress controller behind one cloud load balancer, and route by host and path. A `Service` of type `LoadBalancer` per app creates one billed load balancer each.
-- Certificates: cert-manager with an ACME `ClusterIssuer` issues and renews automatically for both Ingress and Gateway resources. HTTP-01 works for public hostnames; wildcards and private hostnames need DNS-01 with scoped DNS API credentials. Use the staging ACME endpoint while testing to avoid production rate limits. A cloud-managed certificate on the load balancer is simpler when the provider's gateway supports it.
+- Certificates: cert-manager with an ACME `ClusterIssuer` issues and renews automatically for both Ingress and Gateway resources. HTTP-01 works for
+  public hostnames; wildcards and private hostnames need DNS-01 with scoped DNS API credentials. Use the staging ACME endpoint while testing to avoid
+  production rate limits. A cloud-managed certificate on the load balancer is simpler when the provider's gateway supports it.
 - external-dns can create DNS records from routes; scope its credentials to one zone.
 
 Load-balancer behavior, TLS settings and DNS are covered in `0x:web-networking`.
@@ -178,7 +187,10 @@ spec:
 ```
 
 2. **Pod security.** Label namespaces for Pod Security Admission: `pod-security.kubernetes.io/enforce: baseline` at minimum, `restricted` for application namespaces (requires the `securityContext` shown in the Deployment above). Roll out with the `warn` and `audit` labels first to see what would be rejected.
-3. **Identity and RBAC.** One ServiceAccount per workload; `automountServiceAccountToken: false` unless the pod calls the Kubernetes API; cloud permissions through workload identity (EKS Pod Identity or IRSA, GKE Workload Identity Federation, AKS Workload Identity), never node-wide roles or static keys in Secrets. No `cluster-admin` for CI or apps; namespace-scoped Roles. Enable encryption of Secrets at rest with the provider's key service.
+3. **Identity and RBAC.** One ServiceAccount per workload; `automountServiceAccountToken: false` unless the pod calls the Kubernetes API; cloud
+   permissions through workload identity (EKS Pod Identity or IRSA, GKE Workload Identity Federation, AKS Workload Identity), never node-wide roles or
+   static keys in Secrets. No `cluster-admin` for CI or apps; namespace-scoped Roles. Enable encryption of Secrets at rest with the provider's key
+   service.
 
 For tenants that are mutually untrusted (customer code, for example), namespaces with policies are not enough: use separate node pools with sandboxed runtimes, or separate clusters.
 

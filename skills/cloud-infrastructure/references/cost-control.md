@@ -8,7 +8,10 @@ Do these before deploying anything; a leaked key or a loop can spend thousands i
 
 1. **Budget with alerts** at 50, 80 and 100 percent of the expected monthly figure, plus a forecast-based alert, delivered to an inbox and a chat channel people read. Set a second, low budget on accounts that should cost nearly nothing (sandbox, management).
 2. **Anomaly detection** where the provider offers it free (AWS Cost Anomaly Detection): it catches a new line item days before a monthly threshold does.
-3. **Understand what a budget is not.** On AWS, GCP and standard Azure subscriptions a budget is an alert, not a cap, and billing data lags by hours to a day. Nothing stops spending unless it is built: a GCP budget can publish to Pub/Sub and a function can detach billing (which stops every service in the project, production included); AWS budget actions can apply a deny policy or stop specific instances. Several PaaS and edge platforms do offer a real spend limit that pauses the project; turn it on at Prototype and decide deliberately at Launch whether an outage is better than the bill.
+3. **Understand what a budget is not.** On AWS, GCP and standard Azure subscriptions a budget is an alert, not a cap, and billing data lags by hours to a
+   day. Nothing stops spending unless it is built: a GCP budget can publish to Pub/Sub and a function can detach billing (which stops every service in
+   the project, production included); AWS budget actions can apply a deny policy or stop specific instances. Several PaaS and edge platforms do offer a
+   real spend limit that pauses the project; turn it on at Prototype and decide deliberately at Launch whether an outage is better than the bill.
 4. **Service quotas as a safety net.** Default quotas bound what a stolen credential can launch. Do not raise them "for later"; keep GPU and large-instance quotas at zero or minimal in accounts that do not use them, and restrict unused regions (`iam-accounts.md`).
 5. **Caps on everything metered** (see "Hard maximums").
 6. **Third-party meters too**: LLM APIs, SMS, email, maps, error tracking and log vendors each have their own budget or usage-limit setting. Set them the same day.
@@ -87,11 +90,17 @@ Thirty minutes, once a month, at Launch and after. Open the cost explorer groupe
 4. Check each region and each account for spend that should be zero.
 5. Record cost per active user or per request alongside the total, so growth and waste can be told apart.
 
-When a bill has jumped: find the day it started in the daily view, the service and usage type that moved, then the resource (tag, resource-level view or the service's own metrics), then what changed that day (deploy, new feature, traffic source, a failing job retrying, a new log level). The usual culprits in order: data transfer or NAT after a new integration, logs after a debug flag or an error loop, a forgotten large instance or database, a retry or recursion loop, runaway autoscaling, a compromised key launching compute in an unused region.
+When a bill has jumped: find the day it started in the daily view, the service and usage type that moved, then the resource (tag, resource-level view
+or the service's own metrics), then what changed that day (deploy, new feature, traffic source, a failing job retrying, a new log level). The usual
+culprits in order: data transfer or NAT after a new integration, logs after a debug flag or an error loop, a forgotten large instance or database, a
+retry or recursion loop, runaway autoscaling, a compromised key launching compute in an unused region.
 
 ## Orphans and idle resources
 
-Things that bill while doing nothing: unattached volumes; snapshots and machine images of deleted instances; unassociated static IPs; load balancers with no targets; NAT gateways in dev accounts; stopped instances (their disks still bill); databases for abandoned experiments; preview environments and database branches never torn down; old container images; log groups with no retention; incomplete multipart uploads and noncurrent object versions; resources in regions nobody opens.
+Things that bill while doing nothing: unattached volumes; snapshots and machine images of deleted instances; unassociated static IPs; load balancers
+with no targets; NAT gateways in dev accounts; stopped instances (their disks still bill); databases for abandoned experiments; preview environments
+and database branches never torn down; old container images; log groups with no retention; incomplete multipart uploads and noncurrent object
+versions; resources in regions nobody opens.
 
 ```bash
 # Unattached volumes and unassociated addresses (repeat per region)
@@ -101,13 +110,20 @@ aws ec2 describe-addresses \
   --query 'Addresses[?AssociationId==`null`].[PublicIp,AllocationId]' --output table
 ```
 
-Method: start from the bill (every line maps to something that exists), not from the console. Use the provider's recommendations (AWS Compute Optimizer and Trusted Advisor, GCP Recommender, Azure Advisor) for idle findings. Before deleting: confirm ownership by tag, snapshot anything stateful, stop before terminating and wait a week when unsure. Prevent recurrence structurally: everything created by IaC with tags, preview environments with a time-to-live, a lifecycle rule on every bucket to abort incomplete multipart uploads after a few days and expire noncurrent versions, registry retention rules (`docker-images.md`), and a sandbox account that is wiped on a schedule.
+Method: start from the bill (every line maps to something that exists), not from the console. Use the provider's recommendations (AWS Compute
+Optimizer and Trusted Advisor, GCP Recommender, Azure Advisor) for idle findings. Before deleting: confirm ownership by tag, snapshot anything
+stateful, stop before terminating and wait a week when unsure. Prevent recurrence structurally: everything created by IaC with tags, preview
+environments with a time-to-live, a lifecycle rule on every bucket to abort incomplete multipart uploads after a few days and expire noncurrent
+versions, registry retention rules (`docker-images.md`), and a sandbox account that is wiped on a schedule.
 
 ## Tags and attribution
 
 - Tag every resource with at least `environment`, `service` and `owner`, set once through the IaC provider's default tags. On AWS, tags must be **activated as cost allocation tags** in billing before they appear in cost reports, and they are not retroactive; do it on day one. Separate accounts per environment give the first split for free.
 - Some spend cannot be tagged (data transfer, shared clusters, support). Allocate it proportionally and say so.
-- **Per-customer cost** does not come from tags when tenants share infrastructure. Meter it in the application: requests, compute seconds, stored bytes, egress bytes and third-party calls (LLM tokens above all) per tenant, written to the analytics store; then multiply by unit costs derived from the bill. Purpose: find tenants whose cost exceeds their revenue, set plan limits and overage prices from data, and price enterprise deals. Start when one customer plausibly accounts for more than a tenth of a variable line. Billing on usage belongs to `0x:payments-billing`.
+- **Per-customer cost** does not come from tags when tenants share infrastructure. Meter it in the application: requests, compute seconds, stored bytes,
+  egress bytes and third-party calls (LLM tokens above all) per tenant, written to the analytics store; then multiply by unit costs derived from the
+  bill. Purpose: find tenants whose cost exceeds their revenue, set plan limits and overage prices from data, and price enterprise deals. Start when one
+  customer plausibly accounts for more than a tenth of a variable line. Billing on usage belongs to `0x:payments-billing`.
 
 ## Cutting spend, in order of return on attention
 
@@ -115,8 +131,15 @@ Method: start from the bill (every line maps to something that exists), not from
 2. **Turn off non-production** outside working hours and shrink it; staging does not need production sizes or multi-zone.
 3. **Fix the design leaks**: NAT and egress paths, log volume and retention, chatty cross-zone traffic, uncached assets.
 4. **Rightsize**: look at two weeks of p95 CPU and memory. Sustained p95 under about 40 percent means one size down; the database is usually the largest and most oversized item, but check memory and connection headroom before shrinking it. Move general-purpose volumes to the current generation type, and move to ARM instances where the stack allows (`docker-images.md`).
-5. **Storage lifecycle**: transition objects to infrequent-access classes only when they are genuinely rarely read and not tiny, because those classes add retrieval fees, minimum storage durations (30 days and more) and a minimum billable object size; archive classes have longer minimums and slow retrieval. Use the provider's automatic tiering class when access patterns are unknown. Expire what has no reason to exist (`0x:data-stores` `data-lifecycle.md` for retention decisions).
-6. **Commitments last**: savings plans, reserved capacity and committed-use discounts trade flexibility for a substantial discount. Buy only after rightsizing, with at least three months of stable usage, covering about 60 to 80 percent of the steady baseline, one-year and no-upfront first, preferring the flexible kind that follows instance family and region changes. A commitment on an oversized or soon-to-be-replaced resource locks in the waste. Spot or preemptible capacity suits CI, batch and stateless workers that tolerate interruption, not the database or a single-instance service.
+5. **Storage lifecycle**: transition objects to infrequent-access classes only when they are genuinely rarely read and not tiny, because those classes
+   add retrieval fees, minimum storage durations (30 days and more) and a minimum billable object size; archive classes have longer minimums and slow
+   retrieval. Use the provider's automatic tiering class when access patterns are unknown. Expire what has no reason to exist (`0x:data-stores`
+   `data-lifecycle.md` for retention decisions).
+6. **Commitments last**: savings plans, reserved capacity and committed-use discounts trade flexibility for a substantial discount. Buy only after
+   rightsizing, with at least three months of stable usage, covering about 60 to 80 percent of the steady baseline, one-year and no-upfront first,
+   preferring the flexible kind that follows instance family and region changes. A commitment on an oversized or soon-to-be-replaced resource locks in
+   the waste. Spot or preemptible capacity suits CI, batch and stateless workers that tolerate interruption, not the database or a single-instance
+   service.
 7. **Leaving the provider** for cost is the most expensive option in attention; see `platform-choice.md`.
 
 Skip until the bill is worth it: an hour of a founder's time has a price. Below a few hundred dollars a month, do steps 1 and 2 and the guardrails, and stop.

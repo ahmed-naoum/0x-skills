@@ -32,7 +32,10 @@ aws ec2 describe-security-groups \
 Decide the address plan once; it is painful to change.
 
 - **Do not use the default VPC for production.** Its subnets are all public and auto-assign public IPs.
-- **CIDR:** a `/16` per VPC from `10.0.0.0/8`, a different one per environment and region (`10.10.0.0/16` production, `10.20.0.0/16` staging). Non-overlapping ranges are what make later peering, VPN and private-link options possible. Avoid ranges likely to collide: `10.0.0.0/16` and `172.31.0.0/16` (cloud defaults), `172.17.0.0/16` (Docker's default bridge), `192.168.0.0/16` (home and office networks, which matters the day a VPN is added).
+- **CIDR:** a `/16` per VPC from `10.0.0.0/8`, a different one per environment and region (`10.10.0.0/16` production, `10.20.0.0/16` staging).
+  Non-overlapping ranges are what make later peering, VPN and private-link options possible. Avoid ranges likely to collide: `10.0.0.0/16` and
+  `172.31.0.0/16` (cloud defaults), `172.17.0.0/16` (Docker's default bridge), `192.168.0.0/16` (home and office networks, which matters the day a VPN
+  is added).
 - **Subnets:** three tiers across two or three availability zones.
 
 | Tier | Route to internet | Holds | Size |
@@ -115,15 +118,27 @@ Walk the path in order, source to destination and back:
 
 Tools that answer without guessing: the provider's path analyzer (AWS Reachability Analyzer, GCP Connectivity Tests, Azure Network Watcher) names the blocking component; VPC flow logs show `REJECT` records for security-group and ACL drops (no record at all means the packet never arrived: routing or DNS).
 
-Recurring causes: a function or task placed in the wrong subnets; a function in a VPC without NAT trying to reach a public API; the database's security group still referencing a deleted or old application group; a managed database set to public resolving differently inside and outside; overlapping CIDRs between peered networks; MTU problems over VPN showing as small requests working and large ones hanging. General tooling is in `0x:web-networking` `network-debugging.md`.
+Recurring causes: a function or task placed in the wrong subnets; a function in a VPC without NAT trying to reach a public API; the database's
+security group still referencing a deleted or old application group; a managed database set to public resolving differently inside and outside;
+overlapping CIDRs between peered networks; MTU problems over VPN showing as small requests working and large ones hanging. General tooling is in
+`0x:web-networking` `network-debugging.md`.
 
 ## Egress: static IPs and allowlists
 
 Two different needs:
 
-**A partner must allowlist the product's outbound IP** (payment processor, bank API, enterprise customer's firewall, a managed database's IP allowlist). Give outbound traffic stable addresses: a NAT gateway with reserved static IPs (one per zone; give the partner all of them), or on GCP Cloud NAT with reserved addresses. On a PaaS, static outbound IPs are a paid feature, shared across customers on some platforms (which weakens the allowlist to "anyone on this platform"), or unavailable; the fallback is a small fixed-IP forward proxy that only the app can use. Functions need to be attached to the VPC to egress through the NAT. Record the addresses in IaC so they are never released by accident: a released address cannot be recovered and every partner must be updated.
+**A partner must allowlist the product's outbound IP** (payment processor, bank API, enterprise customer's firewall, a managed database's IP
+allowlist). Give outbound traffic stable addresses: a NAT gateway with reserved static IPs (one per zone; give the partner all of them), or on GCP
+Cloud NAT with reserved addresses. On a PaaS, static outbound IPs are a paid feature, shared across customers on some platforms (which weakens the
+allowlist to "anyone on this platform"), or unavailable; the fallback is a small fixed-IP forward proxy that only the app can use. Functions need to
+be attached to the VPC to egress through the NAT. Record the addresses in IaC so they are never released by accident: a released address cannot be
+recovered and every partner must be updated.
 
-**The product must restrict where its own workloads can connect** (containing a compromised dependency or SSRF). Security groups filter by IP, not by domain, and SaaS APIs change IPs, so domain allowlists need a filtering layer: the cloud's network firewall with domain rules, an explicit forward proxy with an allowlist, or FQDN policies in a Kubernetes network plugin that supports them. This is a Scale or compliance-driven control. The cheap parts apply from Launch: block the metadata endpoint from application code paths that fetch user-supplied URLs (SSRF defenses are in `0x:web-security`), deny outbound from the data tier entirely, and remove outbound-anywhere from workloads that only talk to the database.
+**The product must restrict where its own workloads can connect** (containing a compromised dependency or SSRF). Security groups filter by IP, not by
+domain, and SaaS APIs change IPs, so domain allowlists need a filtering layer: the cloud's network firewall with domain rules, an explicit forward
+proxy with an allowlist, or FQDN policies in a Kubernetes network plugin that supports them. This is a Scale or compliance-driven control. The cheap
+parts apply from Launch: block the metadata endpoint from application code paths that fetch user-supplied URLs (SSRF defenses are in
+`0x:web-security`), deny outbound from the data tier entirely, and remove outbound-anywhere from workloads that only talk to the database.
 
 ## Private connections between networks and services
 
@@ -135,7 +150,10 @@ Two different needs:
 | Site-to-site VPN | Connecting to an office, another cloud, or a customer's data center | Throughput limits, MTU issues, both ends need non-overlapping ranges |
 | Mesh VPN | A few hosts across providers need to talk | Depends on a third-party control plane unless self-hosted |
 
-Decision rule for a hosted database or SaaS outside the VPC: at Prototype and Launch, a public endpoint restricted by IP allowlist (the static egress IPs above), enforced TLS with certificate verification, and a strong rotated credential is acceptable. Move to a private link when a customer contract or compliance framework requires that data not traverse the public internet, or when the provider's allowlist cannot be made narrow. Prefer private link over peering with a vendor: peering exposes the whole network range in both directions and depends on address plans not colliding.
+Decision rule for a hosted database or SaaS outside the VPC: at Prototype and Launch, a public endpoint restricted by IP allowlist (the static egress
+IPs above), enforced TLS with certificate verification, and a strong rotated credential is acceptable. Move to a private link when a customer contract
+or compliance framework requires that data not traverse the public internet, or when the provider's allowlist cannot be made narrow. Prefer private
+link over peering with a vendor: peering exposes the whole network range in both directions and depends on address plans not colliding.
 
 Enterprise customers asking to "connect privately to our VPC" mean private link from their network to the product's service: an endpoint service behind a network load balancer, with per-customer acceptance. Price it as an enterprise feature; each one is ongoing operational surface.
 

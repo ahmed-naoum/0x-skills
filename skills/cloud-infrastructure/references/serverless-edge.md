@@ -74,11 +74,17 @@ Defaults: render and run API logic in the database's region (set the function re
 
 ## Edge-runtime limits
 
-- **Partial Node API.** Compatibility layers cover a growing subset (Workers' `nodejs_compat` flag, for example), but file system access, child processes, native addons and arbitrary sockets are absent or restricted. Database access goes through an HTTP or WebSocket driver, the platform's connection service (Cloudflare Hyperdrive, for example), or the platform's own socket API. Test in the platform's local emulator (`wrangler dev`) rather than plain Node; code that passes in Node fails at deploy.
+- **Partial Node API.** Compatibility layers cover a growing subset (Workers' `nodejs_compat` flag, for example), but file system access, child
+  processes, native addons and arbitrary sockets are absent or restricted. Database access goes through an HTTP or WebSocket driver, the platform's
+  connection service (Cloudflare Hyperdrive, for example), or the platform's own socket API. Test in the platform's local emulator (`wrangler dev`)
+  rather than plain Node; code that passes in Node fails at deploy.
 - **CPU time, not wall time, is capped**, often at tens of milliseconds on entry tiers and configurable upward on paid ones. Awaiting `fetch` does not count; parsing a multi-megabyte JSON body, hashing passwords, rendering large pages and image work do. Symptom: intermittent "exceeded CPU" errors on large inputs only. Fix: move that work in-region.
 - **Small memory and bundle caps** (on the order of a hundred-odd MB of memory and a few MB of compressed script). Stream; do not accumulate.
 - **Subrequest caps** per invocation. A fan-out loop over many URLs fails partway; batch upstream or use a queue.
-- **Key-value stores at the edge are eventually consistent.** A write may take up to a minute or so to be visible in other locations, and a read-after-write from a different location returns the old value. Use them for config, flags, cached lookups and anything tolerant of staleness. Do not use them for counters, inventory, session revocation that must be immediate, or locks; those need a strongly consistent primitive (a single-region database, or the platform's coordination object such as Durable Objects).
+- **Key-value stores at the edge are eventually consistent.** A write may take up to a minute or so to be visible in other locations, and a
+  read-after-write from a different location returns the old value. Use them for config, flags, cached lookups and anything tolerant of staleness. Do
+  not use them for counters, inventory, session revocation that must be immediate, or locks; those need a strongly consistent primitive (a single-region
+  database, or the platform's coordination object such as Durable Objects).
 - **No shared memory between requests that can be relied on.** A module-level `Map` is a per-isolate, per-location cache that may vanish at any time: fine as an optimization, wrong as a source of truth.
 - **Per-request secrets and bindings**, not global environment; see the portability rules above.
 
@@ -94,19 +100,33 @@ Unbounded function concurrency is the usual cause of "too many connections" and 
 | Pooler in front of Postgres | Required: PgBouncer in transaction mode, the provider's pooler endpoint (Neon, Supabase), RDS Proxy, Hyperdrive. Point the app at the pooler; point migrations at the direct endpoint |
 | Function concurrency | Cap so that `max concurrency × pool size` stays under the pooler's or database's limit with headroom for migrations and admin |
 
-Transaction-mode pooling breaks session state: `SET` that should persist, session advisory locks, `LISTEN`, and named prepared statements unless the pooler version and driver setting support them. Symptoms are intermittent "prepared statement does not exist" errors; fix with the driver's option to disable prepared statements or the pooler's prepared-statement support. An HTTP-based driver sidesteps connection limits at the cost of interactive transactions being limited or slower. Pooler operation is in `0x:postgres-database` `postgres-operations.md`.
+Transaction-mode pooling breaks session state: `SET` that should persist, session advisory locks, `LISTEN`, and named prepared statements unless the
+pooler version and driver setting support them. Symptoms are intermittent "prepared statement does not exist" errors; fix with the driver's option to
+disable prepared statements or the pooler's prepared-statement support. An HTTP-based driver sidesteps connection limits at the cost of interactive
+transactions being limited or slower. Pooler operation is in `0x:postgres-database` `postgres-operations.md`.
 
-**Budget.** Set, per function or project: a maximum concurrency (Lambda reserved concurrency, Cloud Run `max-instances`, the PaaS's instance or concurrency limit), the shortest timeout that the slowest legitimate request needs (a hung upstream then costs seconds, not minutes), and the platform's spend limit or budget alert. A cap turns overload into throttling (HTTP 429 or 503), which is the intended outcome: decide what the client sees, and make sure webhook providers will retry. Reserve separate, smaller caps for expensive functions (LLM calls, image processing) so that abuse of one endpoint cannot consume the whole account's concurrency. Budget mechanics are in `cost-control.md`.
+**Budget.** Set, per function or project: a maximum concurrency (Lambda reserved concurrency, Cloud Run `max-instances`, the PaaS's instance or
+concurrency limit), the shortest timeout that the slowest legitimate request needs (a hung upstream then costs seconds, not minutes), and the
+platform's spend limit or budget alert. A cap turns overload into throttling (HTTP 429 or 503), which is the intended outcome: decide what the client
+sees, and make sure webhook providers will retry. Reserve separate, smaller caps for expensive functions (LLM calls, image processing) so that abuse
+of one endpoint cannot consume the whole account's concurrency. Budget mechanics are in `cost-control.md`.
 
 ## Background and scheduled work
 
 Order of preference:
 
 1. **A few hundred milliseconds of post-response work** (logging, analytics, cache refresh): use the platform's keep-alive primitive so the instance is not frozen: `ctx.waitUntil(promise)` on Workers, `waitUntil` from the Vercel functions package, `after()` in Next.js. It extends life up to the function limit, with no retry if it fails. Never a bare un-awaited promise.
-2. **Anything that must happen** (send the email, fulfill the order, process the upload): write a job or outbox row in the same transaction as the state change, or publish to a queue, and return. A consumer function processes it with retries. Choices: a Postgres-backed queue drained by a container worker or by a scheduled function; the cloud's queue (SQS, Cloud Tasks, Cloudflare Queues); or a hosted durable-execution service (Inngest, Trigger.dev, Step Functions, Cloudflare Workflows) when jobs have several steps, sleeps or fan-out.
+2. **Anything that must happen** (send the email, fulfill the order, process the upload): write a job or outbox row in the same transaction as the state
+   change, or publish to a queue, and return. A consumer function processes it with retries. Choices: a Postgres-backed queue drained by a container
+   worker or by a scheduled function; the cloud's queue (SQS, Cloud Tasks, Cloudflare Queues); or a hosted durable-execution service (Inngest,
+   Trigger.dev, Step Functions, Cloudflare Workflows) when jobs have several steps, sleeps or fan-out.
 3. **Work longer than the function limit**: checkpointed steps on a durable-execution service, or a container job (ECS or Cloud Run job, a worker on the container PaaS). Do not chain functions by having each invoke the next over HTTP; see the next section.
 
-Scheduled work: platform cron (Vercel cron, Cloudflare Cron Triggers, EventBridge Scheduler, Cloud Scheduler). Three properties to design for: delivery is at-least-once and occasionally late or duplicated, so the job must be idempotent (claim work with a row lock or a unique run key); the endpoint is a public URL unless protected, so verify the platform's secret header or signature; and a run that outlasts its interval overlaps with the next, so take a lock or make each run process a bounded batch. Never rely on `setInterval` or an in-process scheduler in a function. Job design itself is in `0x:backend-architecture` `background-jobs.md`.
+Scheduled work: platform cron (Vercel cron, Cloudflare Cron Triggers, EventBridge Scheduler, Cloud Scheduler). Three properties to design for:
+delivery is at-least-once and occasionally late or duplicated, so the job must be idempotent (claim work with a row lock or a unique run key); the
+endpoint is a public URL unless protected, so verify the platform's secret header or signature; and a run that outlasts its interval overlaps with the
+next, so take a lock or make each run process a bounded batch. Never rely on `setInterval` or an in-process scheduler in a function. Job design itself
+is in `0x:backend-architecture` `background-jobs.md`.
 
 Queue consumers on Lambda-style platforms: set the queue's visibility timeout to several times the function timeout (AWS recommends at least six times), report per-message failures (partial batch response) so one bad message does not replay the whole batch, set a maximum receive count with a dead-letter queue, and alarm on dead-letter depth and on the age of the oldest message.
 
@@ -123,7 +143,11 @@ The expensive incidents are loops: each invocation causes at least one more, at 
 | Retry amplification | Client retries × gateway retries × function retries × SDK retries multiply | Retry at one layer only, with exponential backoff, jitter and a cap; make handlers idempotent so a retry is harmless (`0x:api-design` `idempotency-rate-limits.md`) |
 | Unbounded fan-out | One event enqueues N events, each of which enqueues N more | Bound N in code; cap consumer concurrency |
 
-Platform loop detection exists on some services for some trigger combinations; treat it as a backstop, not a design. The independent defenses are the same as for budget: a concurrency cap on every function (bounds the burn rate), a billing alarm with a short evaluation window on invocation count, and a rehearsed kill switch. Know the kill switch before it is needed: set the function's concurrency to zero (`aws lambda put-function-concurrency --function-name <name> --reserved-concurrent-executions 0`), disable the trigger or event source mapping, or pause the project on the PaaS. Purge or redirect the queue afterwards, or the loop resumes when the cap is lifted.
+Platform loop detection exists on some services for some trigger combinations; treat it as a backstop, not a design. The independent defenses are the
+same as for budget: a concurrency cap on every function (bounds the burn rate), a billing alarm with a short evaluation window on invocation count,
+and a rehearsed kill switch. Know the kill switch before it is needed: set the function's concurrency to zero (`aws lambda put-function-concurrency
+--function-name <name> --reserved-concurrent-executions 0`), disable the trigger or event source mapping, or pause the project on the PaaS. Purge or
+redirect the queue afterwards, or the loop resumes when the cap is lifted.
 
 ## Ask the user
 
