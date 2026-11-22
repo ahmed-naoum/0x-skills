@@ -76,7 +76,8 @@ Diagnose in this order:
 3. Right everywhere but wrong on one machine: local caches. Browser (Chrome keeps its own short-lived cache, visible at `chrome://net-internals/#dns`), OS (`sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder` on macOS, `ipconfig /flushdns` on Windows, `resolvectl flush-caches` on systemd Linux), `/etc/hosts` entries left from testing, a VPN or corporate resolver with split DNS.
 4. Right in DNS but traffic still reaches the old server: established keep-alive connections and connection pools never re-resolve. Long-running services hold old addresses until restarted or until their pool recycles. Keep the old target serving for hours after a cutover.
 
-**Negative caching** is the trap that explains "the record exists but my laptop says it does not". An `NXDOMAIN` or empty answer is cached for the lesser of the SOA record's TTL and its `MINIMUM` field (read both with `dig SOA example.com`): minutes at some providers, hours at others. Checking a name before creating it caches the absence. Create the record first, then test; or test against the authoritative server only.
+**Negative caching** is the trap that explains "the record exists but my laptop says it does not". An `NXDOMAIN` or empty answer is cached for the lesser of the SOA record's TTL and its `MINIMUM` field (read both with `dig SOA example.com`):
+minutes at some providers, hours at others. Checking a name before creating it caches the absence. Create the record first, then test; or test against the authoritative server only.
 
 Nameserver changes are slower than record changes: the delegation's TTL is set by the TLD registry (two days for `.com`) and cannot be lowered.
 
@@ -109,7 +110,8 @@ These are two different moves. Do them separately, DNS first.
 **Transferring registrar:**
 
 - A transfer moves the registration, not the DNS. If the losing registrar is also the DNS host, its nameservers may stop answering when the transfer completes. Move DNS to an independent provider first and let it settle.
-- Sequence: unlock, obtain the authorization (EPP) code, start the transfer at the gaining registrar, approve the confirmation. gTLD transfers can take several days unless the losing registrar releases early, usually add a year to the term, and are blocked for a period after registration or a previous transfer (60 days for many years; ICANN's revised transfer policy shortens it, so read the registrar's current rule). Country-code TLDs each have their own procedure.
+- Sequence: unlock, obtain the authorization (EPP) code, start the transfer at the gaining registrar, approve the confirmation.
+  gTLD transfers can take several days unless the losing registrar releases early, usually add a year to the term, and are blocked for a period after registration or a previous transfer (60 days for many years; ICANN's revised transfer policy shortens it, so read the registrar's current rule). Country-code TLDs each have their own procedure.
 - Do not start within a few weeks of expiry, and do not change registrant contact details just before: either can trigger a lock or a lapse mid-transfer.
 - Afterward re-check lock, auto-renew, MFA, and the `DS` record if DNSSEC is in use.
 
