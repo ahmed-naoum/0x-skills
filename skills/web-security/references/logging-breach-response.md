@@ -145,7 +145,11 @@ Write it now: one or two pages, stored where it survives the incident (printed, 
   customers owed notification by contract; the data-protection authority's reporting channel.
 - **Decisions made in advance.** What counts as a security incident. Anyone on the response may take production offline to contain, without approval. Who decides on customer notification (the lead with counsel). The stance on extortion: by default do not pay, and never decide without counsel, since sanctions law can make payment illegal. Who speaks externally: one voice.
 - **Out-of-band channel.** If email or chat may be compromised, the response moves to a pre-agreed alternative: a messaging group on personal devices, or a phone bridge.
-- **Clocks.** GDPR requires notifying the supervisory authority within 72 hours of becoming aware of a personal-data breach, unless it is unlikely to result in risk; processors notify controllers without undue delay; contracts often set shorter windows; other jurisdictions differ (US state laws, for example, each set their own triggers, recipients and deadlines). Record the moment of awareness. The law itself: `0x:privacy-compliance`, and counsel.
+- **Clocks.** GDPR requires notifying the supervisory authority within 72 hours of becoming aware of a
+  personal-data breach, unless it is unlikely to result in risk; processors notify controllers without undue
+  delay; contracts often set shorter windows; other jurisdictions differ (US state laws, for example, each set
+  their own triggers, recipients and deadlines). Record the moment of awareness. The law itself:
+  `0x:privacy-compliance`, and counsel.
 - **Runbooks linked from the plan**, each tried once: revoke all sessions, rotate each secret in the inventory, block an address or network at the edge, disable a user or tenant, switch to maintenance mode, stop outbound email and webhooks, snapshot a host and the database, restore from backup.
 
 General incident mechanics (channels, status page, postmortem) are in `0x:site-reliability` (`incident-response.md`). Security incidents differ in four ways: a small need-to-know group, the assumption that the attacker reads normal channels, evidence preserved before anything is fixed, and legal clocks.

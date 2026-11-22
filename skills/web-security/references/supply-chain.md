@@ -68,8 +68,15 @@ Rule: depend when the problem is hard to get right, the project has more than on
 
 Dependency lifecycle scripts (`preinstall`, `postinstall`) run arbitrary code with the installing user's access, on every laptop and CI runner.
 
-- pnpm 10 and later does not run dependency build scripts unless the package is on the project's allow-list; `pnpm approve-builds` reviews and records them (the setting's name has changed between majors, so let the command write it). Keep the list to packages that compile or download binaries (typically a bundler's native binary, an image library, a database driver, the ORM's engine), and review every addition in the pull request.
-- npm 12 and later skips dependency install scripts unless the package is approved (`npm approve-scripts`). A skipped script only warns by default, so a native module can end up unbuilt; turn on the strict setting in CI (see `npm help config`). On npm 11 and earlier set `ignore-scripts=true` in `.npmrc` and run `npm rebuild <package> --ignore-scripts=false` for the few that need a build. Bun skips dependency scripts by default and has a `trustedDependencies` allow-list. Yarn Berry: `enableScripts: false`.
+- pnpm 10 and later does not run dependency build scripts unless the package is on the project's allow-list;
+  `pnpm approve-builds` reviews and records them (the setting's name has changed between majors, so let the
+  command write it). Keep the list to packages that compile or download binaries (typically a bundler's native
+  binary, an image library, a database driver, the ORM's engine), and review every addition in the pull request.
+- npm 12 and later skips dependency install scripts unless the package is approved (`npm approve-scripts`). A
+  skipped script only warns by default, so a native module can end up unbuilt; turn on the strict setting in CI
+  (see `npm help config`). On npm 11 and earlier set `ignore-scripts=true` in `.npmrc` and run `npm rebuild
+  <package> --ignore-scripts=false` for the few that need a build. Bun skips dependency scripts by default and
+  has a `trustedDependencies` allow-list. Yarn Berry: `enableScripts: false`.
 - Scripts off filters the common trigger only; malicious code can still run when the module is imported. The cooldown and credential scoping cover that case.
 - On CI, install in a step whose environment holds no deploy or publish credentials. Run unfamiliar repositories and take-home code in a container, not on the machine that holds cloud and registry logins.
 
@@ -92,7 +99,12 @@ updates:
         update-types: ["minor", "patch"]
 ```
 
-The Renovate equivalent is `"minimumReleaseAge": "7 days"`. Dependabot's cooldown delays version updates only; its security updates still arrive at once. Enforce the same rule at install time, so that a manual `pnpm add` or `pnpm update` obeys it: pnpm's `minimumReleaseAge` setting in `pnpm-workspace.yaml` (in minutes; 10080 is 7 days; pnpm 11 and later default to one day), with its exclude list for packages that must bypass it. The other managers have the same control under their own names and units (npm `min-release-age`, Yarn `npmMinimalAgeGate`, Bun `minimumReleaseAge`); read the unit in the manager's documentation before setting a number.
+The Renovate equivalent is `"minimumReleaseAge": "7 days"`. Dependabot's cooldown delays version updates only;
+its security updates still arrive at once. Enforce the same rule at install time, so that a manual `pnpm add` or
+`pnpm update` obeys it: pnpm's `minimumReleaseAge` setting in `pnpm-workspace.yaml` (in minutes; 10080 is 7
+days; pnpm 11 and later default to one day), with its exclude list for packages that must bypass it. The other
+managers have the same control under their own names and units (npm `min-release-age`, Yarn `npmMinimalAgeGate`,
+Bun `minimumReleaseAge`); read the unit in the manager's documentation before setting a number.
 
 Policy:
 
