@@ -55,7 +55,7 @@ point, because each fails differently.
 
 | Entry point | How it fails | Rule |
 |---|---|---|
-| Next.js middleware (named proxy in recent versions) | Treated as the gate; matcher gaps and past bypass bugs skip it | Coarse redirects only, never the sole check |
+| Next.js middleware (`proxy.ts` from Next.js 16) | Treated as the gate; matcher gaps and past bypass bugs skip it | Coarse redirects only, never the sole check |
 | Layouts and pages | A layout's check does not rerun on client navigation between its child pages | Authorize in the data layer each page calls |
 | Server Functions (Server Actions) | Each is a public POST endpoint, callable with any arguments whether or not the UI renders its button | Authenticate, validate input and authorize inside every one |
 | Route handlers, APIs, GraphQL resolvers | A check at the root only; nested resolvers and sub-resources unchecked | The same policy function at the data layer |
@@ -142,6 +142,8 @@ export function can(actor: { role: Role }, permission: Permission): boolean {
 }
 ```
 
+- Stage: the tenant scope and `can()` exist from Prototype, because retrofitting them means
+  touching every query. The cross-tenant suite and the route-enumeration test are due by Launch.
 - Conditions that depend on the resource (ownership, status, amount) live in the same module as
   functions that take the resource, for example `canEditDocument(actor, doc)`.
 - Two layers, both mandatory: the tenant scope in every query, then the permission check for the
@@ -225,7 +227,8 @@ create table grants (
 
 ## Policy engines and Zanzibar-style services
 
-Signals that checks have outgrown code:
+This is a Scale decision; before then the running cost outweighs the gain. Signals that checks
+have outgrown code:
 
 1. Several services in different languages must reach the same decision.
 2. Deep hierarchies and sharing make "list everything this user can see" slow or wrong in SQL.

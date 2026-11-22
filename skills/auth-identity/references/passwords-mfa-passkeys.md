@@ -7,12 +7,15 @@ enforcement, or upgrading old password hashes.
 ## Password storage
 
 Use the auth library's hasher when it meets the parameters below, otherwise a maintained Argon2
-binding. The figures are the OWASP minimums; go higher when the hardware allows.
+binding plugged into the library's custom hash and verify hooks. Read the library's default
+before trusting it: Better Auth, for one, ships scrypt with its own parameters. Switching the
+hasher on a live system needs the rehash-at-login path at the end of this file, or existing
+users cannot sign in. The figures are the OWASP minimums; go higher when the hardware allows.
 
 | Algorithm | Minimum parameters | Use when |
 |---|---|---|
 | Argon2id | 19 MiB memory, 2 iterations, parallelism 1 (or 46 MiB, 1 iteration) | Default |
-| scrypt | N=2^17, r=8, p=1 | Argon2 is unavailable in the runtime; `node:crypto` ships scrypt |
+| scrypt | N=2^17, r=8, p=1 (about 128 MiB per hash; OWASP lists equivalents with less memory and a higher p) | Argon2 is unavailable in the runtime; `node:crypto` ships scrypt but rejects these parameters until `maxmem` is raised above its 32 MiB default |
 | bcrypt | Cost 10 or higher; input limited to 72 bytes | The project already has bcrypt hashes: keep verifying them and rehash at login |
 | PBKDF2-HMAC-SHA256 | 600,000 iterations | FIPS-validated cryptography is required |
 
@@ -36,18 +39,22 @@ const ok = await verify(stored, password);
 - A pepper (a secret mixed in through HMAC and held outside the database) helps only against a
   database-only leak and complicates rotation. Skip it until a secrets manager and a rotation
   procedure exist.
+- Newer Node.js releases expose Argon2 in `node:crypto`. Use it in place of the binding only
+  when the installed version documents it as stable.
 
 ## Password policy
 
-- Minimum length 12 for password-only accounts, 8 when MFA is mandatory. NIST's current guideline
-  asks for 15 on password-only accounts; adopt that where compliance drives the product.
+- Minimum length 12 for password-only accounts (a house rule of thumb), 8 when MFA is mandatory.
+  NIST SP 800-63B-4 requires 15 for password-only accounts and 8 as the floor with MFA; adopt
+  its numbers where compliance drives the product.
 - No composition rules, no periodic rotation, no hints, no security questions. Force a change only
   on evidence of compromise.
 - Reject known-breached passwords at signup, change and reset with the Pwned Passwords range API:
   SHA-1 the password, send the first 5 hex characters to
   `https://api.pwnedpasswords.com/range/<prefix>` with the header `Add-Padding: true`, and search
-  the response for the remaining 35 characters. Neither the password nor its full hash leaves the
-  server. Use a timeout near one second and fail open; an outage must not block signups.
+  the response for the remaining 35 characters (the response is uppercase hex, so compare
+  case-insensitively). Neither the password nor its full hash leaves the server. Use a timeout
+  near one second and fail open; an outage must not block signups.
 - Reject passwords that equal the email, its local part or the product name.
 - When a password that just verified at login is in the breach set, treat the sign-in as risky:
   email-code challenge, then a forced change (`abuse-defense.md`).
@@ -96,7 +103,7 @@ Use the auth library's passkey support or SimpleWebAuthn (`@simplewebauthn/serve
 
 | Option | Value | Reason |
 |---|---|---|
-| RP ID | The registrable domain (`example.com`), not `app.example.com` | Passkeys work on every subdomain; changing the RP ID later orphans every passkey |
+| RP ID | The registrable domain (`example.com`), not `app.example.com` | Passkeys work on every subdomain; changing the RP ID later orphans every passkey. Any subdomain can then start a ceremony, so the server's expected-origin list names only the app's own origins |
 | `residentKey` | `"required"` | A discoverable credential: sign-in without typing a username, and autofill works |
 | `userVerification` | `"preferred"`; `"required"` where the passkey replaces password plus MFA | With user verification a passkey is two factors (device plus biometric or PIN); when relying on that, check the flag in the response on the server |
 | `attestation` | `"none"` | Attestation adds prompts and privacy cost; only customers restricting authenticator models need it |

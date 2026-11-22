@@ -74,10 +74,11 @@ because each covers a gap in the others:
    bound to the session) when defense in depth matters. A plain double-submit cookie is defeated
    by a subdomain that can set cookies.
 
-Framework facts: Next.js Server Actions accept only POST and compare `Origin` with the host; set
-`serverActions.allowedOrigins` behind a proxy that changes the host. Route Handlers have no CSRF
-protection, so add the origin check in shared code. Auth libraries protect their own endpoints
-only.
+Framework facts: Next.js Server Actions accept only POST and compare `Origin` with the host.
+Behind a proxy that changes the host, list the public origin in `serverActions.allowedOrigins`
+in `next.config` (nested under `experimental` in the docs checked; follow the installed
+version) and keep that list narrow. Route Handlers have no CSRF protection, so add the origin
+check in shared code. Auth libraries protect their own endpoints only.
 
 Also protect the login form (login CSRF signs the victim into the attacker's account and captures
 what they then enter), the logout endpoint, and OAuth callbacks through `state` (`oauth-oidc.md`).
@@ -110,8 +111,10 @@ very short-lived JWT refreshed from a session they can revoke.
   subdomain, including vendor-hosted ones reached by CNAME (docs, status, support) and dangling
   DNS records that a stranger can claim.
 - App on `app.example.com` with the API on `api.example.com`: the two are same-site, so
-  `SameSite=Lax` cookies flow, but the cookie then needs `Domain=example.com` and the API needs
-  credentialed CORS. Serving the API under the app origin through a rewrite keeps `__Host-`.
+  `SameSite=Lax` cookies flow, but the API needs credentialed CORS and the cookie is either
+  host-only on the API host (server rendering on the app host then never sees it) or widened
+  with `Domain=example.com`. Serving the API under the app origin through a rewrite avoids both
+  and keeps `__Host-`.
 - User-controlled content and customer subdomains that can run script must live on a different
   registrable domain (`example-usercontent.com`). On the same one, tenant script is same-site for
   CSRF purposes and can set cookies for the parent domain.
@@ -127,7 +130,8 @@ very short-lived JWT refreshed from a session they can revoke.
 - Local development: some browsers refuse `Secure` and `__Host-` cookies over plain HTTP even on
   `localhost`. Run local HTTPS (mkcert), or switch cookie name and flags by environment in one
   place.
-- `http://` and `https://` are different sites. Redirect to HTTPS before anything sets a cookie.
+- Browsers that apply schemeful same-site treat `http://` and `https://` as different sites.
+  Redirect to HTTPS before anything sets a cookie.
 
 ## Refresh token rotation and reuse detection
 
@@ -160,7 +164,9 @@ create table refresh_tokens (
 
 ## Active sessions and devices
 
-This needs server-side session rows. Build it at Launch for any product with valuable accounts.
+This needs server-side session rows. Skip the page at Prototype. Build it at Launch when accounts
+hold money, customer data or admin power; otherwise it can wait for Scale. Revoking every session
+on password change is due at Launch either way.
 
 - Show per session: browser and OS parsed from the user agent, approximate location from the IP
   (labeled approximate), sign-in method, created and last-active times, and a "this device" mark.
@@ -212,14 +218,17 @@ if (Date.now() - session.lastStrongAuthAt.getTime() > STEP_UP_WINDOW_MS) {
 - Gate: changing email or password, adding or removing MFA factors and passkeys, viewing recovery
   codes, creating API keys, changing payout or bank details, exporting all data, deleting the
   account or organization, transferring ownership, editing SSO configuration, impersonation.
+  Skip step-up at Prototype; from Launch every item on this list that exists is gated.
 - Window: 5 to 15 minutes. A "sudo mode" that lasts hours protects nothing against a stolen
   session. The most destructive actions require proof per action.
 - The factor is at least as strong as the account's strongest. An account with MFA steps up with
   MFA, not with the password alone. A passkey with user verification is the lowest-friction
   strong option.
 - Users without a password re-authenticate through their provider with `prompt=login` or
-  `max_age=0`, and the server verifies the returned `auth_time`; or they use a passkey; or an
-  email code, treated as weak.
+  `max_age=0`, and the server verifies a fresh `auth_time` in the returned ID token. Not every
+  provider honors these: Google's documented `prompt` values have not included `login`. A token
+  without a recent `auth_time` means no step-up happened, however the redirect looked. Those
+  users step up with a passkey, or with an email code, treated as weak.
 - Step-up updates a timestamp on the existing session. It does not extend the session lifetime.
 - The UI prompt is a convenience and the server check is the control. Test it by calling the
   action directly with a session whose strong-auth time is old.

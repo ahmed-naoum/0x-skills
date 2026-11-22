@@ -28,8 +28,9 @@ recovery path, and attackers prefer "forgot password" and the support inbox to t
 Variants: an account without a password (social or passkey only) gets an email naming its
 sign-in method, while the screen shows the same generic sentence. An SSO-enforced member gets a
 pointer to the organization's sign-in. An unknown address can be sent "no account uses this
-address", which helps people with several addresses and tells the screen nothing. A completed
-reset may mark the email verified, since it proved inbox control.
+address", which helps people with several addresses and tells the screen nothing; it is mail to
+a non-user, so count it against the same per-address send limits. A completed reset may mark
+the email verified, since it proved inbox control.
 
 Traps: a token logged by a proxy or analytics tool because it sits in the URL (scrub those
 routes); a user ID in the URL trusted separately from the token; a reset token accepted by the
@@ -47,7 +48,10 @@ Changing the email and then resetting the password is how a hijacker makes a tak
    the account."
 4. On confirmation, inside the signed-in session where possible, re-check uniqueness and swap.
 5. Send "your email was changed" to the old address with a revert link valid for days to weeks.
-   Reverting restores the old address, revokes all sessions and forces a password reset.
+   Reverting restores the old address, revokes all sessions and forces a password reset. The
+   trade-off: whoever controls the old mailbox can undo a legitimate change, which hurts a user
+   who was leaving a compromised mailbox. For accounts with MFA, make the revert lock the
+   account until the second factor is presented instead of handing it to the old mailbox.
 6. Revoke other sessions and invalidate outstanding reset tokens and magic links.
 7. For accounts holding money or sensitive data, block payout changes, ownership transfer and
    deletion for 24 to 72 hours after the change.
@@ -108,7 +112,8 @@ Prefer database tokens.
    first), an active subscription (`0x:payments-billing`), an outstanding balance or payout.
 3. Mark `deletion_requested_at`, revoke all sessions and tokens, and email a confirmation with a
    cancel link. Grace period 7 to 30 days (14 is a reasonable default). The delay turns deletion
-   by a hijacker into a recoverable event.
+   by a hijacker into a recoverable event. Where a privacy law sets a deadline for erasure
+   requests, the grace period plus the job must finish inside it (`0x:privacy-compliance`).
 4. The job erases or anonymizes profile, credentials, identities, sessions and the personal
    workspace, propagates to the auth provider, payment customer record, mailing lists, analytics,
    search indexes and object storage, and lets backups age out (`0x:data-stores`).
@@ -121,8 +126,10 @@ Prefer database tokens.
   author as "Deleted user".
 - Do not cascade-delete the user row. Null the personal fields, keep the ID as a tombstone, and
   free the email so the person can register again as a new account.
-- Revoke provider grants on deletion. Apps on the App Store must offer deletion inside the app,
-  and apps using Sign in with Apple are expected to revoke the Apple token.
+- Revoke provider grants on deletion. App stores add duties of their own: Apple requires apps
+  that create accounts to offer deletion inside the app and expects Sign in with Apple tokens to
+  be revoked; Google Play asks for an in-app path plus a web link for requesting deletion.
+  Check both stores' current review rules before submitting.
 - Deactivation and deletion are not exits from a ban. A suspended account stays suspended and
   its ban identifier survives deletion (`abuse-defense.md`).
 - Deletion must be easy to find in settings. A hidden or support-only path draws complaints to

@@ -96,7 +96,7 @@ By stage:
 11. Login, signup, reset and code verification are rate-limited per account and per IP, using
     the real client IP.
 12. ID tokens are verified for signature, issuer, audience, expiry and nonce with a pinned
-    algorithm.
+    algorithm, and a test shows a token minted for another client ID being rejected.
 13. Invitations are bound to the invited address, expire, and cap the role at the inviter's.
 14. For SSO, an assertion is accepted only for its own connection and that organization's
     verified domains, and enforcement has a break-glass path.

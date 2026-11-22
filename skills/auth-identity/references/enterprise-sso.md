@@ -13,7 +13,10 @@ Okta, Entra ID or Google Workspace.
 | The auth library's SSO plugin | The library already owns auth and offers one | The plugin's maturity; the customer setup screen is still to build |
 | A SAML library used directly (`@node-saml/node-saml` and similar) | Nothing above fits | Every validation rule below becomes the project's own responsibility |
 
-Default: buy or bridge for the first connections. The protocol is the small part. The real work
+Stage: at Prototype build nothing beyond identities keyed by provider and subject and
+organizations with memberships. Start when a customer with a pending contract asks, usually
+between Launch and Scale. Default then: buy or bridge for the first connections. The protocol is
+the small part. The real work
 is per-provider setup guides, a self-serve admin screen, certificate rotation, SCIM, a test
 matrix and support calls with customers' IT staff. Revisit when per-connection fees dominate.
 
@@ -173,8 +176,10 @@ Break-glass exists because IdPs go down, certificates expire and admins misconfi
 
 ## Testing against real identity providers
 
-Get developer tenants: Okta offers a free developer organization, Entra ID comes with any Azure
-account, and Google needs a Workspace or Cloud Identity account. In CI use a mock SAML IdP
+Get test tenants: Okta has a free plan for integrators (it replaced the Developer Edition
+organizations; check its current name and limits), a free Entra ID tenant comes with any Azure
+account (check which provisioning features its license tier includes), and Google needs a
+Workspace or Cloud Identity account. In CI use a mock SAML IdP
 container and a mock OIDC issuer. Run the real IdPs by hand before each release that touches SSO.
 
 | IdP | Setup | Quirks |

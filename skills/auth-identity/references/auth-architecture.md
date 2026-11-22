@@ -14,7 +14,7 @@ authorization, invitations, recovery policy and UI.
 
 | Situation | Choose | Why |
 |---|---|---|
-| Greenfield on Postgres and TypeScript, no enterprise deal in sight | A library writing to the project's own database: Better Auth for new work; keep Auth.js or whatever the project already runs | Users join to domain tables in one transaction, no per-user fee, no third party on the login path |
+| Greenfield on Postgres and TypeScript, no enterprise deal in sight | A library writing to the project's own database: Better Auth for new work; keep whatever the project already runs (Auth.js is in security-only maintenance: leave it where it works, start nothing new on it) | Users join to domain tables in one transaction, no per-user fee, no third party on the login path |
 | Data already on Supabase or Firebase | That platform's auth | Its row-level security and SDKs assume it; a second identity source doubles the work |
 | B2B with SSO, SCIM and org management due within a year, or nobody wants to own auth | Managed provider (Clerk, WorkOS, Auth0, Stytch, Kinde) | Organizations and enterprise SSO are months of work; the fee is small against contract size |
 | Consumer product with a large free base | Library | Per-active-user pricing grows with users who pay nothing |
@@ -72,7 +72,7 @@ strong as the weakest of them. Start with two methods and add on evidence.
 ```sql
 create table users (
   id uuid primary key,
-  email citext not null unique,            -- needs: create extension citext
+  email citext unique,                     -- needs: create extension citext; null only when deleted
   email_verified_at timestamptz,
   status text not null default 'active',   -- active | deactivated | suspended | deleted
   created_at timestamptz not null default now()
@@ -115,7 +115,9 @@ What the shape encodes:
 - Compare emails case-insensitively and keep what the user typed for display. Do not strip dots or
   plus-tags for uniqueness; that is wrong outside Gmail. A canonical form for abuse counting is a
   separate column (`abuse-defense.md`).
-- A deleted user must release the unique email, or the same person cannot sign up again.
+- A deleted user must release the unique email, or the same person cannot sign up again. The
+  deletion job nulls it (a unique column accepts many nulls); a check constraint such as
+  `check (email is not null or status = 'deleted')` keeps it mandatory for everyone else.
 
 When a library or provider owns these tables, keep its schema untouched and put app fields in a
 profile table keyed by its user ID, so library upgrades do not collide with local migrations.
@@ -125,8 +127,9 @@ profile table keyed by its user ID, so library upgrades do not collide with loca
 1. Form: email, plus password if used, and nothing else. No "confirm email" field: verification
    catches typos and a second field does not. Use `autocomplete="username"` and
    `autocomplete="new-password"`, and allow paste.
-2. Before sending: reject domains with no MX record, suggest a fix for near-miss domains
-   (`gmial.com`), and show the address on the "check your inbox" screen with an edit link.
+2. Before sending: reject domains that cannot receive mail (no MX and no address record, or a
+   null MX), suggest a fix for near-miss domains (`gmial.com`), and show the address on the
+   "check your inbox" screen with an edit link.
 3. Create the user unverified and send a code (6 digits, 10 to 15 minutes) or a single-use link
    (up to 24 hours). Throttle resends: one per 60 seconds and a handful per hour per address.
 4. Verify inside the session that started signup: the code typed there, or a link whose landing
@@ -180,7 +183,8 @@ requests.
 | End to end (Playwright) | One happy path per sign-in method, signup through verification, logout |
 | Not end to end | A provider's own login pages: run a mock OIDC issuer, or call the callback with a token signed by a test key |
 
-Negative paths that need a test, each a recurring incident class:
+Negative paths that need a test from Launch on (at Prototype the happy paths suffice), each a
+recurring incident class:
 
 - Expired and already-used tokens are rejected (verification, reset, magic link, invitation).
 - A token issued for one user or purpose does nothing for another user or purpose.

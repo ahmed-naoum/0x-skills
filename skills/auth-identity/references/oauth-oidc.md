@@ -21,10 +21,11 @@ code with PKCE.
    linking rules, create the session, delete the temporary cookie, redirect to a validated local
    path.
 
-OAuth 2.1 consolidates the security practice of RFC 9700: PKCE for every client including
-confidential ones, no implicit grant, no password grant, exact string matching of redirect URIs,
-no tokens in query strings, and refresh tokens for public clients rotated or sender-constrained.
-Configure to that baseline and refuse anything older.
+OAuth 2.1 (an IETF draft, not yet an RFC when this was checked) consolidates the security
+practice of RFC 9700: PKCE for every client including confidential ones, no implicit grant, no
+password grant, exact string matching of redirect URIs, no tokens in query strings, and refresh
+tokens for public clients rotated or sender-constrained. Configure to that baseline and refuse
+anything older.
 
 Redirect rules:
 
@@ -64,7 +65,7 @@ log codes, tokens or secrets.
 | The callback succeeds but the app shows signed out, or loops | The session cookie was never stored: `Set-Cookie` stripped from a redirect response by a proxy or cache, a `Domain` mismatch, a cookie over 4 KB (provider tokens packed into it), or a `SameSite=Strict` session cookie, which is not sent on the redirect that ends a cross-site flow | Inspect `Set-Cookie` on the callback response; use `SameSite=Lax`; keep provider tokens out of the cookie |
 | Works locally, fails in production | The other environment's client ID or secret, the production URI not registered, forwarded headers not trusted | Compare environment variables; register the URI; set the base URL |
 | Google refuses with `disallowed_useragent` | The login opened in an embedded WebView, typically a social app's in-app browser | Open the system browser; show an "open in browser" hint |
-| Only some Google users can sign in | Consent screen still in "Testing" | Publish the app |
+| Only some Google users can sign in | Consent screen still in "Testing", or the user type set to "Internal" (one Workspace organization only) | Publish the app; set the user type to "External" |
 | ID token rejected on `iss` (Microsoft) or on `exp` and `iat` | Tenant-specific issuer; clock skew | Check the issuer by `tid`; allow at most 60 seconds of tolerance and fix the clock |
 | A second account appears for the same person | Another provider with the same email and no linking | The linking rules below |
 
@@ -109,10 +110,12 @@ sure every one of them is switched on.
 ```ts
 import { createRemoteJWKSet, jwtVerify } from "jose";
 
+const clientId = process.env.GOOGLE_CLIENT_ID;
+if (!clientId) throw new Error("GOOGLE_CLIENT_ID missing"); // an undefined audience skips the check
 const jwks = createRemoteJWKSet(new URL("https://www.googleapis.com/oauth2/v3/certs"));
 const { payload } = await jwtVerify(idToken, jwks, {
   issuer: ["https://accounts.google.com", "accounts.google.com"],
-  audience: process.env.GOOGLE_CLIENT_ID,
+  audience: clientId,
   algorithms: ["RS256"],
   clockTolerance: 60,
 });
@@ -156,7 +159,8 @@ user endpoint.
 
 An agent (an MCP client, a coding or browsing agent, an automation) never receives the user's
 password, session cookie, or a long-lived full-access key pasted into a prompt or config file.
-Anything in a model's context can be exfiltrated through prompt injection.
+Anything in a model's context can be exfiltrated through prompt injection. Build none of this
+before an agent or MCP integration is actually planned; apply all of it to the first one.
 
 - Treat the agent as an OAuth client. The user grants access through authorization code with
   PKCE and a consent screen that names the agent and the scopes.
@@ -171,10 +175,12 @@ Anything in a model's context can be exfiltrated through prompt injection.
 - Refresh tokens rotate with reuse detection (`sessions-tokens.md`). Users see and revoke agent
   grants on the same page as their sessions.
 - Per-token rate limits and spending caps bound the damage of a looping or hijacked agent.
-- For an MCP server, follow the current MCP authorization specification, which builds on OAuth
-  2.1: the server is a resource server that publishes protected-resource metadata (RFC 9728) and
-  validates the token audience. It never forwards the client's token to an upstream API; to call
-  downstream for the user it obtains a separate token (token exchange, RFC 8693).
+- For an MCP server, read the current revision of the MCP authorization specification before
+  building: it is revised often, and client registration in particular has changed between
+  revisions. The stable core builds on OAuth 2.1: the server is a resource server that publishes
+  protected-resource metadata (RFC 9728) and validates the token audience. It never forwards the
+  client's token to an upstream API; to call downstream for the user it obtains a separate token
+  (token exchange, RFC 8693).
 - First-party agent features that run on the server act with the requesting user's authority.
   Pass the user's actor context into every tool call and run the normal policy checks. A tool
   that queries with a service role is privilege escalation waiting for a prompt injection

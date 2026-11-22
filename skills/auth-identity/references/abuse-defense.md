@@ -126,7 +126,7 @@ failure: failed attempts are full of real passwords typed into the wrong field o
 ## CAPTCHA and challenges
 
 A CAPTCHA costs conversion, excludes some people with disabilities (`0x:accessibility`), ships a
-third party's script and data flow, and is solved by farms and models for a fraction of a cent.
+third party's script and data flow, and is solved cheaply at volume by solving services and models.
 It raises the attacker's cost and is not a wall.
 
 | Where | Default |
@@ -196,9 +196,10 @@ Effects on sender reputation: `0x:email-notifications`.
 
 Senders: the hosting or cloud provider, the domain registrar or registry, the email provider,
 the CDN, the payment processor, browser blocklists (Google Safe Browsing, Microsoft SmartScreen),
-spam and phishing lists, researchers and brand-protection firms. Deadlines are short, commonly
-24 to 48 hours and less for phishing or malware. Silence ends in a suspended server, a blocked
-sending account, or a domain placed on hold, which stops the site and all email at once.
+spam and phishing lists, researchers and brand-protection firms. Deadlines are short, often a
+day or two and less for phishing or malware; the notice states its own. Silence ends in a
+suspended server, a blocked sending account, or a domain placed on hold, which stops the site
+and all email at once.
 
 Prepare at Launch:
 
@@ -227,8 +228,9 @@ Respond:
 A wrong or malicious notice is answered with evidence inside the deadline, never ignored.
 Copyright takedowns, counter-notices and platform notice-and-action duties:
 `0x:privacy-compliance`. Child sexual abuse material carries legal reporting and handling duties
-that vary by country: stop, preserve as required and get legal advice at once. If the product
-itself was compromised, it is a breach: `0x:web-security`.
+that vary by country: restrict access to it, do not copy or forward it, preserve as required and
+get legal advice at once. If the product itself was compromised, it is a breach:
+`0x:web-security`.
 
 ## Signals, review queue and bulk suspension
 
