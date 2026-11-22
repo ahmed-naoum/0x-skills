@@ -70,7 +70,9 @@ Launch for signup, login and payment. Which tests to write: `0x:code-quality` (`
 
 ## Protect main
 
-Apply a branch ruleset (or classic branch protection) to `main`:
+Apply a branch ruleset (or classic branch protection) to `main`. On GitHub Free these are enforced
+on public repositories only; a private repository needs a paid plan (check the current plan
+table). Without enforcement every rule below is a convention, so from Launch pay for the plan.
 
 | Rule | Solo | Team |
 |---|---|---|
@@ -84,8 +86,8 @@ Apply a branch ruleset (or classic branch protection) to `main`:
 
 Required checks are matched by job name, which creates three traps:
 
-1. A workflow skipped by a workflow-level `paths` filter never reports, so the required check stays
-   pending and the pull request cannot merge. Filter at job level instead.
+1. A workflow skipped by a workflow-level `paths` or branch filter, or by `[skip ci]`, never
+   reports: the required check stays pending and the pull request cannot merge. Filter at job level.
 2. A job skipped by `if:`, or skipped because a job it `needs` failed, counts as passing. A required
    check on a downstream job therefore passes when an upstream job fails.
 3. Renaming a job or changing a matrix removes the gate until the ruleset is updated.
@@ -103,7 +105,8 @@ One aggregating job closes all three. Make it the only required check:
 ```
 
 The push to main reruns the checks on the merge result, and deploy jobs `needs` them. Deploy from
-the main run, not from a pull-request run. Review practice: `0x:git-collaboration`.
+the main run, not from a pull-request run. Review practice: `0x:git-collaboration`. Check: a
+direct `git push origin HEAD:main` is rejected, and a pull request with a failing test cannot merge.
 
 ## Migrations as a gated, ordered deploy step
 
@@ -148,8 +151,9 @@ When CI fails and the laptop passes, reproduce in this order and stop at the fir
 2. Fresh checkout of the exact commit: `git worktree add ../repro <sha>`, then
    `pnpm install --frozen-lockfile`. This removes stale `node_modules` and untracked files.
 3. Same environment: `CI=true TZ=UTC pnpm test`. Many tools change behavior when `CI` is set.
-4. Same OS: `docker run --rm -it --cpus 2 -v "$PWD":/app -w /app node:<same-major> bash`. The CPU
-   limit surfaces races and timeouts that a fast laptop hides.
+4. Same OS: `docker run --rm -it --cpus 2 -v "$PWD":/app -w /app node:<same-major> bash`, then
+   install again inside the container (a `node_modules` installed on macOS holds the wrong
+   platform's binaries). The CPU limit surfaces races and timeouts that a fast laptop hides.
 5. The failing test alone, then its file, then the suite in CI's shard and order.
 
 | Symptom | Usual cause |
@@ -228,8 +232,8 @@ check whether promoting rebuilds.
 
 Self-hosted runners must be ephemeral (one job per fresh VM or container) or state and credentials
 leak between jobs. Attaching one to a public repository lets any fork pull request execute code on
-the machine. Check whether the provider bills a platform fee for self-hosted minutes before
-assuming they are free.
+the machine. Check the provider's current billing for self-hosted minutes before assuming they are
+free: GitHub announced a per-minute platform charge for them and then postponed it.
 
 Spend controls by effect: cancel superseded runs; job timeouts; macOS runners only for the iOS
 build and only when mobile paths change (macOS minutes cost several times Linux minutes; check the
@@ -259,8 +263,9 @@ runners or a mobile CI service. On any toolchain:
 - **Tracks.** iOS: TestFlight, App Review, phased release. Android: internal track, closed or open
   testing, production with a staged rollout percentage. A staged rollout can be halted, but a
   store binary cannot be rolled back: the fix is a higher build through review. New personal Play
-  developer accounts must pass a closed-testing requirement before production access; check it
-  early because it takes weeks.
+  developer accounts must run a closed test before production access (at the time of writing at
+  least 12 testers opted in for 14 consecutive days, then an application; organization accounts
+  are exempt). Check the current rule and start weeks before launch.
 - **Review time is outside the pipeline.** Put behavior that may need to change fast behind
   server-side flags, and give launches days of slack.
 - **Over-the-air updates** replace JavaScript and assets only. A new native module, SDK upgrade,

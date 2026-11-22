@@ -37,7 +37,7 @@ Branching model: `0x:git-collaboration` (`branching-workflow.md`).
 - **Test both states** in CI for as long as the flag exists: default off for the suite, plus tests
   that force it on. Force values through a test helper, not by calling the flag service.
 - **Cached and static pages** bake in the flag value at render time. Evaluate flags in the dynamic
-  part of the page or in middleware, and make sure a cached response is not shared between
+  part of the page or in middleware (`proxy.ts` in current Next.js), and make sure a cached response is not shared between
   users with different values.
 
 Do not add a flag for a trivial change, a bug fix or a pure refactor; each flag doubles the paths
@@ -53,7 +53,7 @@ changing it needs a deploy.
 | Non-developers flip flags; experiments with metrics; several services or mobile clients; audit trail needed | a flag service |
 
 When product analytics is already in place, use its flags (PostHog-style) so rollouts and metrics
-share one identity. Dedicated services (LaunchDarkly, Statsig, GrowthBook, Unleash, Flagsmith)
+share one identity. Dedicated services (LaunchDarkly, GrowthBook, Unleash, Flagsmith and others)
 add workflow and scale. Wrap whichever is chosen in one module, or use the OpenFeature API, so the
 vendor can change without touching call sites. Pricing models differ (seats, monthly users,
 requests); check them against expected traffic before committing.
@@ -99,8 +99,10 @@ export function isEnabled(flag: Flag | undefined, unitId: string, fallback = fal
 }
 ```
 
-Load all flags into process memory and refresh every 15 to 30 seconds; on a refresh error keep the
-last good copy. Do not query per check. Hashing the flag key with the ID gives each flag its own
+Load all flags into process memory and refresh on a short interval (15 to 30 seconds is a workable
+rule of thumb; it bounds how fast a kill switch acts); on a refresh error keep the last good copy.
+On serverless there is no long-lived timer: load on cold start and re-read when the copy is older
+than the interval. Do not query per check. Hashing the flag key with the ID gives each flag its own
 ordering of users, so the same accounts are not first in every rollout, and raising the percentage
 only adds users. Record every change (who, when, old and new value): an audit table or the
 service's log. A flag flip changes production like a deploy does and belongs on the same timeline.

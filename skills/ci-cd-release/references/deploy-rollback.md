@@ -43,8 +43,8 @@ practiced once before it is needed.
 
 | Platform | Rollback |
 |---|---|
-| Vercel | `vercel rollback <deployment-url>` or Instant Rollback in the dashboard |
-| Kubernetes | `kubectl rollout undo deployment/<name>`, or apply the previous image digest |
+| Vercel | `vercel rollback <deployment-url>` or Instant Rollback in the dashboard; the plan limits how far back |
+| Kubernetes | `kubectl rollout undo deployment/<name>`, or apply the previous image digest; under Helm or GitOps roll back through that tool, or its next sync reapplies the bad version |
 | Amazon ECS | `aws ecs update-service --cluster <c> --service <s> --task-definition <family>:<previous-revision>` |
 | Heroku | `heroku rollback` |
 | Image-based PaaS (Fly.io, Render, Railway, Cloud Run) | redeploy the previous image or revision by digest or ID |
@@ -56,8 +56,9 @@ Sequence in an incident:
    release is the suspect until shown otherwise.
 2. Check whether the migration of the bad release allows it (table below).
 3. Revert the commit on main (or fix forward) before the next merge, otherwise the next deploy
-   ships the bug again. Some platforms pause automatic production promotion after a rollback until
-   it is re-enabled; check, or later merges silently stop deploying.
+   ships the bug again. Some platforms pause automatic production promotion after a rollback:
+   Vercel stops assigning the production domain to new builds until one is promoted
+   (`vercel promote <deployment-url>`). Check, or later merges build and silently never go live.
 4. Clean up what the release left behind.
 
 ### What migrations allow
@@ -69,7 +70,7 @@ runs on it.
 | The bad release's migration | Roll back code? |
 |---|---|
 | None, or added a table, nullable column or index | Yes. Leave the schema. |
-| Added a `NOT NULL` column without a default | No: the old code's inserts fail. Add a default or drop the constraint first. |
+| Added a `NOT NULL` column with no database default, or tightened a constraint the old code violates | No: the old code's inserts fail (they also failed during the rollout). Add a default or drop the constraint first. |
 | Dropped or renamed a column or table, or changed a type, that the old code uses | No. Fix forward. |
 | Added an enum value or a new status that new code already wrote | Only if the old code tolerates unknown values in rows it reads. |
 | Backfilled or rewrote data in place | Depends on whether the old code reads the new shape; usually fix forward. |
@@ -108,7 +109,7 @@ above applies regardless of strategy. What makes any strategy actually zero-down
   database restarts the whole fleet when the database is slow.
 - **Graceful shutdown.** On SIGTERM: fail readiness, keep serving for a few seconds while the load
   balancer stops sending, stop accepting, finish in-flight requests, close pools, exit, all inside
-  the platform's grace period (30 s is a common default; check it).
+  the platform's grace period (30 s is common, plain `docker stop` gives 10 s; check it).
 
 ```ts
 process.on('SIGTERM', () => {
@@ -169,7 +170,7 @@ installed mobile apps for months. The server must serve version N-1 clients corr
 |---|---|---|
 | `ChunkLoadError` or a blank page on navigation after a deploy | old HTML requests hashed chunks the deploy deleted | keep previous builds' assets served for days (object storage or CDN, never deleted on deploy; the platform's skew protection); on chunk load failure reload once |
 | 404 on assets during a rolling deploy | HTML came from a new instance, the asset request hit an old one | serve static assets from shared storage or a CDN, not from each instance |
-| "Failed to find Server Action" or failed form posts after deploy | action identifiers change per build | platform skew protection; self-hosted Next.js: a stable `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` across instances and a `deploymentId`; treat the error as "reload" |
+| "Failed to find Server Action" or failed form posts after deploy | action identifiers change per build | platform skew protection; self-hosted Next.js: one `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` kept across builds and instances (a build-time variable) and a `deploymentId` per release, so a client from another release is detected; treat the error as "reload" |
 | Users stay on old code for days | HTML cached too long, or a service worker serves the old shell | HTML `Cache-Control: no-cache`; hashed assets `public, max-age=31536000, immutable`; service worker update flow (`0x:frontend-foundations`, `pwa-mobile.md`) |
 | API errors from open tabs | response or request shape changed in place | additive API changes only; remove fields after old clients are gone |
 
@@ -218,12 +219,12 @@ next step never ships.
 ## Canary releases
 
 Skip until Scale. A canary needs enough traffic for a 5% slice to show a difference within
-minutes; below roughly a few requests per second it produces noise, and a percentage flag rollout
+minutes; below a few requests per second (rule of thumb) it produces noise, and a percentage flag rollout
 with staff first (`feature-flags.md`) gives more control for less machinery.
 
 When traffic supports it:
 
-- Steps such as 5% → 25% → 50% → 100%, each held 5 to 15 minutes, advanced automatically.
+- Steps such as 5% → 25% → 50% → 100%, each held 5 to 15 minutes (a starting point), automatic.
 - Compare canary with the stable version over the same minutes, not with yesterday: traffic mix
   changes by hour.
 - Roll back automatically on a threshold fixed before the release: canary error rate or p95
@@ -262,9 +263,9 @@ Live, without a window:
 
 - Prefer replication over application dual writes for moving a database: logical replication or
   change data capture keeps the new side current, and the cutover is a brief write pause while lag
-  reaches zero. With Postgres logical replication, schema changes and sequence values are not
-  replicated and tables need a primary key or replica identity; freeze migrations during the move
-  and set sequences at cutover.
+  reaches zero. With Postgres logical replication, schema changes are not replicated, sequence
+  values are not kept in step (Postgres 19 can sync them on request) and tables need a primary key
+  or replica identity. Freeze migrations during the move and set sequences at cutover.
 - Dual writes from the application are for cases replication cannot do (different data model,
   different system). They are not atomic: one write succeeds, the other fails, and the stores
   drift. Keep one side authoritative, write it first, write the other asynchronously through an

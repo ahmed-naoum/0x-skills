@@ -82,9 +82,11 @@ Traps:
 
 - `FOO=` is the empty string, not undefined: `.optional()` accepts it and `.default()` does not
   apply. Require `.min(1)` on strings, or map `''` to `undefined` before parsing.
-- `z.coerce.boolean()` turns the string `"false"` into `true`. Parse booleans explicitly as above.
+- `z.coerce.boolean()` turns the string `"false"` into `true`. Parse booleans explicitly as above
+  (Zod 4 also has `z.stringbool()`).
 - Validation only fails fast if something imports the module at boot. In Next.js, import it from
-  `instrumentation.ts` (its `register()` runs when the server starts) and from `next.config.ts` so
+  `instrumentation.ts` (its `register()` runs once when the server starts, in each runtime: guard
+  a Node-only module with `process.env.NEXT_RUNTIME === 'nodejs'`) and from `next.config.ts` so
   the build checks it too. On serverless there is no boot: the build-time check and a post-deploy
   smoke request are the gate.
 - A Docker build has no runtime secrets, and `next build` evaluates server modules. Allow a
@@ -109,10 +111,13 @@ The order that prevents "crashed because a variable was missing":
 3. Merge and deploy the code that reads it.
 4. Removing: deploy code that no longer reads it, then delete it from the stores.
 
-Most platforms apply a changed variable only to new deployments; changing a value in the dashboard
-does nothing until a redeploy or restart. Rotating a secret is therefore a deploy, and a rollback
-to an older release may bring the older code but the current variables: keep variable changes
-backward compatible for one release, the same as schema changes.
+Know when a changed variable takes effect. Platforms with immutable deployments (Vercel and
+similar) apply it only to new deployments: a dashboard edit does nothing until a redeploy. Others
+restart the app at once (Heroku config vars, Fly.io secrets), so the edit is an unreviewed
+production release at that moment. Rotating a secret is a deploy either way. Rollback differs the
+same way: some platforms restore the old release's variables, so a secret rotated since then comes
+back as the revoked value; others run old code on current variables. Check which yours does, and
+keep variable changes backward compatible for one release, the same as schema changes.
 
 Keep one source of truth per environment (the platform's variable store or a secret manager) and
 pull local values from it (`vercel env pull`, the secret manager's CLI) instead of passing `.env`

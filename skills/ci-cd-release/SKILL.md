@@ -69,6 +69,10 @@ Follow what the project already uses first. For greenfield choices:
 | Flags | constant or environment variable | Postgres table or the analytics tool's flags; kill switches on risky paths | flag service, expiry enforced in CI |
 | Mobile | manual builds | EAS or fastlane from a tag, managed signing, staged rollout | plus over-the-air updates with runtime versioning |
 
+GitHub plan caveat: on a private repository, branch rulesets and deployment environments exist
+only on a paid plan. Confirm the plan before relying on either (`references/ci-pipelines.md`,
+`references/pipeline-security.md`).
+
 Numbers used as rules of thumb throughout: pull-request feedback under 10 minutes; merge to
 production under 15 minutes; smoke suite under 2 minutes; rollback under 5 minutes; watch each
 release for 15 to 30 minutes; release flags removed within 2 weeks of reaching 100%.
@@ -76,7 +80,8 @@ release for 15 to 30 minutes; release flags removed within 2 weeks of reaching 1
 ## Before you call it done
 
 1. Every pull request runs typecheck, lint, tests and a production build, and main requires one
-   aggregating check that fails when any upstream job fails or is cancelled.
+   aggregating check that fails when any upstream job fails or is cancelled; a direct push to main
+   is rejected.
 2. Every job has `timeout-minutes`; workflows declare `permissions`; third-party actions are
    pinned to full commit SHAs.
 3. Jobs that run pull-request code or install dependencies hold no deploy credentials or
