@@ -1,0 +1,11 @@
+{
+  "name": "0x-skills",
+  "owner": { "name": "ahmed-naoum" },
+  "plugins": [
+    {
+      "name": "0x",
+      "source": "./",
+      "description": "Web development from the machine to the customer: one deep skill per branch of the tree."
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "0x",
+  "version": "1.0.0",
+  "description": "Web development from the machine to the customer: one deep skill per branch of the tree, from Linux and networking through data, backend, security, frontend and operations to product, growth and the company.",
+  "author": { "name": "ahmed-naoum" },
+  "repository": "https://github.com/ahmed-naoum/0x-skills",
+  "keywords": ["web-development", "full-stack", "startup", "skills"]
+}
