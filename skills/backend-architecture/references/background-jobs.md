@@ -41,7 +41,7 @@ job, when a timed-out attempt had in fact succeeded, and when the same job was e
 |---|---|
 | Database change | Guarded state transition, upsert, or a unique constraint on the business key |
 | Third-party API call | The provider's idempotency key, derived from the business entity: `charge:{orderId}` |
-| Email, SMS, push | A sent-log row with a unique key (`receipt:{orderId}`) written before sending, plus the provider's idempotency key where it has one |
+| Email, SMS, push | A sent-log row with a unique key (`receipt:{orderId}`) claimed before sending and marked sent after, plus the provider's idempotency key where it has one. Without that key, a crash between the two steps forces the lost-or-repeated choice below |
 | Duplicate enqueue | A deterministic job key so the queue collapses duplicates |
 | Several effects in one job | Split into one job per effect, or checkpoint after each step |
 
@@ -60,6 +60,10 @@ system to run; and the queue can be inspected and repaired with SQL. The mechani
 `SELECT ... FOR UPDATE SKIP LOCKED`. Use a maintained library rather than writing one: pg-boss or
 Graphile Worker for Node; River (Go), Oban (Elixir), Procrastinate (Python), Solid Queue or
 GoodJob (Rails).
+
+By stage: at Prototype add no queue until something must be retried or outlive the request (on
+a host without workers, a hosted job service); at Launch run the Postgres queue with a `worker`
+process; at Scale leave it only on a signal from the table further down.
 
 What to know while running it:
 
@@ -120,7 +124,8 @@ const delayMs = Math.random() * Math.min(capMs, baseMs * 2 ** attempt); // full 
 gap of a deploy. Use one trigger, then deduplicate:
 
 1. Trigger from one place: the queue library's cron feature, the platform's scheduler, or a
-   leader chosen with `pg_try_advisory_lock`.
+   leader chosen with `pg_try_advisory_lock` (session-scoped, so it needs a direct connection,
+   not a transaction-mode pooler).
 2. The trigger only enqueues a job with a deterministic key for the period
    (`daily-digest:2026-11-22`). A duplicate trigger collapses on the key.
 3. The job itself is idempotent, like any other.

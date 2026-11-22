@@ -64,9 +64,9 @@ instead of waiting for a timeout each time, and the dependency gets room to reco
 
 - Closed: calls pass. Open: calls fail immediately for a cool-down (10-30 s). Half-open: one
   probe passes; success closes, failure reopens.
-- Trip on failure rate over a rolling window with a minimum volume (as a start: half of at least
-  twenty calls in ten seconds). Count timeouts and 5xx; a 4xx is the caller's fault and does not
-  count.
+- Trip on failure rate over a rolling window with a minimum volume (a rule-of-thumb start: half
+  of at least twenty calls in ten seconds, then tune from the metric). Count timeouts and 5xx; a
+  4xx is the caller's fault and does not count.
 - One breaker per dependency, and per endpoint or account where they fail independently.
   Per-process state is fine: each instance learns within seconds.
 - Use a maintained library (cockatiel, opossum). Expose breaker state as a metric and alert when
@@ -163,8 +163,8 @@ cost points per query, and whether it applies per API key or per connected custo
 - An in-process limiter is multiplied by the number of instances. Keep the token bucket in
   Redis, or run the calls through a queue whose limiter is global.
 - Split interactive and bulk traffic. Bulk work (backfills, syncs, campaigns) goes through a
-  queue limited to a fraction of the quota, around half to two thirds, so a user's click never
-  waits behind an import.
+  queue limited to a fraction of the quota (half to two thirds as a rule of thumb), so a user's
+  click never waits behind an import.
 - When limits are per connected account, the bucket key is the account; one busy customer then
   cannot starve the others.
 - Read the vendor's rate-limit headers and slow down before the limit, not after the 429.
@@ -202,8 +202,9 @@ RETURNING id;
 - `invalid_grant` on refresh is permanent: the user revoked access, the token expired from
   disuse, or a password or policy change killed it. Mark the connection `needs_reauth`, stop its
   jobs, and ask the user to reconnect. Retrying does nothing.
-- Some providers issue short-lived refresh tokens to apps that have not passed their review.
-  Check the provider's rules before Launch.
+- Some providers issue short-lived refresh tokens to apps that have not passed their review
+  (Google expires them after about a week while the app is in testing status). Symptom: every
+  connection breaks on the same schedule. Check the provider's rules before Launch.
 - On disconnect or account deletion, revoke at the provider and delete the tokens.
 
 ## Load shedding and backpressure

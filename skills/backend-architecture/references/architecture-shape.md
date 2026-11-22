@@ -26,7 +26,7 @@ background work that can run in a worker or hosted queue.
 | Signal | Add |
 |---|---|
 | Work outlives the host's function duration limit, or must be retried | A worker process or hosted job service, not an API service |
-| WebSockets or other long-lived connections on a serverless host | A long-running realtime service, or a hosted realtime provider |
+| WebSockets or other long-lived connections on a serverless host (they end at the function's duration limit even where upgrades are accepted) | A long-running realtime service, or a hosted realtime provider |
 | A second client (mobile app, public API, partner integration) needs a stable, versioned contract | A separate API service (Hono or Fastify) or a clearly versioned `/api/v1` surface with its own tests |
 | CPU-heavy or non-JavaScript workload | A service in the fitting runtime (`runtime-language.md`) |
 | Backend must deploy and scale independently of the UI | A separate API service |

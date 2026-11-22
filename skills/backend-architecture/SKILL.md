@@ -1,6 +1,6 @@
 ---
 name: backend-architecture
-description: "Structures the server side of a product: runtime choice, monolith and service boundaries, cross-system consistency, multi-tenancy, background jobs, realtime, file uploads and resilient integrations. Use when laying out a backend, moving work to a queue, fixing duplicate or stuck jobs, isolating tenants, adding live updates or uploads, or when a slow third-party API takes the app down."
+description: "Structures the server side of a product: runtime choice, monolith and service boundaries, cross-system consistency, multi-tenancy, background jobs, realtime, file uploads and resilient integrations. Use when laying out a backend, choosing a runtime, moving work to a queue, fixing duplicate or stuck jobs, isolating tenants, adding live updates or uploads, or when a slow third-party API takes the app down."
 ---
 
 # Backend architecture and server-side patterns
@@ -90,8 +90,9 @@ not on depth.
     tenant-scoped; a test fetches, updates and lists another tenant's data and fails.
 11. Realtime clients recover from a dropped connection without losing or duplicating events,
     and each subscription is authorized on the server.
-12. Uploads are size-limited by the signature, verified by content after upload, and served
-    from a separate origin with `nosniff` and a restrictive disposition.
+12. Uploads are size-limited by the signature (or measured in storage and deleted when over, on
+    stores without presigned POST), verified by content after upload, and served from a
+    separate origin with `nosniff` and a restrictive disposition; an oversized test upload fails.
 13. With each third-party hostname blocked in staging, core pages still load and deferred work
     is queued, not lost.
 14. Use cases are callable without HTTP; routes, jobs and CLI are thin adapters around them.

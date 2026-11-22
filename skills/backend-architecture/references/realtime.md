@@ -19,8 +19,10 @@ Rules that settle most cases:
   needs no new infrastructure. Upgrade when the delay is a product problem, not before.
 - Client-to-server messages can stay ordinary HTTP requests. "SSE down, POST up" covers
   notifications, most chat and LLM streaming without a WebSocket.
-- Serverless functions end long connections at their duration limit and cannot hold WebSockets:
-  use streaming responses with client resume, or a hosted realtime service.
+- Serverless functions end every connection at their duration limit, and many cannot accept a
+  WebSocket upgrade at all (some hosts now can; check current documentation). Either way an
+  invocation sees only its own connections: use streaming responses with client resume, or a
+  hosted realtime service, and never keep room state in the function.
 - The live channel is an optimization. The database holds the truth, and every screen must be
   correct after a plain reload.
 
@@ -110,8 +112,10 @@ export async function GET(req: Request) {
   A line starting with `:` is a comment; use it as the heartbeat.
 - `EventSource` reconnects by itself and sends the last received `id` as `Last-Event-ID`. The
   server must replay from there; without `id` lines, every reconnect loses the gap.
-- `retry: 5000` sets the client's reconnect delay in milliseconds. A `204` response tells the
-  client to stop reconnecting; any other non-200 status or a wrong content type also ends it.
+- `retry: 5000` sets the client's reconnect delay in milliseconds. `EventSource` reconnects only
+  after a dropped connection: a `204`, any other non-200 status or a wrong content type ends it
+  for good. One 502 or 503 from the proxy during a deploy therefore kills the stream silently.
+  In `onerror`, when `readyState` is `CLOSED`, create a new `EventSource` after a jittered delay.
 - Buffering proxies are the usual reason "nothing arrives until the end": disable proxy
   buffering (`X-Accel-Buffering: no` for nginx) and exclude the route from response compression.
 - Under HTTP/1.1 a browser allows about six connections per origin across all tabs; a few open
@@ -231,4 +235,5 @@ Sync engines and offline-first:
   depend on it. Assume under fifty.
 - **May message content pass through a third-party realtime provider?** Sensitive data pushes
   toward ID-only events or self-hosting. Assume IDs only through a hosted provider.
-- **Are calls recorded?** Recording needs consent, storage and retention rules. Assume not.
+- **Are calls recorded?** Recording needs participants' consent, and who must consent and how
+  differs by jurisdiction (`0x:privacy-compliance`), plus storage and retention rules. Assume not.

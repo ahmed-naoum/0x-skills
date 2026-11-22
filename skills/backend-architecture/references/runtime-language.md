@@ -45,10 +45,11 @@ Pin the runtime in every place that reads it, and make them agree:
   source of install failures and slow fallbacks.
 - The host's runtime setting on a PaaS.
 
-Drift shows up as "works locally, fails in CI" with a syntax error or a missing API. Run an LTS
-line in production; non-LTS lines lose support within months. Plan the move to a new LTS a few
-months after it is declared LTS, and before the old line reaches end of life. Newer Node majors
-no longer bundle Corepack, so install pnpm explicitly in images and CI instead of assuming it.
+Drift shows up as "works locally, fails in CI" with a syntax error or a missing API. Run a line
+that is in LTS: through Node 26 only even majors reach it and odd ones lose support within
+months; from Node 27 there is one major a year, LTS from October (confirm on the nodejs.org
+release schedule). Move to a new LTS a few months after it is declared, before the old line
+reaches end of life. Node 25 and later do not bundle Corepack: install pnpm explicitly.
 
 ## Built-ins before dependencies
 
@@ -73,8 +74,8 @@ supply-chain surface and an upgrade to track.
 
 Keep the library where the built-in is thinner than the job: schema validation (Zod), structured
 logging (pino), the Postgres driver, password hashing (owned by the auth library), and date and
-time-zone math unless `Temporal` exists in the pinned runtime. `node:test` exists and is fine for a
-small package; an app that already uses Vitest keeps Vitest.
+time-zone math unless the pinned runtime has `Temporal` (on by default from Node 26). `node:test`
+is fine for a small package; an app that already uses Vitest keeps Vitest.
 
 ## Running TypeScript directly in Node
 
@@ -110,13 +111,12 @@ bundler and is unaffected.
 - CommonJS dependencies import fine from ESM. Going the other way, current LTS lines can
   `require()` an ESM module only if its graph has no top-level `await`.
 
-Bundling (esbuild, tsup) is still worth it for serverless cold starts and small images; it is no
-longer required just to run.
+Bundling (esbuild, tsup) still pays for serverless cold starts and small images, not for running.
 
 ## Keeping the event loop unblocked
 
-One thread runs all JavaScript. Fifty milliseconds of synchronous work in one request adds fifty
-milliseconds to every other request in flight. Measure before guessing:
+Fifty milliseconds of synchronous work in one request delays every other request in flight by
+fifty milliseconds. Measure before guessing:
 
 ```ts
 import { monitorEventLoopDelay } from 'node:perf_hooks';
@@ -124,7 +124,8 @@ import { monitorEventLoopDelay } from 'node:perf_hooks';
 const h = monitorEventLoopDelay({ resolution: 20 });
 h.enable();
 setInterval(() => {
-  metrics.gauge('event_loop_delay_p99_ms', h.percentile(99) / 1e6); // histogram is in ns
+  // Values are ns and include the 20 ms sampling interval: an idle loop reads about 20 ms.
+  metrics.gauge('event_loop_delay_p99_ms', Math.max(0, h.percentile(99) / 1e6 - 20));
   h.reset();
 }, 10_000).unref();
 ```
@@ -141,7 +142,6 @@ the usual cause of "random restarts under load".
 | Sorting, grouping or joining large arrays in memory | Do it in SQL; otherwise chunk and yield with `await setImmediate()` from `node:timers/promises` |
 | A long `for await` loop that only resolves promises | Microtasks never yield to I/O: yield explicitly every N items |
 | Image, PDF, spreadsheet or CSV processing | Background job or worker thread |
-| Rendering a very large page synchronously | Streaming render, caching, smaller payload |
 
 The libuv thread pool has four threads by default, shared by `fs`, `dns.lookup`, async crypto
 (`pbkdf2`, `scrypt`, `randomBytes`) and zlib. Symptom: CPU is idle, yet file reads and outbound
@@ -184,8 +184,8 @@ Native addons such as sharp already run off the main thread.
   rate limits); for CPU jobs it equals cores.
 - **Python**: Gunicorn sync workers about `2 x cores + 1` (rule of thumb for I/O-bound apps);
   async workers one per core. Each worker is a process with its own memory and its own pool.
-- **Go**: `GOMAXPROCS` must match the container CPU limit (recent releases read the cgroup limit;
-  older ones need `automaxprocs`), and `GOMEMLIMIT` about 90% of container memory.
+- **Go**: `GOMAXPROCS` must match the container CPU limit (Go 1.25 and later read the cgroup
+  limit; older ones need `automaxprocs`), and `GOMEMLIMIT` about 90% of container memory.
 
 `os.availableParallelism()` may report host cores instead of the container's quota: take worker
 counts from an environment variable set next to the CPU limit. Confirm any sizing with a load
@@ -193,8 +193,8 @@ test: capacity is where p99 bends, not where CPU reaches 100%.
 
 ## Graceful shutdown
 
-Every deploy, scale-down and node replacement sends SIGTERM, then SIGKILL after a grace period.
-The order of steps is what people get wrong.
+Deploys, scale-downs and node replacements send SIGTERM, then SIGKILL after a grace period (a few
+seconds to 30 s by default, by platform: read it). The order of steps is what people get wrong.
 
 1. On SIGTERM, fail the readiness check (503) and keep serving.
 2. Wait a few seconds for the load balancer to stop routing here. On Kubernetes, endpoint removal
@@ -229,7 +229,7 @@ process.on('SIGINT', () => void shutdown());
 |---|---|---|
 | Handler never runs; container dies after the full grace period | `CMD npm start`, `pnpm start` or shell-form `CMD`: the wrapper is PID 1 and does not forward the signal | Exec form `CMD ["node", "server.js"]`; add an init (`--init`, tini) if the process spawns children |
 | A few 502s on every deploy | Process exits while the balancer still routes to it | Steps 1-2; check the balancer's deregistration delay |
-| Sporadic 502s with no deploy | Node closes idle keep-alive sockets (5 s default) before the balancer does | `server.keepAliveTimeout` above the balancer idle timeout, and `server.headersTimeout` above that |
+| Sporadic 502s with no deploy | Node closes idle keep-alive sockets before the balancer does. The default is 5 s through Node 24 and newer majors are reported to raise it: print `server.keepAliveTimeout` on the pinned runtime | Set `server.keepAliveTimeout` explicitly above the balancer idle timeout, and `server.headersTimeout` above that |
 | Shutdown hangs until SIGKILL | WebSocket or SSE connections never end on their own | Send a close frame or end the stream; clients reconnect elsewhere |
 | Jobs run twice after deploys | Job longer than the grace period is killed, then retried | Make it resumable and idempotent, or raise the grace period for the worker service |
 
@@ -249,10 +249,10 @@ const signal = AbortSignal.any([request.signal, AbortSignal.timeout(8_000)]);
 const res = await fetch(url, { signal });
 ```
 
-- Fetch-style handlers (Next.js route handlers, Hono) expose `request.signal`, which aborts when
-  the client disconnects. With `node:http`, abort from `res.on('close')` when
-  `res.writableFinished` is false. Verify on the real host: some proxies do not propagate the
-  disconnect.
+- Fetch-style handlers (Next.js route handlers, Hono) expose `request.signal`, meant to abort
+  when the client disconnects; with `node:http`, abort from `res.on('close')` when
+  `res.writableFinished` is false. Hosts and proxies differ in whether the disconnect arrives:
+  close a client mid-request on the real deployment and log the abort before relying on it.
 - Aborting closes the caller's side only. The upstream may still complete the action, and a
   Postgres query keeps running unless a cancel is sent: set `statement_timeout` as the backstop.
 - Check for cancellation between steps and around reads, expensive computation and LLM streams

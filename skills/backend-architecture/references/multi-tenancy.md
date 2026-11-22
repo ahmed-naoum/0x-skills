@@ -37,7 +37,7 @@ invitations(org_id, email, role, token_hash, expires_at, accepted_at)
   context. Never take a tenant ID from a request body or a client-set header.
 - Every tenant-owned table carries `org_id NOT NULL`, including child tables. Composite foreign
   keys (`FOREIGN KEY (org_id, project_id) REFERENCES projects (org_id, id)`) make a row that
-  points across tenants impossible.
+  points across tenants impossible; the parent table needs `UNIQUE (org_id, id)` for it.
 - Uniqueness becomes per tenant (`UNIQUE (org_id, slug)`), and indexes lead with `org_id`.
 
 Roles and permission checks are in `0x:auth-identity` (`authorization.md`); tenant-specific
@@ -106,15 +106,16 @@ Seed two organizations, A and B, with the same shape of data, and for every reso
 
 Make it systematic: one test walks the route table and calls every route that takes an ID with a
 foreign tenant's ID, so a new endpoint is covered the day it is added. For RLS, connect as the
-application role without setting the tenant and assert zero rows, and fail CI on any tenant
-table without a policy:
+application role without setting the tenant and assert zero rows, and fail CI when this query
+returns any tenant table where row-level security is not both enabled and forced:
 
 ```sql
 SELECT c.relname
 FROM pg_class c
 JOIN pg_namespace n ON n.oid = c.relnamespace
 JOIN pg_attribute a ON a.attrelid = c.oid AND a.attname = 'org_id' AND NOT a.attisdropped
-WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p') AND NOT c.relrowsecurity;
+WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p')
+  AND NOT (c.relrowsecurity AND c.relforcerowsecurity);
 ```
 
 Tests must run as the application role, not as the migration owner, or every RLS test passes
@@ -192,9 +193,9 @@ The `ask` endpoint receives `?domain=<hostname>` and allows issuance only by ans
 Traps: session cookies do not cross to a custom domain, and OAuth redirect URIs cannot be
 registered per customer, so authenticate on the main domain and hand off with a one-time code.
 A `CAA` record at the customer can forbid the issuing CA; say so in the setup instructions.
-Tenant subdomains under the main domain share its cookie scope; serving tenant-authored content
-calls for a separate registrable domain. Keep a reserved list (`www`, `api`, `admin`, `mail`,
-`app`, `status`). DNS and certificate mechanics: `0x:web-networking`.
+Tenant subdomains are same-site with the main domain and receive any cookie scoped to it, so
+tenant-authored pages or scripts call for a separate registrable domain. Keep a reserved list
+(`www`, `api`, `admin`, `mail`, `app`, `status`). DNS and certificates: `0x:web-networking`.
 
 ## Home region per tenant
 

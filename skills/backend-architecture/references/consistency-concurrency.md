@@ -119,6 +119,9 @@ FOR UPDATE SKIP LOCKED;
   inside the business transaction is the outbox. Do not build a second one.
 - Delivery is at-least-once: the relay can publish and crash before marking the row. Consumers
   deduplicate (next section).
+- The relay is the one bounded exception to "no transaction across a network call": it locks
+  only outbox rows. Keep the batch small and the publish timeout at a few seconds, or claim rows
+  with a lease column and publish outside any transaction.
 - Select on `processed_at IS NULL`, never on "id greater than the last one seen". Identity values
   are assigned before commit, so a lower id can become visible after a higher one and a
   high-water-mark reader skips it forever.
@@ -163,7 +166,7 @@ comes from read replicas, search indexes, caches, CDN copies and asynchronous pr
 |---|---|
 | Return the written entity from the mutation and update client state from the response | Always; it is free |
 | Read from the primary for that user for a few seconds after their write (marker in the session or a cookie) | Read replicas serve user-facing pages |
-| Record the WAL position after the write (`pg_current_wal_lsn()`) and wait on the replica until `pg_last_wal_replay_lsn()` passes it | Replica reads must be exact and the marker approach is too coarse |
+| Record the WAL position after the write (`pg_current_wal_lsn()`) and wait on the replica until `pg_last_wal_replay_lsn()` passes it, with a timeout that falls back to the primary. PostgreSQL 19 adds a `WAIT FOR LSN` command for this; older versions poll | Replica reads must be exact and the marker approach is too coarse |
 | Merge the just-written item into list or search results on the client, or show it as "indexing" | The lagging store is a search index or projection |
 | Optimistic UI with a pending marker, reconciled when the server answers | Latency matters more than certainty; never for payments |
 

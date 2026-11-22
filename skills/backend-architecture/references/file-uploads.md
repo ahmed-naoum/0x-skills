@@ -23,8 +23,9 @@ memory lets a handful of uploads exhaust the process.
 5. The client calls a `complete` endpoint (or a storage event notification fires). The server
    reads the object's real size and first bytes, verifies them (next section), and moves the row
    to `uploaded`, then enqueues processing.
-6. A lifecycle rule deletes objects under the pending prefix after a day, and a sweeper removes
-   `pending` rows of the same age. Abandoned uploads are normal.
+6. A sweeper deletes `pending` rows older than a day together with their objects. Abandoned
+   uploads are normal. A storage lifecycle rule can do the object half only if pending uploads
+   sit under their own prefix or tag and are moved on completion.
 
 The signature must bind the size, or the limit is a suggestion. A presigned POST policy can carry
 a size range; a presigned PUT cannot express a range, only an exact signed `Content-Length` where
@@ -46,8 +47,13 @@ const { url, fields } = await createPresignedPost(s3, {
 // Browser: multipart/form-data POST to `url`, every entry of `fields` first, the file last.
 ```
 
-- Not every S3-compatible store implements presigned POST. Where only PUT exists, sign the exact
+- Not every S3-compatible store implements presigned POST (Cloudflare R2 documents it as
+  unsupported; check the provider's current API table). Where only PUT exists, sign the exact
   length and type if possible and treat step 5 as the enforcement: delete anything over the limit.
+- Recent AWS SDK versions add a CRC32 checksum to uploads by default, and a presigned PUT URL can
+  then carry checksum parameters that the browser's upload does not match or that a non-AWS
+  store rejects. Symptom: `SignatureDoesNotMatch` or another 4xx on presigned uploads only. Set
+  `requestChecksumCalculation: 'WHEN_REQUIRED'` on the signing client and test a real upload.
 - The bucket needs a CORS rule for the app's origin and the upload method. Multipart uploads from
   a browser also need `ETag` in the exposed headers.
 - Never trust the `complete` call's claims. The server reads size and type from storage.
@@ -89,6 +95,10 @@ Content-Security-Policy: default-src 'none'; sandbox
 Content-Disposition: attachment; filename="report.pdf"
 ```
 
+- A signed storage URL bypasses the application, so the headers must come from the object and
+  the signature: store the verified `Content-Type` on the object at upload, set the response
+  disposition when signing the GET, and add `nosniff` and the CSP with a response-header rule on
+  the CDN in front of the bucket.
 - Inline display is an allowlist: raster images, audio, video and, if the product needs it, PDF.
   Everything else downloads as an attachment.
 - `Content-Type` is the type the server verified and stored, never the one the client sent.
@@ -198,7 +208,8 @@ upload must pass through infrastructure under your control. It adds a stateful s
   signed link.
 - Formula injection: a cell beginning with `=`, `+`, `-`, `@`, tab or carriage return is run as
   a formula by spreadsheet software. Prefix user-supplied text cells with a single quote; leave
-  numeric columns alone so negative numbers survive.
+  numeric columns alone so negative numbers survive. The quote stays in the data, so strip it
+  again when the same file can be imported back.
 - Quote fields containing the delimiter, quotes or newlines, doubling embedded quotes. Write a
   UTF-8 byte-order mark when the audience opens files in Excel, which otherwise misreads
   non-ASCII text.
@@ -249,11 +260,12 @@ always re-encoded.
    retention period.
 5. Scanner error, timeout or skipped file: stays quarantined. Fail closed.
 
-- ClamAV loads its signature database into memory and needs well over a gigabyte; run it as a
-  daemon that jobs call, not as a process started per file, and keep signatures updating.
+- ClamAV loads its signature database into memory, and its documentation asks for several
+  gigabytes of RAM (check the current figure; a signature reload briefly needs more). Run it as
+  a daemon that jobs call, not as a process started per file, and keep signatures updating.
 - Scanners skip files above their configured size limits and can report them as clean by
-  default. Align the scanner limits with the upload limit and turn on the option that flags
-  oversized files.
+  default. Align the scanner limits with the upload limit (clamd: `MaxFileSize`, `MaxScanSize`,
+  `StreamMaxLength`) and turn on the option that flags oversized files (`AlertExceedsMax`).
 - Prove the pipeline with the EICAR test file in an automated test: it must end as `infected`
   and be undownloadable.
 - Signature scanning catches known malware only. The separate origin, attachment disposition
