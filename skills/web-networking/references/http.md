@@ -69,7 +69,8 @@ curl -sS -o /dev/null -w 'dns %{time_namelookup}  tcp %{time_connect}  tls %{tim
 | 307 | no | Preserved | Temporary move that must keep method and body |
 
 - **Permanent means cached.** Browsers store a 301/308 and stop asking, for a long time when no cache headers limit it. Launch a move as 302/307, verify, then switch to 301/308, and put `Cache-Control: max-age=3600` on permanent redirects while there is any chance of reversal.
-- **One hop.** `http://example.com/x` should reach `https://www.example.com/x` in a single redirect, not HTTP→HTTPS→www→trailing slash. Each hop to a new origin costs a full connection setup. Write the rule to emit the final URL directly; HSTS then removes the HTTP hop for returning visitors. One deliberate exception: an apex that is HSTS-preloaded, or that must carry its own HSTS header, redirects to HTTPS on itself before redirecting to `www` (`tls-certificates.md`).
+- **One hop.** `http://example.com/x` should reach `https://www.example.com/x` in a single redirect, not HTTP→HTTPS→www→trailing slash. Each hop to a new origin costs a full connection setup.
+  Write the rule to emit the final URL directly; HSTS then removes the HTTP hop for returning visitors. One deliberate exception: an apex that is HSTS-preloaded, or that must carry its own HSTS header, redirects to HTTPS on itself before redirecting to `www` (`tls-certificates.md`).
 - **Preserve path and query** unless the move is to a single page; dropped query strings break campaign tracking and deep links.
 - **Do not redirect API calls.** Clients handle redirected `POST` bodies inconsistently and strip `Authorization` when the redirect crosses origins. An API base URL answers at its final address; give a wrong scheme or host an error rather than a redirect.
 - Decide trailing-slash and case conventions once, and make the framework, the proxy and the CDN agree; disagreement is where loops come from.
@@ -150,7 +151,8 @@ In DevTools, add the Protocol column to the Network panel: `h3` should appear af
 - **HTTP/2 server push is dead.** Chrome and Firefox removed support and nginx dropped the directive; delete any push configuration.
 - **Domain sharding is harmful under HTTP/2 and HTTP/3.** Splitting assets across hostnames was a workaround for HTTP/1.1's per-host connection limit; now it adds handshakes and splits prioritization and congestion state. Consolidate onto one hostname.
 - **`103 Early Hints`** sends `Link: <...>; rel=preload` or `rel=preconnect` headers while the server is still computing the real response, so the browser starts fetching during server think time.
-  It pays off only when think time is substantial (hundreds of milliseconds) and the hinted resources are render-critical. Chromium browsers and Firefox act on it, for navigations only and only over HTTP/2 or HTTP/3; do not count on Safari, and repeat the same `Link` headers on the final response so every browser gets them. Simplest deployment: the CDN's Early Hints feature, which replays `Link` headers it saw on earlier responses.
+  It pays off only when think time is substantial (hundreds of milliseconds) and the hinted resources are render-critical.
+  Chromium browsers and Firefox act on it, for navigations only and only over HTTP/2 or HTTP/3; do not count on Safari, and repeat the same `Link` headers on the final response so every browser gets them. Simplest deployment: the CDN's Early Hints feature, which replays `Link` headers it saw on earlier responses.
   Emitting 103 from the origin requires every proxy on the path to pass informational responses; test it, and never send it to HTTP/1.1 clients, some of which mishandle 1xx.
 - **Preload sparingly**: only resources discovered late and needed for first render. Over-preloading competes with what matters. Selection and measurement: `0x:web-performance`, `loading-delivery.md`.
 

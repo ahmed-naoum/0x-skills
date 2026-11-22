@@ -4,7 +4,8 @@ Read this when: setting `Cache-Control`, `ETag` or `Vary`, designing CDN cache k
 
 ## The two failure directions
 
-Caching fails in two ways with very different costs. Serving stale content is an annoyance with a purge button. Serving one user's private response to another is a data breach, which in many jurisdictions brings notification duties (`0x:privacy-compliance`). Every rule below is biased accordingly: public content must opt in to shared caching explicitly, and anything that depends on who is asking is never stored by a shared cache.
+Caching fails in two ways with very different costs. Serving stale content is an annoyance with a purge button. Serving one user's private response to another is a data breach, which in many jurisdictions brings notification duties (`0x:privacy-compliance`).
+Every rule below is biased accordingly: public content must opt in to shared caching explicitly, and anything that depends on who is asking is never stored by a shared cache.
 
 Three caches sit between the app and the user, and they differ in the one property that matters: whether they can be purged.
 
@@ -59,7 +60,8 @@ A content hash in the filename makes the URL a name for exact bytes. That is wha
 
 - Default every authenticated route to `no-store` in one place (middleware or the proxy), and relax per route where caching is deliberate. Per-handler opt-out is how one gets missed.
 - Responses with `Set-Cookie` must never be stored by a shared cache: the stored cookie is handed to every later visitor. Many CDNs refuse by default; an "ignore origin headers" or "cache everything" rule overrides that protection.
-- By specification a shared cache does not reuse a response to a request that carried `Authorization` unless the response opts in with `public`, `s-maxage` or `must-revalidate`. There is no such rule for cookies, and not every CDN applies the `Authorization` rule either. A cookie-authenticated page that is marked `public`, or that sends no directive under a cache-everything rule, will be cached and served to strangers.
+- By specification a shared cache does not reuse a response to a request that carried `Authorization` unless the response opts in with `public`, `s-maxage` or `must-revalidate`.
+  There is no such rule for cookies, and not every CDN applies the `Authorization` rule either. A cookie-authenticated page that is marked `public`, or that sends no directive under a cache-everything rule, will be cached and served to strangers.
 - `no-store` also covers signed URLs, password-reset pages, export downloads and API responses containing tokens.
 
 ## Cache keys

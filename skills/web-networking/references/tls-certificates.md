@@ -4,7 +4,8 @@ Read this when: issuing, renewing or debugging certificates, choosing protocol v
 
 ## Issuance and renewal with ACME
 
-A certificate that a person renews by hand will expire in production. Every certificate is issued and renewed by software from day one, and public certificate lifetimes are shrinking on an industry schedule (the CA/Browser Forum caps them at 200 days since March 2026, 100 days from March 2027 and 47 days from March 2029, and Let's Encrypt has announced 64 days from February 2027 and 45 days from February 2028; confirm the CA's current schedule), so manual processes get worse every year.
+A certificate that a person renews by hand will expire in production. Every certificate is issued and renewed by software from day one, because public certificate lifetimes are shrinking on an industry schedule and manual processes get worse every year.
+The CA/Browser Forum caps lifetimes at 200 days since March 2026, 100 days from March 2027 and 47 days from March 2029; Let's Encrypt has announced 64 days from February 2027 and 45 days from February 2028. Confirm the CA's current schedule before quoting a number.
 
 Pick the least work that fits:
 
@@ -49,7 +50,8 @@ echo | openssl s_client -connect example.com:443 -servername example.com 2>/dev/
   | openssl x509 -noout -enddate -issuer -ext subjectAltName
 ```
 
-- **Threshold follows the renewal schedule.** Clients renew with about a third of the lifetime left (30 days for a 90-day certificate), or earlier when ARI says so. Alert when remaining life drops clearly below that point (under 20 days of 90 means renewal has been failing for over a week) and escalate at 7 days. Scale both numbers with the lifetime: for a 45-day certificate, alert under about 10 days and escalate at 5. A threshold copied from the 90-day era either fires on healthy certificates or gets muted.
+- **Threshold follows the renewal schedule.** Clients renew with about a third of the lifetime left (30 days for a 90-day certificate), or earlier when ARI says so. Alert when remaining life drops clearly below that point (under 20 days of 90 means renewal has been failing for over a week) and escalate at 7 days.
+  Scale both numbers with the lifetime: for a 45-day certificate, alert under about 10 days and escalate at 5. A threshold copied from the 90-day era either fires on healthy certificates or gets muted.
 - **Cover every name and endpoint**: apex and `www`, API, per-tenant custom domains, mail and other non-HTTP TLS ports, and each origin behind the CDN (the CDN's certificate being fine says nothing about the origin's, and with strict origin validation an expired origin certificate takes the site down).
 - **Domain expiry**: alert at 60, 30 and 7 days from the registry's RDAP/WHOIS expiry date, to someone other than the registrar's contact mailbox. Auto-renew fails on an expired card.
 - At Launch, a hosted uptime monitor that checks both certificate and domain expiry is enough. Add it to the same alert channel as downtime.
@@ -68,7 +70,8 @@ Stage it:
 6. `preload` last, and only as a deliberate decision. The preload list requires a one-year `max-age`, `includeSubDomains`, the `preload` token, and a redirect from HTTP on the apex; it ships inside browsers, and removal takes months to reach users.
 
 Rules: the header counts only on HTTPS responses, and a browser learns it only for hosts it actually visits over HTTPS. When `www` is canonical, a direct `http://example.com` → `https://www.example.com` redirect never shows the browser the apex's header.
-To protect the apex, and to qualify for preload, which requires it, redirect `http://example.com` → `https://example.com` first and send the header on that HTTPS response, accepting one extra hop on first visits. Emergency rollback is `max-age=0`, which works only for browsers that return over HTTPS. Never enable HSTS on a host that might need plain HTTP again, and never on `localhost`-style development hostnames shared with other projects.
+To protect the apex, and to qualify for preload, which requires it, redirect `http://example.com` → `https://example.com` first and send the header on that HTTPS response, accepting one extra hop on first visits.
+Emergency rollback is `max-age=0`, which works only for browsers that return over HTTPS. Never enable HSTS on a host that might need plain HTTP again, and never on `localhost`-style development hostnames shared with other projects.
 
 Default: Prototype none or short; Launch one year without `includeSubDomains` until the inventory is done; preload only when asked.
 
