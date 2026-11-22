@@ -1,6 +1,6 @@
 ---
 name: site-reliability
-description: "Sets up and runs production operations: logs, error tracking, metrics, tracing, uptime checks, alerts, SLOs, incident response, postmortems, runbooks, capacity planning and disaster recovery. Use when adding monitoring or logging, when production is down, when alerts are noisy, before a launch readiness check, or when planning for traffic spikes, outages and vendor or region loss."
+description: "Sets up and runs production operations: logs, error tracking, metrics, tracing, uptime checks, alerts, SLOs, incident response, postmortems, runbooks, capacity and disaster recovery. Use when adding monitoring or logging, when production is down or alerts are noisy, for SLOs, on-call, a status page or a postmortem, before a launch readiness check, or when planning for traffic spikes and vendor or region loss."
 ---
 
 # Observability, incidents and reliability
@@ -14,7 +14,7 @@ has to detect, restart and roll back without a human wherever it can, and the hu
 is spent only on what users actually feel.
 
 - **Detection before prevention.** Failures that were not predicted outnumber those that were.
-  An external check, an error tracker and a business-metric alert catch all of them; hardening
+  An external check, an error tracker and a business-metric alert catch both kinds; hardening
   catches only the ones imagined in advance.
 - **Mitigate, then diagnose.** Roll back, flag off, scale or fail over first. Understanding
   takes hours, rollback takes minutes, and users are harmed for the difference.
@@ -25,8 +25,8 @@ is spent only on what users actually feel.
   fired and a runbook never followed by someone else do not count. Every claim of readiness is
   proven by doing the thing.
 - **Reliability is a budget, not a virtue.** Choose a target per user journey from what
-  customers need, measure it, and spend the remainder on shipping. Each extra nine costs
-  roughly ten times more; most products need fewer than their founders assume.
+  customers need, measure it, and spend the remainder on shipping. As a rule of thumb each
+  extra nine costs about ten times more; most products need fewer than their founders assume.
 - **Most outages are self-inflicted.** Deploys, config, migrations and expired things cause far
   more downtime than hardware or regions. Fast rollback and change markers on graphs beat a
   second region.

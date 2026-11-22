@@ -210,7 +210,9 @@ Rules: the external version is derived from the internal one and never contradic
 blame a vendor for a dependency chosen without a fallback; do not publish details that help an
 attacker repeat it; do not promise "this will never happen again". If personal data was
 involved, legal notification rules decide content and timing: get that reviewed
-(`0x:privacy-compliance`).
+(`0x:privacy-compliance`). Where an SLA claim, a dispute or an insurance claim may follow, have
+a lawyer read the external version first: it will be quoted, and contracts or insurers can
+limit what may be admitted.
 
 ## Quarterly incident trends
 

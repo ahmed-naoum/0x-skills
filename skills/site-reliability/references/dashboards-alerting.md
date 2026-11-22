@@ -12,8 +12,8 @@ too many, too late or ignored.
 | Launch | External uptime check to the phone; heartbeats on backups and billing jobs; one dashboard; pages on error rate, latency and imminent saturation; business zero-alerts; certificate and domain expiry | Burn-rate alerts, anomaly detection products, per-host alerts |
 | Scale | SLO burn-rate paging (`slos-error-budgets.md`), multi-region synthetic journeys, per-tenant views, on-call rotation | |
 
-The Launch row is about two hours of work and catches the large majority of outages a small
-product has. Do it before anything sophisticated.
+The Launch row is a few hours of work and covers the usual ways a small product goes down.
+Do it before anything sophisticated.
 
 ## Three destinations for every alert
 
@@ -23,7 +23,7 @@ to "everything pages", and then to "everything is muted".
 | Destination | Criterion | Examples |
 |---|---|---|
 | Page (phone, overrides silent mode) | Users are affected now or will be within hours, and a human can do something about it now | Site unreachable, error rate over threshold, checkout producing zero orders, disk full in 4 hours |
-| Ticket (chat channel or issue, next working day) | Needs a human, not tonight | Backup heartbeat missed once, disk at 80 percent, certificate expires in 14 days, new error-tracker issue, slow budget burn |
+| Ticket (chat channel or issue, next working day) | Needs a human, not tonight | Backup heartbeat missed once, disk at 80 percent, certificate not renewed on schedule, new error-tracker issue, slow budget burn |
 | Record (dashboard only) | Useful when investigating, never by itself | CPU at 90 percent, one instance restarted, a retry succeeded, cache hit ratio dipped |
 
 ## Symptoms, not causes
@@ -39,7 +39,8 @@ year's. Causes belong on the dashboard that the symptom alert links to.
 The exception is saturation that is predictable and irreversible within hours (below): there the
 cause alert buys time that the symptom alert cannot.
 
-Symptom rules for a web product at Launch, with starting thresholds to tune from a week of data:
+Symptom rules for a web product at Launch. The thresholds are rules of thumb to start from and
+tune after a week of data:
 
 | Signal | Page when | Notes |
 |---|---|---|
@@ -68,7 +69,9 @@ Set up three checks:
    or when a maintenance or parked-domain page returns 200.
 2. **A deep health endpoint** that is never cached (`Cache-Control: no-store`) and runs one
    trivial database query and, if the product cannot work without it, a cache or queue ping.
-   Give it a short internal timeout and return 503 on failure.
+   Give it a short internal timeout and return 503 on failure. Return no detail in the body
+   (versions and dependency names help an attacker) and rate-limit it, since every call costs a
+   database query.
 3. **The API or webhook hostname**, if it differs from the site.
 
 Keep this deep endpoint separate from the shallow one the load balancer uses for instance
@@ -77,8 +80,11 @@ instance unhealthy at once and turns a slowdown into a total outage (`capacity-s
 
 Settings: interval of one minute; a request timeout near the worst latency users would accept;
 confirmation from at least two locations before alerting, since a single probe location has its
-own network failures; alert on recovery too. Add certificate expiry (alert at 14 days: auto
-renewal that has silently failed still leaves time) and domain registration expiry (30 days).
+own network failures; alert on recovery too. Add domain registration expiry (30
+days) and certificate expiry, set to catch automatic renewal that has silently failed: 14 days
+remaining suits 90-day certificates that renew with 30 days left. Public certificate lifetimes
+are being shortened toward 45 days and less, so use about half the renewal lead time and
+revisit the threshold when the issuer's lifetime changes.
 
 To the phone: use the service's mobile app with critical alerts that bypass silent mode, with
 SMS or a voice call as the second step. Email and plain chat notifications are not paging.
@@ -93,15 +99,17 @@ monitor (Healthchecks.io, Cronitor, the error tracker's cron monitoring) alerts 
 is late.
 
 ```bash
-pg_dump "$DATABASE_URL" | gzip > "$FILE" \
-  && test "$(stat -c %s "$FILE")" -gt 1000000 \
-  && curl -fsS -m 10 --retry 5 -o /dev/null "$HEARTBEAT_URL"
+set -euo pipefail
+pg_dump "$DATABASE_URL" | gzip > "$FILE"
+test "$(wc -c < "$FILE")" -gt 1000000   # a plausible size for this database
+curl -fsS -m 10 --retry 5 -o /dev/null "$HEARTBEAT_URL"
 ```
 
 Rules:
 
 - Ping only after verifying the result, not merely the exit code. A backup that wrote an empty
-  file exited zero. Assert a plausible size or row count first.
+  file exited zero. Assert a plausible size or row count first; that proves the job ran, not
+  that the backup restores (restore drills: `0x:postgres-database`).
 - Set the expected period to the schedule and the grace time to the normal runtime plus a
   margin. Where the monitor supports start and fail signals, send them: it then also catches
   jobs that hang and reports failures without waiting for the grace time.
@@ -144,7 +152,7 @@ where possible, since a threshold is too early on a large volume and too late on
 | Database connections | 70 percent of the server maximum | 90 percent, or requests waiting on the pool | Each new app instance and serverless concurrency adds connections; scaling out can cause it |
 | Queue | Age of oldest job over the normal maximum | Over what users tolerate, or growing for 30 minutes | Depth grows harmlessly in a burst; age growing means workers cannot keep up |
 | Third-party quota | 70 percent of rate or monthly limit | 90 percent | Email sends, LLM tokens, API call quotas fail like outages |
-| Certificates, domains, cards on vendor accounts | 14 to 30 days before expiry | | A declined card suspends a vendor as surely as an outage |
+| Certificates, domains, cards on vendor accounts | Certificate past its renewal point (see uptime checks); domain or card 30 days before expiry | | A declined card suspends a vendor as surely as an outage |
 
 Disk prediction in PromQL, as an example of the shape:
 

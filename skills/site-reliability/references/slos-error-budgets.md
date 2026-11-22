@@ -35,7 +35,7 @@ Three facts bound the choice:
 |---|---|---|
 | Prototype | None. Fix what users report | No users to disappoint; measurement costs more than outages |
 | Launch | 99.5% on the main journey, measured; 99.9% as the aim for sign-in and payment | Achievable alone with a PaaS, a managed database and tested rollback |
-| Scale | 99.9% across key journeys; 99.95% where contracts require it | Needs redundancy and a rotation; each further nine costs roughly an order of magnitude more |
+| Scale | 99.9% across key journeys; 99.95% where contracts require it | Needs redundancy and a rotation; as a rule of thumb each further nine costs about ten times more |
 
 Adjust by what the product is: a tool used in working hours tolerates night maintenance; an API
 in other companies' request paths, a payment step, or anything used in emergencies needs a
@@ -67,7 +67,8 @@ Decisions to write down per indicator:
   fill the gap at low traffic. Default at Launch: app metrics plus an external probe; move to
   edge logs at Scale.
 - **What is valid.** Exclude health checks, bots and client errors (4xx) from the denominator,
-  except 429 and 408, which are usually the service failing the user. Include errors from
+  except 408 and the 429s that hit legitimate use (load shedding, limits set too tight), which
+  are the service failing the user; 429s served to abusive clients stay out. Include errors from
   dependencies: the user does not care whose fault it was.
 - **The latency threshold.** Take it from what the interaction needs (a page navigation, an
   autocomplete and a report export differ by orders of magnitude), then check it against the
@@ -183,8 +184,9 @@ Traps and limits:
 
 ## Offering an SLA
 
-An SLO is an internal target. An SLA is a contract term with a remedy. Do not offer one until
-the indicator has been measured for at least two quarters, and then follow these rules:
+An SLO is an internal target. An SLA is a contract term with a remedy. As a rule of thumb, do
+not offer one until the indicator has been measured for about two quarters, bad months
+included. The rules below describe common practice in SaaS contracts, not law:
 
 - **Promise less than the SLO.** If the internal objective is 99.9 percent, the SLA is 99.5 or
   99.9 with generous exclusions; the gap is the margin for a bad month.
@@ -211,8 +213,9 @@ the indicator has been measured for at least two quarters, and then follow these
 
 Related promises usually requested alongside: support response times by severity, RPO and RTO
 (`disaster-recovery.md`), incident notification deadlines and postmortem delivery. Each is a
-separate commitment to cost separately. Have a lawyer review the wording before signing; limits
-on liability and remedies are jurisdiction-specific. Negotiating the contract around it is in
+separate commitment to cost separately. Have a lawyer review the wording before signing; caps
+on liability and exclusive-remedy clauses are enforced differently by jurisdiction and are often
+restricted in consumer contracts. Negotiating the contract around it is in
 `0x:sales-support`.
 
 Publish a status page with history (`incident-response.md`) before offering an SLA: buyers check

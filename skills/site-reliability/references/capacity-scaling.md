@@ -68,23 +68,35 @@ Health checks:
 Shutdown and connection handling, which cause most of the 502s seen during deploys:
 
 ```ts
-server.keepAliveTimeout = 65_000; // longer than the load balancer's idle timeout
-server.headersTimeout = 66_000;
+let ready = true;                  // the readiness endpoint returns 503 once this is false
+server.keepAliveTimeout = 65_000;  // must exceed the load balancer's idle timeout
+server.headersTimeout = 66_000;    // must exceed keepAliveTimeout
 
 process.on("SIGTERM", () => {
-  ready = false;                 // readiness endpoint now returns 503
-  setTimeout(() => server.close(() => process.exit(0)), 10_000); // let the LB notice first
+  ready = false;
+  setTimeout(() => {               // first let the balancer stop sending
+    server.close(() => process.exit(0)); // finish in-flight requests; flush telemetry before exit
+  }, 10_000);
 });
 ```
 
-Node's default keep-alive timeout is a few seconds, shorter than a typical load balancer idle
-timeout; the load balancer then reuses a connection the app has just closed and returns 502.
-Set the app's timeout longer than the balancer's. On shutdown, fail readiness first, wait for
-the balancer to stop sending, finish in-flight requests, then exit, all within the platform's
-termination grace period.
+Older Node releases default `keepAliveTimeout` to 5 seconds, shorter than a typical load
+balancer idle timeout (60 seconds on an AWS ALB unless changed); the balancer then reuses a
+connection the app has just closed and returns 502. Newer Node releases raised the default, so
+print `server.keepAliveTimeout` on the version in use, read the balancer's real idle timeout,
+and set the app's value above it explicitly either way. Next.js does not expose the server
+object: use `next start --keepAliveTimeout 65000`, or for the standalone server the keep-alive
+environment variable named in the docs of the version in use.
+
+On shutdown, fail readiness first, wait for the balancer to stop sending, finish in-flight
+requests, then exit. The 10-second wait is a starting value: it must cover the balancer's
+check interval times its failure threshold, and the wait plus the longest request must fit
+inside the platform's termination grace period, or the process is killed mid-request.
 
 Sizing: with N instances, plan for N minus one. Two instances must each be able to carry the
-whole peak, so each runs under 50 percent at peak; with three, under about 65 percent.
+whole peak, so each runs under 50 percent of its capacity at peak; with three, under about 65
+percent. Capacity here is the load-tested knee, not 100 percent CPU: a survivor running at its
+limit is already slow.
 
 Connections: instances times pool size, plus workers, plus migrations and admin tools, must stay
 under the database's connection limit with a reserve. This sum is what breaks first when
@@ -110,7 +122,8 @@ Method:
 1. From metrics, take peak request rate and each component's utilization at that moment.
    Linear extrapolation gives a first estimate of the multiple of current peak the system holds.
 2. The estimate is optimistic: response time rises sharply well before 100 percent utilization,
-   around 70 to 80 percent for most resources, and locks and pool waits are not linear at all.
+   often from around 70 to 80 percent (a rule of thumb), and locks and pool waits are not linear
+   at all.
 3. Verify with a load test on a production-like environment, ramping until p95 latency bends
    upward or errors start. The component that is saturated at that knee is the bottleneck; the
    rate at the knee is real capacity (`0x:web-performance`).
@@ -175,9 +188,10 @@ than region failures.
 
 - **App**: instances in at least two zones, preferably three, so losing one loses a third of
   capacity rather than half. The surviving zones must carry the peak.
-- **Database**: the managed service's high-availability option, with a synchronous standby in
-  another zone and automatic failover. Failover typically completes within a minute or two;
-  check the provider's figure. Existing connections break: the app must connect through the
+- **Database**: the managed service's high-availability option, with a standby in another
+  zone and automatic failover. Check two things with the provider: whether replication to the
+  standby is synchronous (if not, a failover can lose the last commits) and the stated failover
+  time, typically a minute or two. Existing connections break: the app must connect through the
   provider's endpoint (not an instance address), and the pool must discard dead connections and
   retry.
 - **Everything else in the path**: cache, queue, load balancer and NAT each need to be
@@ -188,7 +202,8 @@ than region failures.
 - **On a PaaS**: find out whether instances are spread across zones and which database plan
   includes a standby; the entry-level plans usually have neither.
 
-Cost: roughly double the database price for the standby, plus cross-zone traffic. Take the
+Cost: on the large clouds a standby about doubles the database price, plus cross-zone traffic;
+other providers price it differently, so check. Take the
 database standby once revenue depends on the product (Launch); a backup-only database means an
 outage of restore duration, typically hours.
 

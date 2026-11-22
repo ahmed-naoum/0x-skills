@@ -99,7 +99,9 @@ Resolved: Between [start] and [end] UTC, [share of users] could not [action]. Th
 Writing rules: describe what the user experiences, not internals; give the next update time and
 keep it, even when the update is "no change"; no estimated time to resolution unless certain;
 no guesses about cause before it is known; say explicitly whether data is safe once that is
-known; do not minimize ("a small number of users") without the number.
+known; do not minimize ("a small number of users") without the number; do not promise compensation
+or accept legal liability in incident text, since credits are decided afterward
+(`postmortems-runbooks.md`).
 
 ## Communicating during an outage
 
@@ -180,7 +182,9 @@ manager that works offline.
 
 Tooling: at one or two people, the uptime monitor's own alerting and phone app is enough. Add a
 paging tool (PagerDuty, incident.io, Better Stack on-call or similar) when there is a rotation
-to schedule, escalation between people, or several alert sources to merge and deduplicate.
+to schedule, escalation between people, or several alert sources to merge and deduplicate. Check
+that a tool is still sold and supported before adopting it: Opsgenie, long a default here, is
+being shut down by its vendor, so migrate off it if the project uses it.
 
 Escalation policy that works for a small team: page the primary; re-page after 5 minutes
 without acknowledgment; page the secondary at 10 to 15 minutes; then everyone. An
@@ -198,7 +202,13 @@ Rules whatever the size: a written handover at each rotation (open issues, risky
 planned); time off after a night spent on an incident; swaps are free and need no approval;
 every person on the rota has production access that works and has personally performed a
 rollback and a status-page post in a drill; page volume is reviewed monthly and anything over
-about two pages per on-call week is treated as a defect to fix, not a duty to absorb.
+about two off-hours pages per on-call week (a rule of thumb) is treated as a defect to fix, not
+a duty to absorb.
+
+On-call for employees is also an employment matter: whether standby counts as working time,
+the rest owed after a night call and the pay due for being on call differ by country and by
+contract. Agree it in writing before the rota starts, with local advice where people are
+employed (`0x:company-building`).
 
 ## When a vendor is down
 
@@ -239,3 +249,6 @@ about two pages per on-call week is treated as a defect to fix, not a duty to ab
   detail during, a short cause statement after.
 - **Which key accounts get a personal message during an outage?** Default: any customer on an
   annual contract or above a revenue share the user names.
+- **Are the people on the rota employees, and is on-call paid?** Standby pay, rest time and
+  working-time limits come from local employment law and contracts. Default: nobody employed is
+  required to be on call until terms are agreed in writing; until then the founder carries it.

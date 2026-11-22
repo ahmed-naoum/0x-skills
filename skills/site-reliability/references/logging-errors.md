@@ -45,16 +45,22 @@ export const requestContext = new AsyncLocalStorage<Record<string, unknown>>();
 
 export const log = pino({
   level: process.env.LOG_LEVEL ?? "info",
-  base: { service: "api", env: process.env.NODE_ENV, release: process.env.GIT_SHA },
+  base: { service: "api", env: process.env.APP_ENV, release: process.env.GIT_SHA },
   timestamp: pino.stdTimeFunctions.isoTime,
   formatters: { level: (label) => ({ level: label }) },
   mixin: () => requestContext.getStore() ?? {},
   redact: {
-    paths: ["req.headers.authorization", "req.headers.cookie", "*.password", "*.token"],
+    paths: ["req.headers.authorization", "req.headers.cookie",
+      "password", "token", "*.password", "*.token"],
     censor: "[redacted]",
   },
 });
 ```
+
+Two traps in this configuration. A redact wildcard matches exactly one level: `*.password`
+covers `{ user: { password } }` but neither a top-level `password` nor a deeper one, so list
+every depth that occurs and trust the canary test below, not the pattern. And `env` comes from
+a deployment variable, not `NODE_ENV`, which is `production` in staging and preview builds too.
 
 In the request middleware, call `requestContext.run({ request_id, user_id, tenant_id }, next)`.
 With OpenTelemetry running, the pino instrumentation adds `trace_id` and `span_id` to each line;
@@ -115,8 +121,8 @@ Sequence that makes stack traces readable and regressions attributable:
 
 Backend capture points people miss: unhandled promise rejections, background jobs and cron
 (wrap the job runner, not each job), queue consumers, framework error boundaries that swallow
-exceptions before the SDK sees them (in Next.js, the `onRequestError` hook in
-`instrumentation.ts` and the root `global-error` boundary), and serverless handlers, where the
+exceptions before the SDK sees them (in Next.js 15 and later, the `onRequestError` hook in
+`instrumentation.ts` for server errors and the root `global-error` boundary for render errors), and serverless handlers, where the
 SDK must flush before the function is frozen or the event is lost.
 
 Frontend noise to filter at the SDK, before it costs quota: browser extensions and injected
@@ -137,8 +143,8 @@ schedule:
 - Passwords, session cookies, API keys, `Authorization` headers, JWTs, OAuth codes, password
   reset and magic links, signed URLs, webhook signing secrets.
 - Card numbers, CVV, bank details. A card number in logs pulls the log pipeline into PCI scope.
-- Request and response bodies wholesale. Email, name, address, phone and IP are personal data;
-  log the internal ID and look the person up when needed.
+- Request and response bodies wholesale. Email, name, address, phone and IP address count as
+  personal data under most privacy laws; log the internal ID and look the person up when needed.
 
 How to enforce it, in order of strength:
 
@@ -204,7 +210,7 @@ minutes, and after every deploy:
 |---|---|
 | New in the latest release | Look now; a new issue minutes after a deploy is the best rollback signal there is |
 | Real bug, low impact | Assign, link to a ticket, resolve when the fix ships so a recurrence shows as a regression |
-| Not actionable (extension, bot, client offline) | Add an SDK filter, then delete; ignoring in the UI still consumes quota |
+| Not actionable (extension, bot, client offline) | Add an SDK filter or a server-side inbound filter, then delete. In Sentry-style trackers an archived or ignored issue only stops notifications; its events still count against quota |
 | Known, will not fix soon | Archive until it affects N more users or its rate multiplies |
 | One bug split into many issues, or many bugs merged | Fix grouping with a fingerprint rule |
 
@@ -240,7 +246,7 @@ sessions with an error.
   region matching the database.
 - **How long must logs be kept?** Contracts and regulation may set a minimum or a maximum.
   Default: 14 to 30 days searchable, no archive, audit logs handled separately.
-- **Is session replay acceptable to your users?** It records behavior and needs disclosure and
-  possibly consent. Default: off until there is a specific debugging need, then masked.
+- **Is session replay acceptable to your users?** It records behavior and needs disclosure and,
+  depending on jurisdiction, consent (`0x:privacy-compliance`). Default: off until there is a specific debugging need, then masked.
 - **What may be spent on telemetry per month?** Sets sampling rates. Default: stay inside the
   free or lowest tier until Launch, then cap at a figure the user names.

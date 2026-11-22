@@ -25,6 +25,12 @@ Record as counters, server-side, at the moment the state change commits:
 | `emails_sent_total`, `emails_bounced_total` | template | Deliverability collapse |
 | The product's core action (reports generated, messages sent) | type | The product silently not working |
 
+Two traps. Create each series at process start (add 0 for every expected label set):
+otherwise the first event after a restart creates the series and rate functions miss it,
+which at low volume is most of the signal. And short-lived serverless functions cannot hold a
+cumulative counter: there, count rows instead, with a scheduled check that queries the
+database (orders created in the last hour) and alerts or pings a heartbeat on the result.
+
 These are operational signals, counted in aggregate and alerted on within minutes. They are not
 product analytics: no user ID, no funnel properties, and they live in the metrics backend so
 they share dashboards and alerts with technical metrics. Per-user events and funnels belong to
@@ -67,14 +73,22 @@ untraced with no error. Load it with a preload flag, not from inside the app ent
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
+import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 
-const sdk = new NodeSDK({
+export const sdk = new NodeSDK({
   traceExporter: new OTLPTraceExporter(),
+  // without a reader, counters and histograms are recorded and never exported;
+  // SDK releases that predate the array option take a single `metricReader`
+  metricReaders: [new PeriodicExportingMetricReader({ exporter: new OTLPMetricExporter() })],
   instrumentations: [
     getNodeAutoInstrumentations({ "@opentelemetry/instrumentation-fs": { enabled: false } }),
   ],
 });
 sdk.start();
+// Workers and scripts: flush, then exit. A web server with its own SIGTERM drain
+// (capacity-scaling.md) calls sdk.shutdown() at the end of that drain instead, because
+// this handler exits while requests are still in flight.
 process.on("SIGTERM", () => { sdk.shutdown().finally(() => process.exit(0)); });
 ```
 
@@ -91,9 +105,13 @@ OTEL_TRACES_SAMPLER_ARG=0.1
 
 Notes that save an afternoon:
 
+- Header name, auth scheme and the environment attribute differ per backend (an API-key header,
+  Basic auth, the older `deployment.environment`): copy them from the vendor's OTLP page. Header
+  values are percent-encoded, hence `%20` for the space. The `-otlp-http` exporters send JSON; if
+  the backend accepts only protobuf, use the `-otlp-proto` packages.
 - Next.js: use the framework's `instrumentation.ts` `register()` hook; on Vercel the
   `@vercel/otel` helper wires the SDK for both Node and edge runtimes. The Node SDK does not run
-  in the edge runtime.
+  in the edge runtime: import it only when `process.env.NEXT_RUNTIME === "nodejs"`.
 - ES modules need the OpenTelemetry loader hook registered as well as the preload; without it
   auto-instrumentation silently patches nothing. Check the current SDK documentation for the
   exact flag, since this area has changed between releases.
@@ -175,7 +193,7 @@ Procedure:
 |---|---|
 | 502 | Upstream answered with garbage or closed the connection: crash, restart mid-request, or the app's keep-alive timeout shorter than the proxy's idle timeout |
 | 503 | No healthy upstream, or deliberate load shedding |
-| 504 | Upstream accepted the request and did not answer within the proxy timeout |
+| 504 | Upstream did not answer, or could not be connected to, within the proxy timeout |
 | 499 (nginx) | The client gave up first; usually slowness upstream |
 | Cloudflare 520 to 526 | Origin-side classes: 521 refused, 522 connect timeout, 524 origin connected but too slow, 525 and 526 TLS between CDN and origin |
 
@@ -236,8 +254,9 @@ Selection criteria for a small team, in order:
 Reasonable shapes: the hosting platform's observability plus an error tracker (Prototype); one
 OTLP-native hosted backend such as Grafana Cloud, Honeycomb, Axiom or Better Stack plus the
 error tracker (Launch); a full suite such as Datadog or New Relic when the breadth is used and
-someone watches the bill (Scale). Check current pricing and free-tier limits before
-recommending; they change yearly. Whatever is chosen, set an ingest cap and a billing alert on
+someone watches the bill (Scale). The names are examples, not a ranking: check current
+OTLP support, pricing, free-tier limits and whether alerting is included before recommending;
+all of these change. Whatever is chosen, set an ingest cap and a billing alert on
 the first day.
 
 ## Routing through an OpenTelemetry Collector
@@ -249,8 +268,10 @@ metrics must be collected alongside app telemetry; credentials for the vendor mu
 app containers.
 
 The minimal configuration is one `otlp` receiver (gRPC on 4317, HTTP on 4318), the
-`memory_limiter` and `batch` processors, and one `otlphttp` exporter per backend, wired into
-three pipelines (traces, metrics, logs). Apps then point `OTEL_EXPORTER_OTLP_ENDPOINT` at the
+`memory_limiter` processor, and one OTLP/HTTP exporter per backend with its sending queue, retry
+and batching enabled, wired into three pipelines (traces, metrics, logs). Batching has moved
+from the standalone `batch` processor, now deprecated, to the exporter's queue settings; copy
+component names and batching syntax from the documentation of the Collector version in use. Apps then point `OTEL_EXPORTER_OTLP_ENDPOINT` at the
 Collector and hold no vendor credentials.
 
 Traps: `memory_limiter` goes first in every pipeline or a backend outage kills the Collector by

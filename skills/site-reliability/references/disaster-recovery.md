@@ -34,11 +34,11 @@ product. Inventory every place state lives:
 | Database | Managed Postgres | PITR plus logical dumps copied elsewhere (`0x:postgres-database`) | Provider backups are deleted with the instance or account on many platforms |
 | Secrets and environment variables | Platform dashboard, CI settings | A secrets manager or password manager as the source of truth, with an encrypted export stored separately | Dashboards often cannot export values; the only copy is the running app |
 | Encryption and signing keys | KMS, environment | Documented key hierarchy; backup or multi-region keys for anything that encrypts stored data | Losing the key loses the data, however good the backup. Rotated-out keys are still needed for old data |
-| Object storage (uploads, exports) | Bucket | Versioning, plus replication to a second region or provider; lifecycle rule to expire old versions | Replication copies deletions and overwrites; without versioning it is not a backup |
+| Object storage (uploads, exports) | Bucket | Versioning, plus replication to a second region or provider; lifecycle rule to expire old versions | Replication carries overwrites, and in many setups deletions, to the copy; without versioning it is not a backup |
 | Infrastructure definition | Terraform or OpenTofu in git; state file | State in versioned remote storage; avoid console-only changes | Hand-made resources that exist nowhere in code |
 | DNS zone | DNS provider | Zone in code, or a periodic export | Rebuilding records from memory during an outage |
 | Platform and vendor configuration | CDN and WAF rules, auth provider settings, payment products and webhooks, email templates and domain verification, feature-flag definitions | In code where the vendor has an API or Terraform provider; otherwise a dated export or screenshots | The forgotten setting that only matters once: redirect URIs, IP allowlists |
-| Data held by vendors | Auth users, payment customers and subscriptions, mailing lists, analytics | Scheduled export; mirror the essentials into the database via webhooks | Card data cannot be exported directly; providers migrate it processor to processor on request, which takes weeks |
+| Data held by vendors | Auth users, payment customers and subscriptions, mailing lists, analytics | Scheduled export; mirror the essentials into the database via webhooks | Card numbers are never exported to you: the provider transfers them only to another PCI-certified processor, on request, so start weeks ahead. Subscriptions and payment history are usually not part of that transfer and are rebuilt from your own records; with a merchant of record, ask whether any transfer is possible |
 | Source code and CI | Git host | A mirror or a scheduled clone to other storage; issues and CI configuration if they matter | Every developer laptop is a copy of the code and of nothing else |
 | Recovery material | MFA recovery codes, break-glass credentials, the runbooks themselves | Offline or in a second system that does not depend on the first | Storing the recovery codes in the account they recover |
 
@@ -51,7 +51,8 @@ Rules for all of it:
 - **Restore is the test.** A backup is proven only by restoring it and using the result. Put a
   heartbeat on every backup job and a calendar entry on every restore drill.
 - **Retention covers slow discovery.** Corruption is often noticed weeks later; keep dailies for
-  weeks and monthlies for months, within the deletion duties in `0x:data-stores`.
+  weeks and monthlies for months, within the retention limits and deletion duties set by privacy law
+  and contracts (`0x:data-stores`, `0x:privacy-compliance`).
 
 ## RPO and RTO from business impact
 
@@ -60,7 +61,7 @@ system, because one pair for everything over-protects caches and under-protects 
 
 | System | Question that sets RPO | Question that sets RTO | Typical at Launch |
 |---|---|---|---|
-| Primary database | Can users re-enter the last N minutes? Can it be rebuilt from a provider's records? | Revenue and trust lost per hour down | RPO 5 minutes (PITR), RTO 1 to 4 hours |
+| Primary database | Can users re-enter the last N minutes? Can it be rebuilt from a provider's records? | Revenue and trust lost per hour down | RPO of minutes (PITR; check the provider's stated figure), RTO 1 to 4 hours in waking hours |
 | Uploaded files | Can the user upload again? | Is the product usable without them? | RPO near zero (versioned), RTO hours |
 | Payments state | The provider is the source of truth; re-sync from its API | Can checkout run while the rest is down? | RPO zero by re-sync |
 | Sessions, caches | Loss means sign in again, or slower | | No backup; rebuilt on demand |
@@ -113,8 +114,9 @@ app-store accounts are each a single point of failure with a human-speed recover
 - Hold them in the company's name on a company email, never a personal login, with two owners
   or admins. Solo: a second hardware key and recovery codes stored offline, plus a trusted
   person or the password manager's emergency-access feature.
-- Break the circular dependency: the recovery email for the registrar and DNS accounts must not
-  be on the domain those accounts control.
+- Break the circular dependency: the login and recovery addresses for the registrar, DNS and
+  email accounts must not be on the domain those accounts control. Use a company-owned mailbox
+  on a second domain held at a different registrar.
 - Keep a second payment card on file and send billing notices to a monitored address;
   suspension for non-payment is the most avoidable outage.
 - Registrar lock and auto-renew on; renew key domains for several years.
@@ -133,7 +135,9 @@ and uses standard Postgres. Vendor selection and exit terms: `0x:engineering-lea
 **People.** For a solo founder the plan is short: a password manager with emergency access for
 a named person; a document that says what the company runs, where, and how to keep it running
 or shut it down properly; a technical contact who has agreed to be called; and customers'
-contracts read for continuity or escrow duties. For a team: no system that only one person can
+contracts read for continuity or escrow duties. Access is not authority: who may legally act for
+the company, its bank and its vendor accounts if the founder is incapacitated depends on the
+company form and the jurisdiction, so arrange it with a lawyer (`0x:company-building`). For a team: no system that only one person can
 deploy, restore or log in to; test this by having the second person do it.
 
 ## Is multi-region worth it
@@ -142,14 +146,14 @@ Usually not before Scale, and often not then. Weigh it explicitly:
 
 | It costs | It buys |
 |---|---|
-| More than double the infrastructure, plus cross-region traffic | Survival of a full region outage, which is rare and usually lasts hours |
+| From a small addition (backups, pilot light) to more than double the infrastructure (warm standby, active-active), plus cross-region traffic | Survival of a full region outage, which is rare and usually lasts hours |
 | Permanent complexity in data replication, deploys, testing and incident response | A lower RTO for that one scenario |
 | Regular failover drills, or it will not work when needed | Sometimes: latency for distant users, or data residency (different problems with simpler solutions) |
 
 Decision rules:
 
-- A single region across multiple zones, done properly, supports targets of 99.9 to 99.95
-  percent. Multi-region enters when a contract or regulator requires recovery from region loss
+- As a rule of thumb, a single region across multiple zones, done properly, supports targets of
+  99.9 to 99.95 percent; compare the provider's own SLA for the services used. Multi-region enters when a contract or regulator requires recovery from region loss
   within about an hour, when the target is 99.99 percent, or when an hour of downtime costs
   more than a year of the second region.
 - Most downtime is self-inflicted: deploys, configuration, data bugs. A second region does not
@@ -216,7 +220,7 @@ What is found missing, nearly every time:
 - Secrets whose only copy was the old environment; third-party credentials tied to the old
   account.
 - Default quotas in a fresh account far below production needs, and email sending that starts
-  in a restricted mode; both need a support request and days.
+  in a restricted mode on some providers; both can need a support request and days.
 - External registrations that name the old endpoints: OAuth redirect URIs, webhook URLs, IP
   allowlists at partners and banks, email domain verification records.
 - Container images and build artifacts that existed only in the old registry; unpinned base
@@ -256,8 +260,9 @@ Rules:
 ## Ask the user
 
 - **How much recent data could be lost without lasting damage, and how long could the product
-  be down?** These set RPO and RTO and through them the cost. Default: 5 minutes of data, 4
-  hours down, for the primary database.
+  be down?** These set RPO and RTO and through them the cost. Default for the primary
+  database: a few minutes of data (what PITR gives) and 4 hours down in waking hours, longer
+  overnight for a solo operator.
 - **Does any contract, regulator or large customer require specific recovery objectives, a
   second region or data residency?** A requirement overrides the cost argument. Default: none;
   single region, multi-zone, cross-region backups.
