@@ -94,7 +94,7 @@
           "level": "core"
         },
         {
-          "topic": "Explain load average, iowait and memory pressure when a box feels slow",
+          "topic": "Tell CPU saturation from I/O wait or memory pressure when load average is high",
           "level": "core"
         },
         {
@@ -149,7 +149,7 @@
           "level": "pro"
         },
         {
-          "topic": "Read the OOM killer's log and fix the limit or leak behind it",
+          "topic": "Read the OOM killer's log and tell a too-low limit from a leak",
           "level": "pro"
         },
         {
@@ -266,11 +266,11 @@
           "level": "pro"
         },
         {
-          "topic": "Explain image layers and overlay filesystems when disk fills or builds slow down",
+          "topic": "Find which image layers and container writes consume disk and prune them safely",
           "level": "pro"
         },
         {
-          "topic": "Explain VMs, containers and microVMs and pick the isolation a workload needs",
+          "topic": "Decide when untrusted code needs a microVM or VM instead of a shared-kernel container",
           "level": "expert"
         },
         {

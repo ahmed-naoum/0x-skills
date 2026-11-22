@@ -76,7 +76,7 @@
           "level": "expert"
         },
         {
-          "topic": "Explain TCP congestion control and head-of-line blocking during a latency spike",
+          "topic": "Tell congestion-control backoff from head-of-line blocking when latency spikes on a lossy link",
           "level": "expert"
         },
         {
@@ -322,7 +322,7 @@
           "level": "core"
         },
         {
-          "topic": "Configure a reverse proxy with routing, timeouts, compression and forwarded headers",
+          "topic": "Configure a reverse proxy with upstreams, timeouts, compression and forwarded headers",
           "level": "pro"
         },
         {

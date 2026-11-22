@@ -193,7 +193,7 @@
           "level": "core"
         },
         {
-          "topic": "Explain parse, style, layout, paint and composite to predict a change's cost",
+          "topic": "Predict whether a change triggers layout, paint or only compositing before making it",
           "level": "pro"
         },
         {

@@ -88,6 +88,8 @@ Claude will follow what you write. **A wrong default in a skill is worse than no
 
 Write into the skill's folder (the path is in your task). The plan entry for your skill gives
 its name, summary, `useWhen`, `notFor`, and its reference files with the leaves each must cover.
+`index.md` in the plan folder lists every sibling skill with its reference files: use it to see
+who owns a neighboring topic, and point there in one line instead of covering it again.
 
 ```
 <skill-name>/
@@ -176,10 +178,11 @@ registries, so do not write a script you cannot test without the network. At mos
 
 ## Before you report
 
-Run the checker and fix everything it prints, errors and warnings both:
+Run the checker and fix everything it prints, errors and warnings both. The exact command,
+with the folders for this build, is in your task:
 
 ```bash
-python3 <plan folder>/check_skill.py <skill-name>
+python3 <plan folder>/check_skill.py <skill-name> <build folder>
 ```
 
 ## Your final report

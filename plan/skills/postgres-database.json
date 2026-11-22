@@ -330,7 +330,7 @@
     {
       "file": "replication-scaling.md",
       "title": "Replication and scaling",
-      "purpose": "Read when one database node is no longer enough, or when moving providers by replication: replicas, failover, partitioning, archiving and sharding decisions.",
+      "purpose": "Read when one database node is no longer enough, or when moving providers by replication: replicas, failover, partitioning and sharding decisions.",
       "leaves": [
         {
           "topic": "Scale vertically first and recognize when that is exhausted",

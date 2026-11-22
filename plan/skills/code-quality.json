@@ -13,7 +13,8 @@
     "Should we rewrite this or fix it in place?",
     "Set up linting, formatting and stricter TypeScript",
     "Write the README, architecture notes or developer docs",
-    "A bug only happens in production and I cannot reproduce it"
+    "A bug only happens in production and I cannot reproduce it",
+    "Find which code is leaking memory in the server process using heap snapshots"
   ],
   "notFor": [
     {

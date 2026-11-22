@@ -44,7 +44,7 @@
     {
       "file": "choosing-datastores.md",
       "title": "Choosing a datastore",
-      "purpose": "Read when someone proposes adding a new database, cache, queue or search system, or asks which store fits a workload.",
+      "purpose": "Read when someone proposes adding a new database, cache, queue, event log or search system, or asks which store fits a workload.",
       "leaves": [
         {
           "topic": "Default to Postgres and justify every additional datastore",
@@ -55,7 +55,7 @@
           "level": "core"
         },
         {
-          "topic": "Decide when a job queue must give way to a broker or event log",
+          "topic": "Decide when a job queue must yield to a broker or Kafka-style event log",
           "level": "pro"
         },
         {

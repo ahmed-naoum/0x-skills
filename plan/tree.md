@@ -17,7 +17,7 @@
   - ◐ Mount, resize and check filesystems and volumes without losing data
 - **hardware-resources.md** — Hardware resources and limits
   - ● Read live CPU, memory, disk and network usage and name the bottleneck
-  - ● Explain load average, iowait and memory pressure when a box feels slow
+  - ● Tell CPU saturation from I/O wait or memory pressure when load average is high
   - ● Choose instance size by CPU architecture, memory and network needs
   - ◐ Set log rotation, disk alerts and swap policy before a host fills
   - ◐ Diagnose a saturated host with the USE method
@@ -30,7 +30,7 @@
   - ● Read and filter service logs with journalctl
   - ◐ Write a systemd unit that restarts on crash and starts on boot
   - ◐ Inspect open sockets, files and system calls with ss, lsof and strace
-  - ◐ Read the OOM killer's log and fix the limit or leak behind it
+  - ◐ Read the OOM killer's log and tell a too-low limit from a leak
   - ◐ Schedule recurring work with systemd timers or cron, with overlap protection
   - ○ Raise file-descriptor, conntrack and ephemeral-port limits before exhaustion
   - ○ Tune kernel TCP backlog, buffers and congestion control
@@ -57,8 +57,8 @@
   - ◐ Debug OOM-killed or CPU-throttled containers from cgroup metrics
   - ◐ Run containers non-root, read-only and with dropped capabilities
   - ◐ Handle PID 1, signal forwarding and zombie reaping inside a container
-  - ◐ Explain image layers and overlay filesystems when disk fills or builds slow down
-  - ○ Explain VMs, containers and microVMs and pick the isolation a workload needs
+  - ◐ Find which image layers and container writes consume disk and prune them safely
+  - ○ Decide when untrusted code needs a microVM or VM instead of a shared-kernel container
   - ○ Trace container networking: bridges, port mapping and DNS between containers
 - **time-encoding.md** — Time, time zones and text encoding
   - ● Store timestamps in UTC and convert time zones only at the edges
@@ -81,7 +81,7 @@
   - ◐ Survive a Wi-Fi to cellular switch with QUIC connection migration and safe client retries
   - ◐ Allow and debug UDP traffic for QUIC, DNS and WebRTC through firewalls
   - ○ Count round trips for TCP plus TLS 1.3 versus QUIC and remove extras
-  - ○ Explain TCP congestion control and head-of-line blocking during a latency spike
+  - ○ Tell congestion-control backoff from head-of-line blocking when latency spikes on a lossy link
   - ○ Diagnose MTU black holes, carrier NAT and proxy interference
   - ○ Interpret a regional outage using BGP and anycast routing data
 - **dns-domains.md** — DNS and domains
@@ -138,7 +138,7 @@
 - **proxies-load-balancers.md** — Reverse proxies and load balancers
   - ● Write health checks that reflect real readiness
   - ● Identify which hop produced a 502, 503 or 504
-  - ◐ Configure a reverse proxy with routing, timeouts, compression and forwarded headers
+  - ◐ Configure a reverse proxy with upstreams, timeouts, compression and forwarded headers
   - ◐ Route by host and path to several backends from one proxy or load balancer
   - ◐ Drain connections from the load balancer gracefully during deploys
   - ◐ Align timeouts across client, CDN, load balancer, app and database
@@ -357,7 +357,7 @@
 - **choosing-datastores.md** — Choosing a datastore
   - ● Default to Postgres and justify every additional datastore
   - ● Decide when to add Redis, a search engine, object storage or a vector index
-  - ◐ Decide when a job queue must give way to a broker or event log
+  - ◐ Decide when a job queue must yield to a broker or Kafka-style event log
   - ◐ Use SQLite, libSQL or D1 where a single writer fits
   - ◐ Keep every derived store rebuildable from the source of truth
   - ○ Choose a document, key-value or wide-column store only for a proven access pattern
@@ -863,10 +863,10 @@
   - ○ Generate an SBOM for each release
   - ○ Establish a compromised package's blast radius and rotate everything exposed
   - ○ Fork, vendor or replace an abandoned dependency
-- **infrastructure-hardening.md** — Hardening company accounts, staff access and admin tools
+- **accounts-admin-hardening.md** — Hardening company accounts, staff access and admin tools
   - ● Enforce MFA and least privilege on registrar, repository, payment and SaaS accounts
   - ● Hold domains, cloud, code and payment accounts in company-owned identities
-  - ● Remove default credentials, debug routes and unused endpoints and ports
+  - ● Remove default credentials, debug routes and forgotten internal endpoints before launch
   - ◐ Enforce SSO, phishing-resistant MFA and same-day offboarding for staff
   - ◐ Put internal tools behind zero-trust access instead of a VPN
   - ◐ Harden admin panels with separate authentication, access restrictions and audit
@@ -1001,7 +1001,7 @@
   - ● Debug a real phone remotely with Chrome DevTools or Safari Web Inspector
   - ● Handle pointer, keyboard and touch events with delegation and passive listeners
   - ● Choose client storage: cookies, localStorage, IndexedDB, Cache API or OPFS
-  - ◐ Explain parse, style, layout, paint and composite to predict a change's cost
+  - ◐ Predict whether a change triggers layout, paint or only compositing before making it
   - ◐ Use Intersection, Resize and Mutation observers instead of polling
   - ◐ Move heavy work off the main thread with web workers
   - ◐ Use platform APIs (clipboard, share, file, fullscreen) with permission and fallback
@@ -1051,7 +1051,6 @@
 - **rendering-strategies.md** — Framework, rendering strategy and content sources
   - ● Choose per route between static, server-rendered, streamed and client rendering
   - ● Choose a meta-framework: Next.js, React Router, TanStack Start, Astro, SvelteKit or Nuxt
-  - ● Decide what runs at build time, request time and in the browser
   - ● Render useful HTML for crawlers and link previews
   - ● Control framework caching with explicit tags and revalidation
   - ● Choose where content lives: repo MDX, a headless CMS or a site builder
@@ -1502,7 +1501,7 @@
 - **capacity-scaling.md** — Capacity and scaling
   - ● Decide when scaling up is cheaper than scaling out
   - ◐ Run two or more instances behind a health-checked load balancer
-  - ◐ Know current headroom and which component saturates first
+  - ◐ Measure current headroom and find which component saturates first
   - ◐ Configure autoscaling with minimums, cooldowns and maximums
   - ◐ Map dependencies and remove single points of failure
   - ◐ Spread instances and the database across availability zones with automatic failover
@@ -1843,7 +1842,7 @@
   - ● Write help articles and saved replies for the top ten questions
   - ● Handle refund and cancellation requests by a written policy
   - ◐ Decide what an AI support agent may answer and when a human takes over
-  - ◐ Build admin tools with audited impersonation so support needs no engineer
+  - ◐ Decide which audited admin actions, including impersonation, the support team gets without an engineer
   - ◐ Tag tickets by root cause and review the trends
   - ◐ Review support quality with CSAT, response time and ticket sampling
   - ◐ Hire a first support person and hand over a documented playbook
@@ -1950,7 +1949,7 @@
   - ● Decide bootstrapped niche versus venture-scale before raising
   - ● Choose between bootstrapping, angels, venture capital and revenue-based financing
   - ◐ Use grants, cloud credits and other non-dilutive funding
-  - ◐ Know the milestones investors expect at each stage
+  - ◐ Set the milestones to reach before each round from what investors expect
   - ◐ Pitch the company in two minutes to customers, hires and investors
   - ◐ Send a monthly stakeholder update with real numbers
 - **fundraising-process.md** — Running a fundraise

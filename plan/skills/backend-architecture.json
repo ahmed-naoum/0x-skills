@@ -14,7 +14,7 @@
     "Add live updates, chat, presence or collaborative editing",
     "Handle file uploads, image processing or CSV import and export",
     "A third-party API being slow or down takes our whole app down",
-    "The server stalls or leaks memory under load"
+    "One slow request freezes every other request, or the process drops in-flight requests on SIGTERM"
   ],
   "notFor": [
     {
@@ -46,7 +46,7 @@
     {
       "file": "runtime-language.md",
       "title": "Language, runtime and process model",
-      "purpose": "Read when choosing a backend language or runtime, or when a server process blocks, leaks, or shuts down badly.",
+      "purpose": "Read when choosing a backend language or runtime, or when a server process blocks, pauses under load, or shuts down badly.",
       "leaves": [
         {
           "topic": "Choose a backend language and runtime by workload and team skill",

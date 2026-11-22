@@ -57,10 +57,6 @@
           "level": "core"
         },
         {
-          "topic": "Decide what runs at build time, request time and in the browser",
-          "level": "core"
-        },
-        {
           "topic": "Render useful HTML for crawlers and link previews",
           "level": "core"
         },

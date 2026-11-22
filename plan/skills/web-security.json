@@ -2,7 +2,7 @@
   "name": "web-security",
   "layer": 5,
   "order": 2,
-  "title": "Web application and infrastructure security",
+  "title": "Web application and company security",
   "summary": "Build and run the product so it resists attack: threat modeling, vulnerability classes, browser security headers, secrets and cryptographic choices, the software supply chain, hardening of company accounts and admin tools, security logging and breach response, and security testing.",
   "useWhen": [
     "Is this feature secure? What could an attacker do with it?",
@@ -255,7 +255,7 @@
       ]
     },
     {
-      "file": "infrastructure-hardening.md",
+      "file": "accounts-admin-hardening.md",
       "title": "Hardening company accounts, staff access and admin tools",
       "purpose": "Read when locking down the company's own accounts, staff devices, internal tools and admin panels.",
       "leaves": [
@@ -268,7 +268,7 @@
           "level": "core"
         },
         {
-          "topic": "Remove default credentials, debug routes and unused endpoints and ports",
+          "topic": "Remove default credentials, debug routes and forgotten internal endpoints before launch",
           "level": "core"
         },
         {

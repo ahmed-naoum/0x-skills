@@ -116,7 +116,7 @@
     {
       "file": "environments-config.md",
       "title": "Environments and configuration",
-      "purpose": "Read when adding an environment, wiring configuration and secrets into a deploy, or chasing works-on-my-machine drift.",
+      "purpose": "Read when adding an environment, wiring per-environment configuration into a deploy, or chasing works-on-my-machine drift.",
       "leaves": [
         {
           "topic": "Separate development, staging and production with distinct secrets and data",

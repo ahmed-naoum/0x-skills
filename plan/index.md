@@ -113,7 +113,7 @@
   - browser-security.md — CSP, CORS and browser security headers
   - secrets.md — Secrets, key management and cryptographic primitives
   - supply-chain.md — Dependencies and software supply chain
-  - infrastructure-hardening.md — Hardening company accounts, staff access and admin tools
+  - accounts-admin-hardening.md — Hardening company accounts, staff access and admin tools
   - logging-breach-response.md — Security logging, detection and breach response
   - security-testing.md — Security testing and disclosure
 - **privacy-compliance** — Keep the product lawful and sellable: GDPR and US privacy law, consent and cookies, data-subject requests and retention, DPAs and vendors, PCI, SOC 2 and ISO 27001, sector and consumer rules, terms and policies, and software licenses.
