@@ -21,7 +21,8 @@ Stage guidance: at Prototype, a heuristic review and three to five hallway sessi
 
 ## The five-user test
 
-Five participants from one user group, each attempting the same tasks while thinking aloud, expose most of the serious problems in the tested flow. The figure comes from a model in which each participant reveals roughly a third of the problems; it is a rule of thumb, and it holds only per distinct user group and per flow. It finds problems; it does not measure rates. Never report "60% of users failed" from five sessions.
+Five participants from one user group, each attempting the same tasks while thinking aloud, expose most of the serious problems in the tested flow.
+The figure comes from a model in which each participant reveals roughly a third of the problems; it is a rule of thumb, and it holds only per distinct user group and per flow. It finds problems; it does not measure rates. Never report "60% of users failed" from five sessions.
 
 The better plan is several small rounds: test five, fix, test five more on the revised design. Three rounds of five beat one round of fifteen.
 
@@ -66,7 +67,8 @@ Log each observation as: task, what happened, quote or timestamp, participant. M
 | 2 Minor | Hesitation or annoyance; task completed | Schedule |
 | 1 Cosmetic | Noticed, no effect on the task | Batch with other work |
 
-Rank by severity, then by frequency (how many of the five), then by how central the task is. A blocker seen once on the core flow outranks a minor issue seen five times. Record whether each issue is in the flow, the layout, the wording or the concept, because the fix differs. The output is a list of at most ten issues with a proposed fix and an owner, not a report. Also note what worked, so it is not redesigned away.
+Rank by severity, then by frequency (how many of the five), then by how central the task is. A blocker seen once on the core flow outranks a minor issue seen five times.
+Record whether each issue is in the flow, the layout, the wording or the concept, because the fix differs. The output is a list of at most ten issues with a proposed fix and an owner, not a report. Also note what worked, so it is not redesigned away.
 
 ## Task scenarios that do not lead
 
@@ -157,14 +159,17 @@ A critique evaluates a design against its goals. Without stated goals it becomes
 4. **Feedback, tied to goals**: "Because the goal is X, this element does Y, which helps or hurts." Describe the problem; leave the solution to the designer unless asked.
 5. **Decide and record**: each point becomes one of *change* (with owner), *test with users* (when it is a prediction about behavior), or *no change* (with the reason). One named person makes the call when views differ.
 
-Ground rules: critique the work at the fidelity it is in (no color comments on wireframes); "I like" and "I do not like" are replaced by an effect on the user; disagreements about what users will do are settled by a test, not by seniority; keep it to 30 minutes. A solo founder can run the same structure with an agent or an advisor: state goals and the question, ask for problems ranked by severity against those goals, then decide in writing.
+Ground rules: critique the work at the fidelity it is in (no color comments on wireframes); "I like" and "I do not like" are replaced by an effect on the user; disagreements about what users will do are settled by a test, not by seniority; keep it to 30 minutes.
+A solo founder can run the same structure with an agent or an advisor: state goals and the question, ask for problems ranked by severity against those goals, then decide in writing.
 
 ## Unmoderated and first-click tests
 
 Use unmoderated tests when the question is narrow and numbers matter, or when schedules make moderated sessions impractical. They trade depth for scale: nobody can ask "why", and nobody can rescue a participant from a broken prototype.
 
-- **Unmoderated task test**: participants follow written tasks on a prototype or live site, recorded. Write tasks even more carefully than for moderated tests, one at a time, with an unambiguous end condition. Limit to three to five tasks and about 15 minutes. Pilot with two people first; an unclear task wastes the whole batch. For rough completion rates use 20 or more participants per variant, as a rule of thumb; five to eight suffice when only watching recordings for problems.
-- **First-click test**: show a screenshot or mockup, give a task, record where the participant clicks first and how long it takes. A correct first click strongly predicts eventual task success, so this is a cheap check of layout and labels before anything is built. Reading results: clustered clicks on the right target is the goal; scattered clicks mean no clear affordance; a cluster on a wrong element means that element promises the wrong thing. Use roughly 30 or more participants per design to compare two layouts.
+- **Unmoderated task test**: participants follow written tasks on a prototype or live site, recorded. Write tasks even more carefully than for moderated tests, one at a time, with an unambiguous end condition. Limit to three to five tasks and about 15 minutes.
+  Pilot with two people first; an unclear task wastes the whole batch. For rough completion rates use 20 or more participants per variant, as a rule of thumb; five to eight suffice when only watching recordings for problems.
+- **First-click test**: show a screenshot or mockup, give a task, record where the participant clicks first and how long it takes. A correct first click strongly predicts eventual task success, so this is a cheap check of layout and labels before anything is built.
+  Reading results: clustered clicks on the right target is the goal; scattered clicks mean no clear affordance; a cluster on a wrong element means that element promises the wrong thing. Use roughly 30 or more participants per design to compare two layouts.
 - **Five-second test**: show a screen for five seconds and ask what it was about and what could be done there. Checks first impression and hierarchy; unsuitable for evaluating flows.
 - **Quality control**: add an attention-check question, discard sessions completed implausibly fast, and screen as for moderated tests.
 - Testing platforms and their panels change often; compare current options and prices when needed rather than assuming one.

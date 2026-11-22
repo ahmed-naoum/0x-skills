@@ -169,7 +169,8 @@ Prototype to answer a question; pick the cheapest medium that can answer it.
 | Does the interaction feel right (drag, transitions, typing speed)? | Code only; static tools cannot answer this |
 | Does the visual direction fit the brand? | Two or three styled key screens, in a design tool or in code |
 
-With a coding agent and a component kit, a coded prototype is usually as fast as a design-tool one, tests real behavior and uses real components. Default to code for flows; use a design tool when comparing visual directions side by side or when a designer is involved. Keep prototype code out of production unless it is rewritten deliberately: fake the data, skip error handling, and say so in the branch name. Stop prototyping as soon as the question is answered.
+With a coding agent and a component kit, a coded prototype is usually as fast as a design-tool one, tests real behavior and uses real components. Default to code for flows; use a design tool when comparing visual directions side by side or when a designer is involved.
+Keep prototype code out of production unless it is rewritten deliberately: fake the data, skip error handling, and say so in the branch name. Stop prototyping as soon as the question is answered.
 
 ## Checks
 

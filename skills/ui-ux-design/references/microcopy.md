@@ -127,7 +127,8 @@ Keep the guide in the repository beside the tokens. Marketing voice may be livel
 - **Check collisions**: with existing objects in the product, with terms that mean something else in the user's industry, and with competitors' well-known names when the meaning differs.
 - **Name the thing, not the technology.** "Smart suggestions" or the outcome, not the model or algorithm behind it.
 - **Renaming is expensive**: URLs, documentation, support macros, users' habits. Choose plain names early so renaming is not needed.
-- **Plans**: names must rank themselves without a table. Conventional ladders (Free, Starter, Pro, Business, Enterprise) or audience names (Solo, Team, Company) work; abstract themed names (metals, planets, animals) force users to learn the order. Three or four plans at most are comprehensible. Each plan gets a one-line "for whom" description. Keep the names identical on the pricing page, in checkout, on invoices and in settings. Which plans exist and what they contain belongs to `0x:pricing-monetization`.
+- **Plans**: names must rank themselves without a table. Conventional ladders (Free, Starter, Pro, Business, Enterprise) or audience names (Solo, Team, Company) work; abstract themed names (metals, planets, animals) force users to learn the order.
+  Three or four plans at most are comprehensible. Each plan gets a one-line "for whom" description. Keep the names identical on the pricing page, in checkout, on invoices and in settings. Which plans exist and what they contain belongs to `0x:pricing-monetization`.
 - **Labels for states and statuses** are names too: keep the set small, mutually exclusive and in plain adjectives (Draft, Sent, Paid, Overdue).
 
 ## Copy that translates and reads aloud
@@ -145,7 +146,8 @@ Even for an English-only product, these rules cost nothing now and avoid a rewri
 - **No text inside images.** Format dates, numbers and currencies with the locale's formatter, never by hand.
 - **Avoid idioms, puns, cultural references and humor** in strings that will be translated. Avoid ambiguous words that are both noun and verb without context ("Record", "Archive", "Display"); give translators a description for each key.
 - **Keep one string per meaning**, not per English wording: "Open" (verb, a button) and "Open" (status, an adjective) are two keys.
-- **Reads aloud**: screen readers and voice interfaces speak the text out of visual context. Links and buttons must make sense alone; no "click", "see below", "the green button" or direction-only references. Avoid symbols as words ("&", "/", "→", "w/"); write abbreviations out the first time. Do not use emoji or decorative characters in labels; they are read aloud by name. Put the status word in text, not only in color or an icon.
+- **Reads aloud**: screen readers and voice interfaces speak the text out of visual context. Links and buttons must make sense alone; no "click", "see below", "the green button" or direction-only references.
+  Avoid symbols as words ("&", "/", "→", "w/"); write abbreviations out the first time. Do not use emoji or decorative characters in labels; they are read aloud by name. Put the status word in text, not only in color or an icon.
 - **Check by reading every string aloud** once, and by tabbing through the screen listening only to control names.
 
 Implementation of message catalogs, locale formatting and right-to-left layout belongs to `0x:frontend-foundations`.

@@ -7,7 +7,8 @@ description: Designs interfaces people understand and enjoy, covering visual hie
 
 ## Stance
 
-Design is a sequence of decisions about what the user is trying to do, made before pixels: the job, the objects and their names, the flow, the states of each screen, and only then the look. Most screens that feel amateur or confusing fail early in that sequence, and no amount of styling repairs a flow with a missing state or an object with three names. For a solo founder the efficient path is constraint: a small set of tokens, a borrowed component kit, plain words, and cheap evidence from five users instead of opinion.
+Design is a sequence of decisions about what the user is trying to do, made before pixels: the job, the objects and their names, the flow, the states of each screen, and only then the look.
+Most screens that feel amateur or confusing fail early in that sequence, and no amount of styling repairs a flow with a missing state or an object with three names. For a solo founder the efficient path is constraint: a small set of tokens, a borrowed component kit, plain words, and cheap evidence from five users instead of opinion.
 
 1. **One primary action per screen.** If two things compete, the user hesitates. Decide which wins and demote the rest; this resolves most hierarchy arguments.
 2. **Systems beat taste.** A spacing scale, a type scale, a role-based palette and one icon set make an interface look professional even with ordinary taste, because consistency is what the eye reads as quality.

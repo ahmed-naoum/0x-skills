@@ -100,7 +100,8 @@ Tokens live in code as CSS custom properties, exposed to the styling layer. With
 }
 ```
 
-This yields `bg-surface`, `text-foreground`, `bg-primary`, `text-on-primary`. Restrict the palette utilities that components may use to the semantic ones; a lint rule or review check for raw palette classes (`bg-blue-600`) and arbitrary values (`p-[13px]`) inside components keeps the system honest. If the project uses an older Tailwind with a JavaScript config, or another styling approach, keep the same structure: custom properties for values, the framework's theme pointing at them. Mechanics belong to `0x:frontend-foundations`.
+This yields `bg-surface`, `text-foreground`, `bg-primary`, `text-on-primary`. Restrict the palette utilities that components may use to the semantic ones; a lint rule or review check for raw palette classes (`bg-blue-600`) and arbitrary values (`p-[13px]`) inside components keeps the system honest.
+If the project uses an older Tailwind with a JavaScript config, or another styling approach, keep the same structure: custom properties for values, the framework's theme pointing at them. Mechanics belong to `0x:frontend-foundations`.
 
 ## Component states
 
