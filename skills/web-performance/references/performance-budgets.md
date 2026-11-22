@@ -109,8 +109,8 @@ the site is at Launch and regressions have actually happened.
       "assertions": {
         "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1 }],
         "resource-summary:script:size": ["error", { "maxNumericValue": 350000 }],
-        "total-blocking-time": ["warn", { "maxNumericValue": 300 }],
-        "largest-contentful-paint": ["warn", { "maxNumericValue": 3000 }]
+        "total-blocking-time": ["warn", { "maxNumericValue": 300, "aggregationMethod": "median" }],
+        "largest-contentful-paint": ["warn", { "maxNumericValue": 3000, "aggregationMethod": "median" }]
       }
     },
     "upload": { "target": "temporary-public-storage" }
@@ -118,20 +118,28 @@ the site is at Launch and regressions have actually happened.
 }
 ```
 
-Save as `lighthouserc.json`, build the app, then run `npx @lhci/cli autorun` in the workflow.
-`temporary-public-storage` uploads reports to a public URL; use `filesystem` or a private
-server for anything not meant to be public.
+Save as `lighthouserc.json`, add `@lhci/cli` as a dev dependency at a pinned version, build the
+app, then run `pnpm exec lhci autorun` in the workflow. `maxNumericValue` is in the audit's own
+unit: bytes for sizes, milliseconds for timings. `temporary-public-storage` uploads reports,
+screenshots included, to a public URL; use `filesystem` or a private server for anything not
+meant to be public.
 
 Rules:
 
 - Test a production build served locally or a preview deployment, never the dev server.
-- Several runs per URL. Check which run the assertion uses by default (the aggregation method
-  is configurable per assertion) and make it the median for timing metrics.
+- Several runs per URL, and set `aggregationMethod` on timing assertions. The default is
+  `optimistic`: the best of the runs is compared with the limit, so one lucky run passes the
+  check. `median` is the honest choice for timings.
+- Audit ids change between Lighthouse versions: the move to "insight" audits renamed or merged
+  several (render-blocking resources and text compression among them). Copy ids from a report
+  produced by the installed version, and make each new assertion fail once on purpose to
+  prove it evaluates.
 - Lab numbers in CI are not field numbers. A CI runner is not a phone; set thresholds from a
   week of observed CI results plus margin, not from the Core Web Vitals thresholds.
 - Assert on metrics, not on the performance score: the score's weights change between
-  Lighthouse versions and a version bump would fail the build for no code reason. Pin the
-  Lighthouse version for the same reason.
+  Lighthouse versions and a version bump would fail the build for no code reason. Each
+  `@lhci/cli` release bundles one Lighthouse version, so pinning the CLI pins Lighthouse;
+  upgrade it deliberately and re-baseline the thresholds when doing so.
 - Few URLs (three to five templates). Every added URL adds minutes and flake.
 - Lab runs do not measure INP. Total Blocking Time is the available proxy for main-thread load
   during startup; interaction regressions need field monitoring or a scripted user flow.

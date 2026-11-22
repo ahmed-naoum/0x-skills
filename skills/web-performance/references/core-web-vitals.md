@@ -22,8 +22,13 @@ Details that change the diagnosis:
 - INP ignores scrolling and hover. It covers the whole visit, not the load, so a page that loads
   fast and has one slow menu fails.
 - CLS groups shifts into windows (shifts less than 1 s apart, window at most 5 s) and reports the
-  worst window. Shifts within 500 ms of a discrete user input are excluded; shifts caused by
-  `transform` are not shifts at all.
+  worst window. Shifts within 500 ms of a discrete user input are excluded, so an accordion
+  opening is fine but a click that inserts content 800 ms later, after a fetch, counts.
+  Movement done with `transform` is not a shift at all.
+- Client-side route changes are not page loads: in a single-page or App Router app the whole
+  visit is attached to the URL of the last full navigation. Chromium has begun measuring these
+  "soft navigations" and current `web-vitals` can report them (`reportSoftNavs`); keep that
+  data separate from the pass criterion until the public sources adopt it.
 
 ## Lab and field are different instruments
 
@@ -37,17 +42,16 @@ Details that change the diagnosis:
 Rules that follow:
 
 1. Decide pass or fail from field data. Use the lab to reproduce and to verify a fix.
-2. A good Lighthouse score with failing field data is common: consent banners, logged-in
-   states, personalization, ads and slow phones do not exist in the lab run.
-3. A bad Lighthouse score with passing field data is also common (repeat visitors with warm
-   caches, desktop-heavy audience). Do not spend a week on it.
-4. Lighthouse mobile simulates a slow 4G link and a 4x CPU slowdown. Its performance score is a
+2. Disagreement is normal in both directions. Good lab, failing field: consent banners,
+   logged-in states, personalization, ads and slow phones do not exist in the lab run. Bad lab,
+   passing field: warm caches and a desktop-heavy audience; do not spend a week on it.
+3. Lighthouse mobile simulates a slow 4G link and a 4x CPU slowdown. Its performance score is a
    weighted blend whose weights change between versions; never set the score as the target.
 
 ### Field sources
 
-- **CrUX** (Chrome User Experience Report): Chrome users only, opted-in, 28-day rolling window,
-  only for origins and URLs with enough traffic. Read it through PageSpeed Insights, Search
+- **CrUX** (Chrome User Experience Report): opted-in Chrome users only (no iOS browsers, Chrome
+  on iOS included), 28-day rolling window, only for origins and URLs with enough traffic. Read it through PageSpeed Insights, Search
   Console's Core Web Vitals report, or the CrUX API. It is what Google Search uses. A new or small
   site has no CrUX data: that is not a failure, it means own RUM is the only field source.
 - **Own RUM**: the `web-vitals` library, sending to the analytics or telemetry tool already in
@@ -55,22 +59,40 @@ Rules that follow:
 
 ```ts
 // app/web-vitals.ts, loaded from a client component in the root layout
-import { onCLS, onINP, onLCP, onTTFB, type Metric } from 'web-vitals/attribution';
+import { onCLS, onINP, onLCP, onTTFB, type MetricWithAttribution } from 'web-vitals/attribution';
 
-function send(metric: Metric) {
+// Send the fields that diagnose; the full attribution object holds raw performance entries.
+function debug(m: MetricWithAttribution) {
+  switch (m.name) {
+    case 'LCP': { const a = m.attribution; return { target: a.target, url: a.url,
+      ttfb: a.timeToFirstByte, loadDelay: a.resourceLoadDelay,
+      loadDuration: a.resourceLoadDuration, renderDelay: a.elementRenderDelay }; }
+    case 'INP': { const a = m.attribution; return { target: a.interactionTarget,
+      type: a.interactionType, loadState: a.loadState, inputDelay: a.inputDelay,
+      processing: a.processingDuration, presentation: a.presentationDelay }; }
+    case 'CLS': return { target: m.attribution.largestShiftTarget, loadState: m.attribution.loadState };
+    default: return {};
+  }
+}
+function send(m: MetricWithAttribution) {
   navigator.sendBeacon('/rum', JSON.stringify({
-    name: metric.name, value: metric.value, rating: metric.rating, id: metric.id,
-    navigationType: metric.navigationType,           // navigate, reload, back-forward-cache, prerender…
-    path: location.pathname, release: process.env.NEXT_PUBLIC_RELEASE,
-    attribution: metric.attribution,                  // trim before sending: it can be large
+    name: m.name, value: m.value, rating: m.rating, id: m.id,
+    navigationType: m.navigationType,        // navigate, reload, back-forward-cache, prerender…
+    path: location.pathname,                 // map to the route template on the server
+    release: process.env.NEXT_PUBLIC_RELEASE, ...debug(m),
   }));
 }
 onLCP(send); onINP(send); onCLS(send); onTTFB(send);
 ```
 
+Attribution fields have been renamed between `web-vitals` majors (the LCP selector was `element`
+before `target`); typing the callback as above makes the compiler check the installed version.
+
 Rules for the collector:
 
 - Import from `web-vitals/attribution`, not the plain build; the extra bytes buy the diagnosis.
+- The beacon endpoint accepts anonymous writes from the internet: validate the body against a
+  schema, cap its size, rate-limit it, and use the values for statistics only.
 - INP and CLS are final only when the page is hidden. The library reports then; `sendBeacon`
   (or `fetch` with `keepalive: true`) is what survives the unload. Do not batch on a timer and
   expect the last values to arrive.
@@ -78,11 +100,12 @@ Rules for the collector:
   and country. Without these dimensions the data cannot answer any later question.
 - Aggregate as p75 per metric per template. Never average percentiles across segments; recompute
   from raw values or histograms.
-- Browser coverage differs by metric: layout-shift measurement has been Chromium-only for most of
-  its life, and LCP and INP reached other engines later. Check current support before reading
-  an absence of Safari data as "Safari is fine".
-- Next.js exposes `useReportWebVitals` from `next/web-vitals`; it has no attribution data. Use it
-  for a quick start, the library directly once a metric fails.
+- Browser coverage differs by metric. At the time of writing LCP and INP are measurable in
+  Chromium, Firefox and recent Safari, CLS only in Chromium (the library's README lists current
+  support). Own RUM has no CLS from iOS and CrUX has nothing from iOS: no data is not "fine".
+- Next.js exposes `useReportWebVitals` from `next/web-vitals`. It reports plain values;
+  attribution is off unless enabled per metric through the experimental `webVitalsAttribution`
+  config option. Use it for a quick start, the library directly once a metric fails.
 - Sampling: at Launch volumes send everything. Sample only when the bill says so, and then
   sample by session, not by event.
 
@@ -130,10 +153,11 @@ Traps:
 - A preload that does not match the request actually made (different URL, missing
   `imagesrcset`, wrong `crossorigin`) downloads the file twice.
 - The LCP element differs by viewport. On phones it is often a heading or a cookie banner, not
-  the hero image. Read the element selector in the LCP attribution (named `element` or `target`
-  depending on the library version) from field data before optimizing.
-- With `next/image`, mark the hero with the prop the installed version documents for this
-  (`priority` in older releases, `preload` and `fetchPriority="high"` in newer ones).
+  the hero image. Read the element selector in the LCP attribution (`target` in current
+  library majors, `element` in older ones) from field data before optimizing.
+- With `next/image` the hero prop depends on the version: `priority` through Next.js 15; from
+  16 it is deprecated in favor of `fetchPriority="high"` with `loading="eager"`, or `preload`
+  when the request must start from the `<head>` (the docs say not to combine it with the others).
 - When LCP is text, the levers are TTFB, blocking CSS and fonts, not images.
 
 ## CLS: reserve the space before the content arrives
@@ -152,10 +176,6 @@ Field CLS is usually worse than lab CLS because it includes scrolling: lazy-load
 without dimensions, infinite-scroll inserts and late ad refreshes. Use
 `attribution.largestShiftTarget` and `loadState` to tell load-time shifts from post-load ones.
 In DevTools, the Performance panel's layout-shift track shows each shift and the nodes that moved.
-
-Shifts within 500 ms of a click are excluded, so expanding an accordion is fine, but a click that
-triggers a fetch and inserts content 800 ms later counts. Reserve space or show the placeholder
-immediately.
 
 ## INP: three phases, three different fixes
 
@@ -192,8 +212,6 @@ async function onAddToCart() {
   `useDeferredValue`; the urgent update (the input value, the pressed state) renders first.
 - Analytics and tag-manager handlers attached to every click are a frequent cause. Move them
   behind a yield or `requestIdleCallback` with a `setTimeout` fallback.
-- Tasks over 50 ms are "long tasks". A handler does not need to be fast in total, it needs to
-  let a frame through quickly.
 
 ### Attribution with Long Animation Frames
 
@@ -260,10 +278,8 @@ started" date lags the cause by days to weeks. Work backward with faster evidenc
 5. Reproduce in the lab: run the old and new build under identical throttling, or block the
    suspect third-party domain in DevTools request blocking and compare.
 6. Fix or revert, then watch RUM for the release that carries the fix. Report the CrUX recovery
-   only after the 28-day window has turned over.
-
-Prevent the repeat: tag every beacon with the release id from day one, and keep a dated log of
-third-party tag changes.
+   only after the 28-day window has turned over. Keep a dated log of third-party tag changes
+   so the next regression starts at step 4.
 
 ## Ask the user
 

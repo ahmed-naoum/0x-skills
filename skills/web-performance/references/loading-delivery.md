@@ -196,17 +196,25 @@ Pages lose eligibility through:
 
 - An `unload` event listener, often added by an old third-party script. Use `pagehide` instead;
   `Permissions-Policy: unload=()` blocks it for all scripts in supporting browsers.
-- `Cache-Control: no-store` on the document. Use it only on pages with sensitive data.
-- Open connections or locks at the moment of leaving (rules vary by browser): close WebSockets
-  and finish IndexedDB transactions in `pagehide`.
+- `Cache-Control: no-store` on the document. Most browsers refuse to keep such a page; Chrome
+  has started to allow it in limited cases. Use `no-store` only on pages with sensitive data.
+- Open connections or locks at the moment of leaving. The rules differ by browser and have
+  been loosening (Chrome has moved toward closing a WebSocket on entry instead of refusing the
+  page), so close WebSockets and finish IndexedDB transactions in `pagehide` and test.
 
 Check in Chrome DevTools: Application panel, Back/forward cache, "Test back/forward cache",
-which lists the blocking reasons. After a restore the page's JS state is as it was left, so
-refresh anything stale (cart count, auth state) in a `pageshow` handler when `event.persisted`
-is true. In RUM, bfcache restores appear as navigation type `back-forward-cache`.
+which lists the blocking reasons. After a restore the page's JS state is exactly as it was
+left, which is a privacy problem as well as a staleness one: after sign-out, Back can show the
+previous user's page. In a `pageshow` handler, when `event.persisted` is true, re-check the
+session and reload if it changed, and refresh stale state such as the cart count. In RUM,
+bfcache restores appear as navigation type `back-forward-cache`.
 
-**Speculation rules** (Chromium; ignored elsewhere, so safe as progressive enhancement) let the
-browser prefetch or fully prerender likely next pages of a multi-page site:
+Stage: checking bfcache eligibility is a free win at Launch. Speculation rules come after the
+basics pass, for content and commerce sites with ordinary link navigation.
+
+**Speculation rules** (Chromium at the time of writing; browsers without support ignore the
+script, so it is safe as progressive enhancement) let the browser prefetch or fully prerender
+likely next pages of a multi-page site:
 
 ```html
 <script type="speculationrules">
@@ -216,17 +224,23 @@ browser prefetch or fully prerender likely next pages of a multi-page site:
 </script>
 ```
 
-- `moderate` triggers on hover or pointer-down, which wastes little. `eager` and `immediate`
-  are for one or two near-certain next pages. The browser caps concurrent speculations.
+- `moderate` waits for a sign of intent: on desktop a short hover or pointer-down, which wastes
+  little; on phones, where nothing hovers, Chrome uses viewport-based heuristics and speculates
+  more often. `eager` and `immediate` do not wait for intent and are for one or two
+  near-certain next pages. The exact triggers have changed between Chrome versions; read the
+  current documentation before tuning. The browser caps concurrent speculations.
+- A Content-Security-Policy that restricts inline scripts blocks the rules unless `script-src`
+  allows them (a nonce, or the `'inline-speculation-rules'` source). The only symptom is a
+  console message.
 - Exclude every URL where a GET has side effects (logout, add-to-cart links, one-time tokens).
   GET requests should not have side effects at all; prerendering exposes the ones that do.
 - Prerendered pages run their scripts before the user sees them. Analytics must wait for
   activation (`document.prerendering` and the `prerenderingchange` event) or page views inflate;
   major analytics tools handle this, custom code does not.
 - Server load rises with speculation; the requests carry a `Sec-Purpose` header for accounting.
-- In a Next.js App Router app, `<Link>` already prefetches route data on viewport or hover;
-  speculation rules matter for classic multi-page sites and for links into the app from
-  a marketing site.
+- In a Next.js App Router app, `<Link>` already prefetches a route when the link enters the
+  viewport (production builds only; not in `next dev`), so speculation rules matter for
+  classic multi-page sites and for links into the app from a marketing site.
 
 ## Ask the user
 

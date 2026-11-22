@@ -26,11 +26,14 @@ and main-thread time on a throttled profile, not the number itself.
 
 | Build tool | How to see what is in the bundle |
 |---|---|
-| Next.js with webpack | `@next/bundle-analyzer`, run the build with `ANALYZE=true` |
-| Next.js with Turbopack | The analyzer the installed Next.js version provides; the webpack plugin does not apply. Check the version's docs |
+| Next.js with Turbopack (the default bundler from Next.js 16) | The built-in analyzer: `pnpm next analyze` in current releases, introduced as `next experimental-analyze` in 16.1. The webpack plugin does not apply |
+| Next.js with webpack (older versions, or a build that opts into webpack) | `@next/bundle-analyzer`, run the build with `ANALYZE=true` |
 | Vite or Rollup | `rollup-plugin-visualizer` (treemap of the output) |
 | esbuild | `--metafile=meta.json`, then esbuild's bundle analyzer |
 | Anything with source maps | `source-map-explorer 'dist/**/*.js'` |
+
+Current Next.js no longer prints per-route JavaScript sizes in the `next build` output, so the
+analyzer is the place to look.
 
 Read the treemap in this order:
 
@@ -38,7 +41,10 @@ Read the treemap in this order:
    charting library or an editor in the shared chunk is the most common large finding.
 2. **Duplicates.** The same library twice in different versions, or once as ESM and once as
    CommonJS. Confirm with `pnpm why <package>`; fix with `pnpm dedupe`, aligning version ranges,
-   or a `pnpm.overrides` entry when a transitive dependency pins an old major.
+   or an override when a transitive dependency pins an old major. Where overrides live depends
+   on the pnpm version: `overrides` in `pnpm-workspace.yaml` for current pnpm, which no longer
+   reads the `pnpm` field of `package.json` that older versions used. An override in the wrong
+   place is ignored, so confirm with `pnpm why` afterward.
 3. **Oversized single dependencies.** Compare the size against what the product uses from it.
 4. **Own code that is unexpectedly big.** Usually generated code, a large JSON or locale file
    imported statically, or inlined base64 assets.
@@ -148,7 +154,7 @@ Tree-shaking removes unused exports only when the bundler can prove that droppin
 no effect. Four conditions decide it:
 
 1. **ES modules end to end.** `import`/`export` are statically analyzable; `require` is not.
-   A CommonJS dependency is included whole. Prefer packages whose `package.json` has an
+   A CommonJS dependency is usually included whole. Prefer packages whose `package.json` has an
    `exports` map with an `import` condition (or a `module` field).
 2. **Side-effect flags.** `"sideEffects": false` in a package's `package.json` tells the
    bundler that unused modules can be dropped entirely. For own packages in a monorepo, set it,
@@ -159,10 +165,12 @@ no effect. Four conditions decide it:
    every module behind it. With correct side-effect flags the bundler recovers, but in practice
    one impure module (a top-level call, a class with decorators, a CSS import) drags in its whole
    subtree, and dev builds and tests slow down regardless. Import from the specific module in
-   application code; in Next.js, list offending libraries in `optimizePackageImports`.
-4. **Pure top-level code.** Top-level function calls, `Object.assign` on exports and TypeScript
-   `enum` (compiled to an immediately invoked function) keep modules alive. Prefer `as const`
-   objects over enums in shared packages.
+   application code; in Next.js, list offending libraries in `optimizePackageImports` (under
+   `experimental` in the config at the time of writing; several common icon and utility
+   libraries are on its default list already).
+4. **Pure top-level code.** Top-level function calls and `Object.assign` on exports keep
+   modules alive. A TypeScript `enum` compiles to an immediately invoked function that some
+   bundlers cannot drop; prefer `as const` objects over enums in shared packages.
 
 Also: `import * as lib` is fine when members are accessed statically (`lib.x`), and defeats
 shaking when the namespace object is passed around or indexed dynamically. `import type` is
@@ -189,9 +197,15 @@ Launch; at Prototype, a look at the analyzer before release is enough.
 ```
 
 Install `size-limit` with the `@size-limit/file` plugin for plain file-size checks. Run it
-after the build in the pull-request workflow; a non-zero exit fails the job. Adjust the paths to
-the project's real output directory and confirm that the tool reports the compression it
-measures.
+after the build in the pull-request workflow; a non-zero exit fails the job. The plugin
+measures Brotli-compressed size unless an entry sets `"gzip": true` or `"brotli": false`.
+
+The glob above sums the chunks of every route, so its limit is a whole-app ceiling, not the
+per-page figure from the top of this file; add an entry for the shared chunk or the landing
+route once the file names are known. Output layout differs between bundlers and versions
+(Turbopack builds may emit CSS next to the JS chunks instead of in `static/css`): list the
+build directory and make sure every `path` matches real files, because a pattern that matches
+nothing guards nothing.
 
 Rules that keep the budget useful:
 

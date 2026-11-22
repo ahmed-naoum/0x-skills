@@ -126,10 +126,11 @@ thousand nodes make every interaction's presentation delay visible on phones. Co
 ```
 
 Traps with `content-visibility: auto`: without `contain-intrinsic-size` each section has zero
-height until rendered and the scrollbar jumps while scrolling; it applies size containment to
-skipped elements, so content that overflows its box by design (dropdowns, tooltips escaping
-the section) is clipped; applying it to hundreds of tiny elements costs more than it saves, so
-use it on a few dozen large sections.
+height until rendered and the scrollbar jumps while scrolling; it turns on layout, style and
+paint containment for the element even while it is on screen (size containment is added only
+while it is skipped), so content that overflows its box by design (dropdowns, tooltips
+escaping the section) is clipped all the time, not only off-screen; applying it to hundreds of
+tiny elements costs more than it saves, so use it on a few dozen large sections.
 
 ## Respond to input within 100 ms
 

@@ -173,9 +173,12 @@ The result transfers to production only as far as the test environment resembles
   APIs: it violates terms, burns quota and money, and sends real messages. Stub them with a
   mock that responds with realistic latency and error rates. Sandbox modes have their own low
   rate limits.
-- **Tell the host.** Some hosting, CDN and DDoS-protection providers require notice or forbid
-  load tests; check the terms, and expect bot protection and rate limiting to block an
-  un-allowlisted generator, which then measures the WAF.
+- **Test only what the user owns or has written permission to test.** Load aimed at someone
+  else's system is indistinguishable from a denial-of-service attack and can be unlawful as
+  well as a breach of terms. That includes shared platforms: some hosting, CDN and
+  DDoS-protection providers require notice or forbid load tests, so read the current terms
+  first. Expect bot protection and rate limiting to block an un-allowlisted generator, which
+  then measures the WAF.
 - **Mind the bill.** On usage-priced platforms a load test is billable traffic: function
   invocations, bandwidth, database compute. Estimate before a long soak.
 

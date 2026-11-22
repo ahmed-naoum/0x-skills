@@ -36,7 +36,7 @@ The procedure for one slow endpoint:
 
 | Trace shape | Cause | Fix |
 |---|---|---|
-| One long database span | Slow query: missing index, large scan, sort without index | `EXPLAIN (ANALYZE, BUFFERS)`, then `0x:postgres-database` |
+| One long database span | Slow query: missing index, large scan, sort without index | `EXPLAIN (ANALYZE, BUFFERS)`, then `0x:postgres-database`. `ANALYZE` executes the statement: for an `INSERT`, `UPDATE` or `DELETE`, run it inside `BEGIN; … ROLLBACK;` |
 | Dozens or hundreds of short database spans | N+1, or a per-item loop | Batch |
 | Several independent spans in sequence | Sequential awaits | Run in parallel (below) |
 | One long outbound HTTP span | Slow third party | Timeout, cache, move out of the request path to a job; see `0x:backend-architecture` |
@@ -108,6 +108,9 @@ Slow-query logging, from Launch:
   statements by total and mean time. Managed providers expose both as settings or dashboards.
 - In the application: log any query over the threshold with the route and a trace id, so the
   slow statement can be tied to the endpoint that issued it.
+- Logged statements can carry literal values and bind parameters (emails, tokens, search
+  text). Treat slow-query logs as personal data: restrict who reads them, set a retention
+  period, and log the statement shape without parameters in the application's own log.
 - Review the top statements by total time on a schedule (monthly at Launch); reading plans and
   indexing are in `0x:postgres-database`.
 
@@ -151,8 +154,10 @@ node --cpu-prof --cpu-prof-dir=./profiles server.js     # writes a .cpuprofile o
 
 Exercise the slow route under realistic load for a short time, stop the process, and open the
 file in Chrome DevTools (Performance panel, load profile) or any flame-graph viewer. For a live
-process, start it with `--inspect` and record from DevTools; in production prefer a continuous
-profiler from the telemetry vendor over attaching a debugger. Profile a production build with
+process, start it with `--inspect` and record from DevTools. The inspector port gives whoever
+reaches it full code execution in the process: keep it bound to localhost and reach it through
+an SSH tunnel, never bind it to a public interface. In production prefer a continuous profiler
+from the telemetry vendor over attaching a debugger. Profile a production build with
 production-like data.
 
 Reading: width is time on CPU, the vertical axis is the call stack. Look for wide plateaus

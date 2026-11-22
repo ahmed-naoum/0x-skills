@@ -87,10 +87,15 @@ resize, convert and cache per request.
   full viewport.
 - Remote sources must be allowed in `images.remotePatterns`. Keep the patterns narrow: an open
   optimizer is a free resizing proxy for anyone.
-- AVIF output is opt-in through `images.formats`; it costs more encode time on a cache miss.
+- AVIF output is opt-in through `images.formats` (the default is WebP only); it costs more
+  encode time on a cache miss and stores a second copy of each variant.
+- The `quality` prop is checked against the `images.qualities` allowlist, which from Next.js 16
+  defaults to a single value; a quality outside the list is coerced to the nearest allowed
+  one. Add the values the design needs, or the lower AVIF quality suggested above never applies.
 - Width and height are required for remote images unless `fill` is used; static imports get
   them automatically.
-- SVG and animated images pass through unoptimized.
+- SVG is served as-is, and the optimizer rejects it unless explicitly allowed because SVG can
+  carry script. Animated images pass through unoptimized.
 
 Rules for any on-demand service:
 
@@ -100,7 +105,9 @@ Rules for any on-demand service:
   source changes.
 - Cap input dimensions and file size for user uploads before they reach the transformer;
   upload handling is in `0x:backend-architecture`.
-- Strip metadata on output, which also removes location data from user photos.
+- Strip metadata on output, which also removes location data from user photos. Apply the EXIF
+  orientation first, or stripped photos come out sideways, and convert to sRGB or keep the
+  color profile.
 
 ## Video
 
@@ -116,7 +123,8 @@ Rules:
 - Always set `poster`, sized and compressed like any hero image. The poster can be the LCP
   element; treat it as one (preload it if the video is the hero).
 - `preload="none"` for click-to-play videos, `preload="metadata"` when duration or first frame
-  is needed. The default lets the browser download a large part of a file nobody may watch.
+  is needed. With no attribute the choice is the browser's, and it may download a large part
+  of a file nobody watches.
 - Set `width` and `height` or `aspect-ratio`, as for images.
 - Progressive MP4 must have its index at the front or playback waits for the whole file, and
   the server must support range requests (Safari requires them):
@@ -127,8 +135,9 @@ ffmpeg -i in.mov -c:v libx264 -crf 24 -preset slow -pix_fmt yuv420p -movflags +f
 
   `-an` drops audio for muted loops; remove it when sound is needed.
 - Adaptive streaming (HLS or DASH) is what makes long video start fast and survive bad
-  networks. Safari plays HLS natively; other browsers need a player library, which is heavy:
-  load it only when the user presses play.
+  networks. Safari plays HLS natively and other browsers have been adding it; feature-detect
+  with `video.canPlayType('application/vnd.apple.mpegurl')`, and where that fails load a
+  player library (it is heavy) only when the user presses play.
 - Below-the-fold autoplay loops: attach `src` when the element nears the viewport
   (IntersectionObserver) and pause when it leaves; decoding several videos at once is a battery
   and jank problem on phones.
@@ -157,7 +166,10 @@ not expect; test on Windows and Android if the audience is international.
 
 1. **WOFF2 only.** Every current browser supports it; older formats are dead weight.
 2. **Self-host** from the page's origin. A third-party font host adds a connection and, since
-   browser caches are partitioned per site, gives no cross-site cache benefit.
+   browser caches are partitioned per site, gives no cross-site cache benefit. It also sends
+   every visitor's IP address to that host, which has drawn privacy complaints in some
+   jurisdictions (`0x:privacy-compliance`). Before self-hosting or subsetting a commercial
+   font, read its license: some forbid modifying the file or meter page views.
 3. **Subset.** Ship only the scripts the product uses, and split by `unicode-range` so other
    scripts download only when a page uses them:
 
@@ -200,8 +212,10 @@ body { font-family: "Inter", "Inter Fallback", sans-serif; }
 
    The numbers are specific to each font pair; treat the ones above as an illustration and
    generate real values with a tool (Fontaine, Capsize) or let the framework do it:
-   `next/font` self-hosts, subsets, sets `font-display` and generates the adjusted fallback
-   automatically, and is the default in a Next.js project.
+   `next/font` self-hosts, sets `font-display` (default `swap`), preloads and generates the
+   adjusted fallback, and is the default in a Next.js project. `next/font/google` serves the
+   subsets named in `subsets`; `next/font/local` serves the file as given, so subset a local
+   font before handing it over.
 
 Check: throttle to a slow profile, reload with cache disabled, and watch the first second.
 Text should be visible immediately and should not move when the font arrives. Confirm in the
@@ -233,9 +247,10 @@ or emoji ranges inside a text font inflate it.
 
 ## Ask the user
 
-- **Is the brand font a requirement, and where?** Decides between system fonts and web fonts,
-  and how many families. Default: system stack for app UI, one variable family for marketing
-  pages.
+- **Is the brand font a requirement, where, and is it licensed for self-hosted web use?**
+  Decides between system fonts and web fonts, how many families, and whether the file may be
+  subsetted. Default: system stack for app UI, one variable family for marketing pages, and
+  an openly licensed font until the license of a commercial one is confirmed.
 - **Which languages and scripts must render?** Decides subsetting and `unicode-range` splits.
   Default: Latin with common punctuation and currency symbols, other scripts in separate files.
 - **Where do images come from and how many are there?** Decides between framework loader and an

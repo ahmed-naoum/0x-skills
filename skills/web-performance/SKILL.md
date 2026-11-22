@@ -1,6 +1,6 @@
 ---
 name: web-performance
-description: Makes pages and endpoints fast and keeps them fast, covering Core Web Vitals, loading and delivery, JavaScript bundle size, images and fonts, runtime jank, backend latency and profiling, load testing and performance budgets. Use when the site feels slow, Lighthouse or LCP, INP or CLS scores are bad, the bundle is too big, an endpoint takes seconds, or a load test is needed before launch.
+description: Makes pages and endpoints fast and keeps them fast, covering Core Web Vitals, page loading, JavaScript bundles, images and fonts, runtime jank, backend latency, load testing and performance budgets. Use when the site feels slow, Lighthouse, LCP, INP or CLS scores are bad, the bundle is too big, scrolling or typing is janky, an endpoint takes seconds, a load test is needed, or speed regresses between releases.
 ---
 
 # Web performance
