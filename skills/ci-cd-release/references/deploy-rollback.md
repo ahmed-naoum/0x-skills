@@ -27,8 +27,7 @@ Order inside the deploy, each step gating the next:
 ```
 
 `cancel-in-progress: false` matters: a deploy cancelled between migration and rollout leaves a
-half-applied release. Queued deploys run in order; if three merges queue up, deploying only the
-newest is fine because the artifact is cumulative.
+half-applied release.
 
 When the PaaS deploys from git by itself, keep that and gate it with required checks on main; do
 not rebuild the same thing in Actions. Confirm two things: the platform waits for checks (or
@@ -130,11 +129,8 @@ process.on('SIGTERM', () => {
   containers briefly behind a proxy that switches on health (Kamal does this), or accept a few
   seconds of downtime at Prototype. Setup: `0x:cloud-infrastructure` (`docker-images.md`).
 
-Check: run a loop of requests during a deploy and count non-2xx responses.
-
-```bash
-while true; do curl -s -o /dev/null -w '%{http_code}\n' https://app.example.com/healthz; sleep 0.2; done | sort | uniq -c
-```
+Check: request the health endpoint in a loop (several times a second) during a deploy and count
+non-2xx responses; the count must be zero.
 
 ## Smoke tests and release health
 
@@ -219,9 +215,6 @@ next step never ships.
 - Urgent fixes use the same pipeline. A bypass path that skips checks is used at the moment of
   least care; make the normal path fast enough (under 15 minutes merge to production) instead.
 
-Low-traffic hours shrink the blast radius but also shrink the signal and find the founder tired.
-Use them for changes with unavoidable user impact (a short read-only window), not as the default.
-
 ## Canary releases
 
 Skip until Scale. A canary needs enough traffic for a 5% slice to show a difference within
@@ -243,9 +236,7 @@ When traffic supports it:
   compatibility rules still carry the risk.
 - Rarely used paths (monthly billing run, export) see no traffic during a canary; a flag and a
   test cover those.
-
-Tooling: the platform's traffic splitting where it exists (managed container services, serverless
-platforms), Argo Rollouts or Flagger on Kubernetes.
+- Tooling: the platform's traffic splitting where it exists, Argo Rollouts or Flagger on Kubernetes.
 
 ## Cutover to a new platform or database
 
