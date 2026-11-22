@@ -1,6 +1,6 @@
 ---
 name: code-quality
-description: Keeps code correct and changeable through test strategy, unit, integration, end-to-end, contract and visual tests, test data, debugging method, refactoring, linting and strict types, and developer documentation. Use when asked to write tests or decide what to test, set up Vitest or Playwright, fix a flaky or slow suite, find the cause of a bug or memory leak, refactor or rewrite code, tighten TypeScript, or write docs.
+description: Keeps code correct and changeable through test strategy, unit, integration, end-to-end, contract and visual tests, test data, debugging method, refactoring, linting, strict types and developer documentation. Use when asked to write tests or decide what to test, set up Vitest or Playwright, fix a flaky or slow suite, find the cause of a bug or memory leak, refactor or rewrite code, tighten TypeScript, or write docs.
 ---
 
 # Testing, debugging, refactoring and documentation
