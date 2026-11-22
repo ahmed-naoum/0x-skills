@@ -22,7 +22,10 @@ Rules for the switcher:
 
 Implementation points that are design decisions:
 
-- **No flash of the wrong theme.** The theme must be resolved before first paint: a small blocking inline script in the document head that reads the stored choice and sets the attribute, or a cookie read on the server. A cookie can carry only an explicit Light or Dark choice; the server cannot see the system preference on most browsers, so "System" resolves in CSS (`prefers-color-scheme`) or in that inline script. Under a strict Content Security Policy the inline script needs a nonce or hash, or it is blocked silently and the flash returns (`0x:web-security`). A white flash on every load is the dark-mode defect users notice first. Helper libraries exist (`next-themes` is the long-standing one for Next.js); before adding one, check that it is still maintained and runs without warnings on the React version in use, because the whole job is about ten lines of script.
+- **No flash of the wrong theme.** The theme must be resolved before first paint: a small blocking inline script in the document head that reads the stored choice and sets the attribute, or a cookie read on the server.
+  A cookie can carry only an explicit Light or Dark choice; the server cannot see the system preference on most browsers, so "System" resolves in CSS (`prefers-color-scheme`) or in that inline script.
+  Under a strict Content Security Policy the inline script needs a nonce or hash, or it is blocked silently and the flash returns (`0x:web-security`). A white flash on every load is the dark-mode defect users notice first.
+  Helper libraries exist (`next-themes` is the long-standing one for Next.js); before adding one, check that it is still maintained and runs without warnings on the React version in use, because the whole job is about ten lines of script.
 - **Tell the browser the scheme** so scrollbars, form controls and default backgrounds match:
 
 ```css
@@ -141,7 +144,8 @@ What breaks in forced-colors mode, and the fix:
 - **`forced-color-adjust: none`** opts an element out; reserve it for content where color is the information (a color swatch, a chart with another accessible alternative), never for whole components.
 - **Test** by emulating forced colors in browser developer tools (the rendering emulation settings in Chromium-based browsers) and, before a claim of support, on Windows with a contrast theme enabled.
 
-Stage: using real borders and outlines costs nothing and should be the habit from Prototype. A full forced-colors pass belongs at Launch for products sold to the public sector, education or large enterprises, and at Scale otherwise. For those buyers accessibility is often a legal or procurement requirement rather than a preference, and which rules apply depends on the market. A dedicated high-contrast theme is optional when the default themes already meet AA. Conformance scope belongs to `0x:accessibility`.
+Stage: using real borders and outlines costs nothing and should be the habit from Prototype. A full forced-colors pass belongs at Launch for products sold to the public sector, education or large enterprises, and at Scale otherwise.
+For those buyers accessibility is often a legal or procurement requirement rather than a preference, and which rules apply depends on the market. A dedicated high-contrast theme is optional when the default themes already meet AA. Conformance scope belongs to `0x:accessibility`.
 
 ## Per-customer branded themes
 

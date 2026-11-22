@@ -57,7 +57,8 @@ Sizes are specified in `rem` so user font-size settings scale the interface. Flu
 ### Choosing and pairing typefaces
 
 - **Default: one sans family** with a wide weight range, ideally variable. Proven screen faces: Inter, Geist, IBM Plex Sans, Source Sans 3, or the platform stack via `system-ui`. The system stack costs zero bytes and looks native, but looks different on each OS; pick it for tools and admin, pick a web font when brand consistency matters.
-- **What to check before committing**: a tall x-height (legible at 12 to 14px); distinguishable `I l 1` and `O 0`; tabular figures available; at least 400, 500 or 600, and 700; the character sets for every language the product ships in; a license that covers web embedding and, if needed, app embedding and self-hosting (the faces named above are openly licensed; read the license of any other before shipping it).
+- **What to check before committing**: a tall x-height (legible at 12 to 14px); distinguishable `I l 1` and `O 0`; tabular figures available; at least 400, 500 or 600, and 700; the character sets for every language the product ships in;
+  a license that covers web embedding and, if needed, app embedding and self-hosting (the faces named above are openly licensed; read the license of any other before shipping it).
 - **Self-host the font files.** Loading them from a third-party font host sends every visitor's IP address to that host, which has drawn privacy claims in the EU, and adds a connection before text can render. Loading strategy belongs to `0x:web-performance`.
 - **Pairing rule**: a second family is justified only by a second job. Common jobs: a display or serif face for marketing headings; a monospace for code, IDs and keys. Pair by contrast (serif with sans, or text face with a distinct display face), never two similar sans faces. Three families is a mistake.
 - **Personality comes from the heading face, weight and tracking**, not from the body face. Body text must be boring.
@@ -127,7 +128,8 @@ Dense is not the same as cramped. Density comes from removing chrome and decorat
 
 ## Icons and imagery
 
-- **One icon set** for the whole product. Lucide is the default with Radix-style kits; Heroicons, Phosphor and Tabler are sound alternatives. Mixing sets shows immediately as mismatched stroke weight and corner style. Those four are open source; for any other icon set, font, photo or illustration, stock or generated, confirm that the license allows commercial use and record any attribution duty in the brand kit.
+- **One icon set** for the whole product. Lucide is the default with Radix-style kits; Heroicons, Phosphor and Tabler are sound alternatives. Mixing sets shows immediately as mismatched stroke weight and corner style.
+  Those four are open source; for any other icon set, font, photo or illustration, stock or generated, confirm that the license allows commercial use and record any attribution duty in the brand kit.
 - Rules to write down: outline or filled (use filled only to mark the active state); stroke width (1.5 or 2px, constant); sizes 16, 20 and 24px only; color inherits `currentColor`; icon-to-label gap 6 to 8px.
 - **Icons need labels.** Only a handful are understood without text (search, close, plus, settings gear, trash, home, menu). Icon-only buttons need a tooltip and an accessible name. An icon next to every menu item adds noise unless users scan by icon.
 - Do not use emoji as interface icons: they render differently on every platform and cannot take the theme color.

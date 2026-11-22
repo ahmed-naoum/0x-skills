@@ -41,7 +41,10 @@ Placeholders disappear when typing starts, usually have low contrast and are ski
 
 Confirm what happened, not that something happened. After a save in a form that stays open, an inline "Saved" near the control is enough; after an action whose result is elsewhere, name the object and link to it.
 
-Words next to money, consent and security are commitments, not decoration. State the price, the billing interval, when a trial converts and how to cancel beside the button that commits, and make the label match what the system does: "Start free trial" must not charge today. Word decline and cancel options as plainly, and show them as clearly, as accept. Guilt-laden declines ("No thanks, I prefer paying more"), pre-ticked consent boxes and buried opt-outs are treated as deceptive design by regulators in many jurisdictions, with rules that differ by country (`0x:privacy-compliance`). Claims such as "secure", "encrypted", "compliant" or "we never share your data" go in the interface only when they are true of the system as built.
+Words next to money, consent and security are commitments, not decoration. State the price, the billing interval, when a trial converts and how to cancel beside the button that commits, and make the label match what the system does: "Start free trial" must not charge today.
+Word decline and cancel options as plainly, and show them as clearly, as accept.
+Guilt-laden declines ("No thanks, I prefer paying more"), pre-ticked consent boxes and buried opt-outs are treated as deceptive design by regulators in many jurisdictions, with rules that differ by country (`0x:privacy-compliance`).
+Claims such as "secure", "encrypted", "compliant" or "we never share your data" go in the interface only when they are true of the system as built.
 
 ## Error messages
 
@@ -67,7 +70,8 @@ Rules:
 - **Never lose the user's input.** The message is worthless if the form was cleared.
 - **Timing**: validate on leaving the field or on submit, not on the first keystroke; clear the error as soon as the input becomes valid.
 - **Technical detail**: plain sentence first; a reference code or expandable detail second, for support. Never show stack traces, SQL or raw exception text; besides being useless to the user, they leak internals.
-- **Security exceptions**: sign-in and password-reset messages stay deliberately vague about whether an account exists ("If that email has an account, we sent a link"), and a signup form that answers "this email is already registered" tells an attacker who the customers are; whether signup may reveal it is a decision owned by `0x:auth-identity`. Card declines stay generic as well: do not echo the processor's raw reason, which can expose fraud signals (`0x:payments-billing`). In these places the security rule beats the specificity rule.
+- **Security exceptions**: sign-in and password-reset messages stay deliberately vague about whether an account exists ("If that email has an account, we sent a link"), and a signup form that answers "this email is already registered" tells an attacker who the customers are; whether signup may reveal it is a decision owned by `0x:auth-identity`.
+  Card declines stay generic as well: do not echo the processor's raw reason, which can expose fraud signals (`0x:payments-billing`). In these places the security rule beats the specificity rule.
 - **Do not apologize by reflex.** "Sorry" belongs in messages about the product's own failure, once, without drama.
 - **Humor fails in errors.** The user is blocked; a joke the first time is an irritation the fifth.
 - Give every error a stable code in logs so support can find it; message catalogs make this easy. Announcing errors to assistive technology belongs to `0x:accessibility`.

@@ -105,10 +105,12 @@ Match behavior, not demographics: people who do the job the product serves, at t
 | Anyone nearby (hallway test) | Catching gross problems in labels and layout | Not valid for domain-specific tasks |
 
 - **Screener**: three to five questions that identify behavior without revealing the wanted answer. Ask "Which of these did you do in the past month?" with distractors, not "Do you send invoices?". Include one open question; a thoughtful answer predicts a useful participant.
-- **Incentive**: pay for people's time at a rate appropriate to their profession; gift cards or account credit are common. Busy professionals need more; existing customers often accept credit or early access. Two traps: employees of public bodies and of some regulated companies may not accept gifts at all, so ask before sending one; and payments to individuals can carry tax-reporting duties above thresholds that differ by country, which matters once incentives are large or repeated.
+- **Incentive**: pay for people's time at a rate appropriate to their profession; gift cards or account credit are common. Busy professionals need more; existing customers often accept credit or early access.
+  Two traps: employees of public bodies and of some regulated companies may not accept gifts at all, so ask before sending one; and payments to individuals can carry tax-reporting duties above thresholds that differ by country, which matters once incentives are large or repeated.
 - **Logistics**: schedule with a booking link, send a reminder the day before, over-recruit by one, keep sessions remote by default (video call with screen share) and test their ability to share a screen in the first minute.
 - **Do not reuse the same participants for first-run tests**; they are no longer new.
-- **Consent and data**: get explicit agreement before recording starts, in writing or spoken on the recording; say how the recording is used, who sees it and for how long it is kept, and store it with access limits. Do not publish clips or named quotes without separate permission. Recruit adults only unless minors are the audience, which needs a guardian's consent and legal advice. Recordings are personal data; requirements belong to `0x:privacy-compliance`.
+- **Consent and data**: get explicit agreement before recording starts, in writing or spoken on the recording; say how the recording is used, who sees it and for how long it is kept, and store it with access limits. Do not publish clips or named quotes without separate permission.
+  Recruit adults only unless minors are the audience, which needs a guardian's consent and legal advice. Recordings are personal data; requirements belong to `0x:privacy-compliance`.
 
 ## Session replays
 
@@ -127,7 +129,10 @@ What replays reveal well: elements that look clickable and are not, controls tha
 
 Traps: watching without a question (hours gone, nothing decided); generalizing from the few most dramatic sessions; ignoring that replays record only consenting, non-blocked users. Mask all input fields and sensitive on-screen text by default, and exclude payment and authentication pages; replay tools capture personal data and need the same care as any other processor.
 
-Replay is also the analytics feature most likely to create legal exposure. In the EU and UK it generally needs the visitor's consent before recording starts. In the United States it has drawn many lawsuits under wiretapping and interception laws, with courts disagreeing on the outcome; the recurring allegation is recording that began before any consent was given. Design for the mechanism: the recorder loads only after whatever consent the visitor's jurisdiction requires, the privacy notice names the tool, and masking is on by default. Which rule applies to this product's visitors is a question for `0x:privacy-compliance`, and for a lawyer where the product handles health, financial or children's data.
+Replay is also the analytics feature most likely to create legal exposure. In the EU and UK it generally needs the visitor's consent before recording starts.
+In the United States it has drawn many lawsuits under wiretapping and interception laws, with courts disagreeing on the outcome; the recurring allegation is recording that began before any consent was given.
+Design for the mechanism: the recorder loads only after whatever consent the visitor's jurisdiction requires, the privacy notice names the tool, and masking is on by default.
+Which rule applies to this product's visitors is a question for `0x:privacy-compliance`, and for a lawyer where the product handles health, financial or children's data.
 
 ## Heuristic review
 

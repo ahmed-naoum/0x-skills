@@ -145,7 +145,8 @@ Choose by reversibility and blast radius, not by how nervous the action feels.
 - **Confirmation dialogs wear out.** A dialog on every delete trains users to press Enter. Reserve dialogs for the rows above that need them; use undo for the rest.
 - **Undo requires backend support**: soft delete or delayed execution. Decide during design, because it changes the data model; see `0x:backend-architecture` and `0x:postgres-database` for the implementation.
 - **The toast is not the only way back.** A window of a few seconds is missed by anyone who looked away or uses a screen reader; the trash or an activity entry must offer the same restore after the toast has gone.
-- **Soft delete is not deletion.** Say "moved to trash" when that is what happens and "permanently deleted" only when it is. When a person asks for their data to be erased, a hidden row does not satisfy the request, while some records (invoices, audit logs) may have to be kept; both duties depend on the jurisdiction, so the delete-account flow needs a real purge path designed with `0x:privacy-compliance`.
+- **Soft delete is not deletion.** Say "moved to trash" when that is what happens and "permanently deleted" only when it is.
+  When a person asks for their data to be erased, a hidden row does not satisfy the request, while some records (invoices, audit logs) may have to be kept; both duties depend on the jurisdiction, so the delete-account flow needs a real purge path designed with `0x:privacy-compliance`.
 - **Protect work in progress**: autosave drafts; warn before leaving a form with unsaved changes; never clear a form on a failed submit; restore state after a session expiry and re-login.
 - **Separate destructive controls physically** from frequent ones; a Delete next to Save is an accident waiting.
 - **Make state visible so mistakes are noticed**: show what was changed, by whom and when, for anything shared.
@@ -157,11 +158,14 @@ Choose by reversibility and blast radius, not by how nervous the action feels.
 - **Save model**: toggles and selects apply immediately with visible confirmation; text fields and anything risky save with an explicit button per section. Do not mix both models in one section.
 - **Scale path**: a single page until about 15 settings; then sections with a side navigation; add settings search past roughly 50. Every settings page has a stable URL so support can link to it.
 - **Roles**: start with two or three fixed roles (owner, admin, member; add viewer or billing when asked). Custom roles and per-resource permissions are Scale features driven by enterprise deals. Show what each role can do in a plain table at the point of choosing. The authorization model belongs to `0x:auth-identity`.
-- **Invitations**: accept several emails at once, set the role in the invite, show pending invites with resend and revoke, handle the invitee who already has an account and the one who signs up with a different email, and land the invitee in the workspace, not in a new empty one. Invitation links expire, work once, and show the workspace and role they grant before acceptance; whether an invite may be accepted from a different email address is a security decision (default: no) owned by `0x:auth-identity`.
+- **Invitations**: accept several emails at once, set the role in the invite, show pending invites with resend and revoke, handle the invitee who already has an account and the one who signs up with a different email, and land the invitee in the workspace, not in a new empty one.
+  Invitation links expire, work once, and show the workspace and role they grant before acceptance; whether an invite may be accepted from a different email address is a security decision (default: no) owned by `0x:auth-identity`.
 - **Guard the last owner**: the last owner cannot leave or demote themselves; ownership transfer is an explicit flow.
 - **Permission-denied is a designed state**: say what is needed and who to ask; offer "request access" when that is cheap to build.
 - **Hiding a control is not access control.** Role-aware screens are a courtesy to the user; every action and every URL must be checked on the server for the same role, or the hidden button is one pasted link away (`0x:auth-identity`).
-- **Leaving is a flow too.** Cancel subscription, downgrade, export data and delete account must be findable in settings and take no more effort than signing up. A cancellation path that is hidden, needs a phone call or runs through repeated offers is treated as a deceptive pattern by consumer regulators in several jurisdictions, with rules that differ by country; one retention offer, clearly skippable, is the safe limit. Billing mechanics belong to `0x:payments-billing`.
+- **Leaving is a flow too.** Cancel subscription, downgrade, export data and delete account must be findable in settings and take no more effort than signing up.
+  A cancellation path that is hidden, needs a phone call or runs through repeated offers is treated as a deceptive pattern by consumer regulators in several jurisdictions, with rules that differ by country; one retention offer, clearly skippable, is the safe limit.
+  Billing mechanics belong to `0x:payments-billing`.
 - **Danger zone** at the bottom of workspace settings, each action with the confirmation level from the table above.
 
 ## Prototyping
