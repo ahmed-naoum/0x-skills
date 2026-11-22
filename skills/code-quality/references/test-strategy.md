@@ -111,10 +111,10 @@ flow. Automated tests do not replace it: they check what was thought of.
    onboard, core action, pay, upgrade, cancel, delete account) and personas (new user, returning
    user, admin, invited member). Each participant takes different journeys and devices.
 3. **Device matrix:** at minimum one real iPhone with Safari, one real mid-range Android with
-   Chrome, one desktop Chromium browser, desktop Safari, desktop Firefox. iOS browsers all use
-   WebKit, so one iPhone covers them; simulators miss keyboard, safe-area, autofill and
-   performance problems.
-4. **Hostile conditions:** throttle to slow 3G or a custom slow profile in DevTools and repeat
+   Chrome, one desktop Chromium browser, desktop Safari, desktop Firefox. Browsers on iOS run
+   on WebKit almost everywhere (other engines are permitted only in some regions), so one
+   iPhone covers them; simulators miss keyboard, safe-area, autofill and performance problems.
+4. **Hostile conditions:** throttle to the slowest network preset in DevTools and repeat
    signup and checkout; go offline mid-submit; double-click every submit button; use back and
    refresh in the middle of multi-step flows; open the same flow in two tabs; paste a 5,000
    character string and emoji into text fields; use a password manager and browser autofill;
@@ -158,8 +158,8 @@ freezes feature releases when exhausted (see `0x:site-reliability`).
 
 Coverage measures which lines ran, not whether anything was asserted. Use it to find untested
 areas, not as a target: a global threshold produces assertion-free tests of easy code. Useful
-uses: a per-directory floor on the money, auth and permissions modules (90% or more branch
-coverage there is reasonable), and "coverage must not drop" on changed files.
+uses: a per-directory floor on the money, auth and permissions modules (as a rule of thumb,
+90% or more branch coverage there), and "coverage must not drop" on changed files.
 
 The measures that show whether the suite works:
 
@@ -168,7 +168,7 @@ The measures that show whether the suite works:
 | Escaped defects | Tag each production bug with the layer that should have caught it | A cluster in one layer or module says where the next tests go |
 | Change failure rate | Share of deploys that needed a rollback, hotfix or patch | Rising rate with a green suite means the suite tests the wrong things |
 | Time to green | Local run and CI wall-clock for the default suite | Over about 10 minutes in CI, people batch changes and stop running tests locally |
-| Flake rate | Share of CI runs that pass on re-run with no code change | Above about 1% of runs, trust is eroding; see test-data-flaky.md |
+| Flake rate | Share of CI runs that pass on re-run with no code change | Rule of thumb: above about 1% of runs, trust is eroding; see test-data-flaky.md |
 | Test churn | Tests modified per behavior-preserving refactor | High churn means tests are bound to implementation |
 | Mutation score on critical modules | Mutation testing, see unit-integration-tests.md | Surviving mutants are missing assertions |
 

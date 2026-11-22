@@ -67,7 +67,8 @@ minimal), not both.
   behavior is unchanged and how that was verified.
 - Purely mechanical mass edits (formatting, renames, codemod output) go in their own commit,
   with nothing hand-edited in it, and can be listed in `.git-blame-ignore-revs` so blame skips
-  them. Commit and pull-request conventions are in `0x:git-collaboration`.
+  them (GitHub reads the file by itself; local git needs `blame.ignoreRevsFile` set). Commit
+  and pull-request conventions are in `0x:git-collaboration`.
 
 ## Delete dead code now
 
@@ -88,13 +89,15 @@ Delete in the same change that makes it unreachable:
 Before deleting, prove it is dead at the right boundary: the compiler and an unused-export
 tool cover in-repo references (tooling in static-analysis-types.md); for HTTP routes, jobs,
 webhooks and public API fields, check access logs or add a counter and wait one full business
-cycle (a month covers monthly jobs and billing runs). Dynamic references (string-built
-imports, reflection, names stored in the database or a queue) defeat static tools; search for
-the string.
+cycle (a month covers monthly jobs and billing runs; annual renewals, year-end jobs and old
+mobile app versions need a check of schedules and client versions, not a wait). Dynamic
+references (string-built imports, reflection, names stored in the database or a queue)
+defeat static tools; search for the string.
 
 A "cleanup sprint" is the wrong tool: by then nobody remembers what is safe to remove, and it
 competes with features for time. If a deletion is large and risky, stage it: stop calling,
-log-and-wait, then delete.
+log-and-wait, then delete. Code comes back from git; data does not. Dropping a column or
+table comes last, after a verified backup or export, and only once nothing reads or writes it.
 
 ## Characterization tests for legacy code
 

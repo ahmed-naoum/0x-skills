@@ -1,6 +1,6 @@
 ---
 name: code-quality
-description: Keeps code correct and changeable through test strategy, unit, integration, end-to-end, contract and visual tests, test data, debugging method, refactoring, linting, strict types and developer documentation. Use when asked to write tests or decide what to test, set up Vitest or Playwright, fix a flaky or slow suite, find the cause of a bug or memory leak, refactor or rewrite code, tighten TypeScript, or write docs.
+description: Keeps code correct and changeable through test strategy, unit, integration, end-to-end, contract and visual tests, debugging, refactoring, linting and strict types. Use when asked to write tests or decide what to test, set up Vitest or Playwright, fix a flaky or slow suite, find the cause of a bug or memory leak, refactor or rewrite code, set up linting or stricter TypeScript, or write a README or developer docs.
 ---
 
 # Testing, debugging, refactoring and documentation
@@ -17,7 +17,7 @@ changes reach production without breaking things and whether the next change sta
   silent, expensive and hard to reverse.
 - **Push every check to the cheapest layer that can observe the failure.** Types and lint
   before unit tests, unit before integration, integration before browser. Each step up costs
-  roughly ten times more to run, diagnose and maintain.
+  far more to run, diagnose and maintain (as a rule of thumb, about an order of magnitude).
 - **Use the real thing inside the system and fake only at its edge.** A real database of the
   production engine, the real HTTP layer and the real modules; fakes for third-party networks,
   the clock and randomness. Mocks of internal code test the mock and freeze the design.
@@ -70,7 +70,7 @@ Follow the project's existing runner, linter and conventions before any of these
 | Browser tests | Production build, role and label locators, saved auth state, no fixed sleeps, trace on first retry, retries in CI only |
 | Flaky tests | Pass-on-retry counts as flaky; quarantine the same day, fix or delete in about two weeks |
 | Types | `strict` plus `noUncheckedIndexedAccess`; `tsc --noEmit` as the first CI job |
-| Lint and format | Biome on greenfield, or ESLint flat config with typescript-eslint type-checked rules plus Prettier; tool defaults; zero warnings |
+| Lint and format | Biome on greenfield, or ESLint flat config plus Prettier; either way the type-aware rules (floating promises, unsafe `any`) run in CI from Launch; tool defaults; zero warnings |
 | Hooks | Format and lint staged files in under about 3 seconds; type check and tests on pre-push or CI only |
 | Bug fixes | Reproduce, bisect when theories run out, failing regression test first, fix the cause |
 | Refactoring | Only code the current task touches; structural commits separate; incremental replacement over rewrite |

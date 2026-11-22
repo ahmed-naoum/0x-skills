@@ -62,14 +62,20 @@ Setup that works for one developer and CI alike:
 ```ts
 // global setup sketch with Testcontainers
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
+import type { TestProject } from 'vitest/node';
 
-export default async function setup() {
+export default async function setup(project: TestProject) {
   const pg = await new PostgreSqlContainer('postgres:17').start(); // match production's major
-  process.env.DATABASE_URL = pg.getConnectionUri();
-  // run migrations here
+  // run migrations here, against pg.getConnectionUri()
+  project.provide('databaseUrl', pg.getConnectionUri());
   return async () => { await pg.stop(); };
 }
 ```
+
+Global setup runs outside the test workers, so do not rely on `process.env` set there reaching
+the tests. Read the value with `inject('databaseUrl')` from `vitest` in a setup file and
+assign `process.env.DATABASE_URL` there, before the app's database module is imported;
+declare the key by augmenting `ProvidedContext` so it is typed.
 
 What to assert at this layer: the row state after the operation, that constraints reject bad
 writes (unique, foreign key, check), that a failure midway leaves nothing behind, that a query
@@ -91,10 +97,11 @@ Mechanics by stack:
 - Frameworks with an in-process request helper (Hono `app.request()`, Fastify `inject()`,
   Express with supertest): use it; no port needed.
 - Next.js route handlers are functions of a standard `Request`: import the handler and call it
-  with `new Request(url, { method, headers, body })`. This skips middleware and the framework's
-  routing, so cover middleware-dependent behavior (redirects, auth gating done in middleware)
-  with a few tests against the running app, in Playwright's `request` fixture or with `fetch`
-  against a started server.
+  with `new Request(url, { method, headers, body })`. This skips the framework's routing and
+  its middleware (named proxy in newer versions), and a handler that calls `cookies()` or
+  `headers()` from `next/headers` throws outside a real request. Cover those, and redirects
+  or auth gating done in middleware, with tests against the running app: Playwright's
+  `request` fixture or `fetch` against a started server.
 - Authenticate the way real clients do: create a session row or signed cookie through a test
   helper that uses the app's own session code. Do not stub the auth check out; that is the
   thing under test.
@@ -176,8 +183,9 @@ expect(await screen.findByText('Invitation sent')).toBeVisible();
 - Worth a component test: conditional rendering with real logic, form validation and
   submission, keyboard interaction, loading, empty and error states. Not worth one: static
   layout, styling, wrappers around a library component.
-- Async React Server Components are poorly supported by component test runners; cover them
-  with end-to-end tests and unit-test the data functions they call.
+- Async React Server Components have not been renderable in jsdom component tests (check the
+  framework's testing docs for the current state); cover them with end-to-end tests and
+  unit-test the data functions they call.
 - jsdom has no layout: nothing about size, position, scrolling, or real focus order can be
   trusted there. Use Vitest browser mode or Playwright for those.
 

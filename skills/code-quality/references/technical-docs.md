@@ -231,7 +231,10 @@ Verify with a real task: a small change taken from ticket to production by the r
 then a simulated incident (roll back a deploy, restore to a scratch database). For a
 contractor handing back to a founder, the same list is the acceptance checklist; put it in
 the contract before work starts (`0x:sales-support` covers the contract side when the founder
-is the contractor).
+is the contractor). Receiving the repository is not the same as owning the code: in many
+jurisdictions a contractor keeps the copyright unless a written agreement assigns it, and the
+rules differ by country, so have the assignment clause checked by a lawyer
+(`0x:company-building`). List third-party licenses in the package (`0x:privacy-compliance`).
 
 ## Stopping rot
 
@@ -245,7 +248,7 @@ Docs decay because nothing fails when they are wrong. Make something fail.
   the command definitions, env variable tables from the env schema. Regenerate in CI and fail
   on a diff.
 - **Link checking** on a schedule and in pull requests that touch docs; internal links by
-  relative path so the code host validates them on rename.
+  relative path, so they resolve on every branch and the checker can verify them offline.
 - **An owner per document.** Put docs paths in the code-owners file so changes request the
   right reviewer, and so every page has someone to ask. Unowned pages are deleted or adopted.
 - **A review date on pages that cannot be tested** (architecture, runbooks, handover,

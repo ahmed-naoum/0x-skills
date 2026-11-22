@@ -58,8 +58,9 @@ volume never appear before production.
 - Content that exercises the UI: an empty account, a typical account, and a heavy account
   (thousands of rows to force pagination and slow queries); long names, non-Latin text, a
   right-to-left string, missing optional fields; every status of every state machine
-  (trialing, active, past due, canceled); several roles with known credentials printed at the
-  end of the run.
+  (trialing, active, past due, canceled); several roles with credentials printed at the end
+  of the run. Fixed passwords are for local use only: a preview reachable from the internet
+  gets generated passwords or sits behind access protection.
 - A guard that refuses to run against production: check an explicit environment variable and
   the database host, and exit non-zero otherwise. Seeding production by accident is a real
   incident class.
@@ -71,7 +72,7 @@ volume never appear before production.
 | Method | How | Speed | Limits |
 |---|---|---|---|
 | Transaction per test | Begin before each test, run the code on that connection, roll back after | Fastest | Code under test must use the test's connection; cannot test commit behavior, multiple connections, real concurrency, or code that manages its own top-level transactions unless they become savepoints |
-| Truncate between tests | `TRUNCATE ... RESTART IDENTITY CASCADE` of the touched tables after each test | Medium; cost grows with table count | Tests in the same database cannot run in parallel |
+| Truncate between tests | `TRUNCATE ... RESTART IDENTITY CASCADE` of the touched tables after each test | Medium; cost grows with table count | Tests in the same database cannot run in parallel; Vitest runs test files in parallel by default, so give each worker its own database or set `fileParallelism: false` |
 | Database per worker | Create one database per parallel worker from a migrated template, then transaction or truncate inside it | Fast, parallel-safe | Slightly more setup; the default once the suite is parallel |
 | Unique data, shared database | Every test creates its own tenant and only queries within it | Fast, parallel-safe, also works for end-to-end against a deployed app | Global queries (counts, "latest N") and unique global keys still collide |
 
@@ -189,8 +190,8 @@ relies on a fixed port or a global file.
   `vitest run --shard=1/4`. Each shard uploads its own report; merge them in a final job.
   Shards split by file, so one huge file unbalances the run: split it.
 - End-to-end tests in parallel against one app instance share that app's caches, rate limits
-  and background jobs. Exempt test tenants from rate limits by configuration, or tests throttle
-  each other.
+  and background jobs. Raise or disable rate limits in the test environment's configuration
+  (never through a bypass that also exists in production), or tests throttle each other.
 - Serial mode for a group of tests is a smell that they share state. Use it only for a true
   multi-step journey, and prefer one longer test.
 

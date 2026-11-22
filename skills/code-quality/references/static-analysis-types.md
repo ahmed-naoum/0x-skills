@@ -6,7 +6,6 @@ rejected; or module boundaries need enforcing.
 
 ## What each check is for
 
-Static checks are the cheapest tests: they run in seconds, cover every line, and never flake.
 Assign each defect class to the earliest tool that can reject it, and do not duplicate.
 
 | Tool | Catches | Runs |
@@ -17,9 +16,8 @@ Assign each defect class to the earliest tool that can reject it, and do not dup
 | Unused-code and cycle tools | Dead exports, unused dependencies, circular imports | CI |
 | Import-boundary rules | Architecture violations | Lint, CI |
 
-Enforcement lives in CI as required checks. Editor integration and hooks are conveniences for
-faster feedback; anything not enforced in CI will be skipped under pressure. Pipeline wiring
-is in `0x:ci-cd-release`.
+Enforcement lives in CI as required checks; editor integration and hooks only give faster
+feedback. Pipeline wiring is in `0x:ci-cd-release`.
 
 ## Type checking as the first test
 
@@ -48,6 +46,9 @@ Traps:
   Keep those few and simple.
 - Generated types must exist before `tsc` runs (framework route types, ORM client, API
   types): generate in the same job, first.
+- **A TypeScript major can outrun the tools that read types.** Type-aware lint rules, codemod
+  libraries and some transformers call the compiler API; before moving to a new major (the
+  native compiler line in particular), check each tool's supported `typescript` range.
 
 Greenfield `tsconfig.json` beyond the framework's preset:
 
@@ -79,7 +80,7 @@ most line width, and never review style by hand again.
 
 | Choice | Take it when |
 |---|---|
-| Biome (one binary: formatter and linter) | Greenfield, or lint time is hurting. Fast, one config file, almost nothing to maintain. Check that it covers the type-aware rules and framework plugins the project needs before committing to it alone |
+| Biome (one binary: formatter and linter) | Greenfield, or lint time is hurting. Fast, one config file, almost nothing to maintain. Its type-aware rules (`noFloatingPromises`, `noMisusedPromises`) run on Biome's own type inference, not the TypeScript compiler, and have shipped as nursery rules that miss cases; check the current rule docs, and if they are not stable, add ESLint with only the type-aware rules in CI from Launch. Check framework plugin coverage too |
 | ESLint flat config with typescript-eslint, plus Prettier for formatting | The project needs the full type-aware rule set, framework or accessibility plugins, or custom rules. Slower, larger ecosystem |
 | Biome for formatting and fast lint, ESLint for type-aware and plugin rules only | A large codebase that wants both; costs two configs |
 
@@ -93,8 +94,6 @@ Rules for either:
 - Ignore generated and vendored files in the tool's config, not with inline comments.
 - Warnings are noise. Every rule is `error` or `off`; in CI run with zero warnings allowed
   (`eslint --max-warnings 0`) so a rule cannot sit ignored at `warn` for a year.
-- A rule that produces mostly false positives gets turned off, with a comment saying why.
-  A rule set people work around teaches disabling by reflex.
 - Every inline disable names the rule and gives a reason
   (`// eslint-disable-next-line <rule> -- reason`); report unused disable directives as errors.
 - With ESLint plus Prettier, do not run Prettier as an ESLint rule; run both tools and add
@@ -143,6 +142,8 @@ export default defineConfig(
       '@typescript-eslint/no-non-null-assertion': 'error',
     },
   },
+  // last: files in no tsconfig (this file, root scripts) would fail typed linting
+  { files: ['**/*.{js,mjs,cjs}'], extends: [tseslint.configs.disableTypeChecked] },
 );
 ```
 
@@ -161,7 +162,6 @@ protects nothing. Budget: under about 3 seconds for a typical commit.
 - Do not run the type checker or the test suite in pre-commit. Both are whole-project
   operations and too slow. If a local gate is wanted, put `tsc --noEmit` and the changed-file
   tests on pre-push.
-- Hooks fix what they can and re-stage, so the commit is not rejected for whitespace.
 - Add a secret scanner on staged changes here: a leaked key is the one mistake that cannot be
   fixed after push (`0x:web-security`).
 - Hooks must install themselves on `pnpm install` (a `prepare` script), or new clones and
@@ -177,15 +177,15 @@ go down.
 | Approach | How | Use when |
 |---|---|---|
 | Flag by flag | Enable one strict-family flag, fix, merge, next. Easy ones first (`noImplicitThis`, `alwaysStrict`, `strictBindCallApply`), then `noImplicitAny`, and `strictNullChecks` last because it is the largest | Few hundred errors per flag |
-| Strict for a growing set of files | A second `tsconfig.strict.json` extending the base with `strict: true` and an `include` list; CI checks both; every new file and every touched file joins the list | Thousands of errors; want strict on all new code today |
+| Strict for a growing set of files | A second `tsconfig.strict.json` extending the base with `strict: true` and an `include` list; CI checks both; every new file and every touched file joins the list. Trap: `tsc` also checks every file the listed ones import, so add leaf modules first, or filter the reported errors to the listed paths with a script or a plugin built for per-file strictness | Thousands of errors; want strict on all new code today |
 | Suppress and burn down | Enable the flag, insert `@ts-expect-error` with a tracking tag on each existing error by script, and remove them over time. Unlike `@ts-ignore`, an expect-error fails when the error is gone, so fixed lines cannot keep a stale suppression | Want one config; accept noisy files for a while |
 
 Rules for all three: new code is strict from day one; never loosen a flag once on; track the
 count (suppressions, or files outside the strict list) and fail CI if it rises; fix by
 directory, starting with money, auth and data access, where a null error costs most. The
-same ratchet works for new lint rules: record existing violations in a baseline (recent
-ESLint versions have built-in bulk suppressions; otherwise per-file overrides) and block only
-new ones.
+same ratchet works for new lint rules: record existing violations in a baseline and block
+only new ones (ESLint 9.24 and later: `eslint --suppress-all` writes
+`eslint-suppressions.json`, and `--prune-suppressions` drops entries once they are fixed).
 
 During `strictNullChecks` cleanup, resist `!` and `as`: each one converts a compile error
 into a possible run-time one. Narrow, default, or change the type so the absent case is
@@ -229,7 +229,8 @@ representation is derived from it by a tool.
 | GraphQL | The schema | Typed operations by codegen |
 | Environment variables | One schema parsed at startup | `env` object type; a missing variable fails at boot, not at first use |
 
-The enforcement step, in CI, is the same for all: regenerate and fail if anything changed.
+The enforcement step, in CI, is the same for all: regenerate and fail if anything changed (a
+generator that stops at a prompt, such as a rename question, counts as changed).
 
 ```bash
 pnpm exec openapi-typescript ./openapi.yaml -o ./src/api/schema.d.ts
@@ -280,8 +281,9 @@ build fail when a client component imports it.
 Traps: start with two or three rules that reflect how the code is already organized, since a
 rule set describing an aspirational architecture fails on day one and gets disabled; adopt
 with a baseline of existing violations and block new ones; path aliases must resolve
-identically in the linter, the compiler and the test runner or rules silently match nothing.
-Prove each rule works by writing a violating import once and seeing the error.
+identically in the linter, the compiler and the test runner or rules silently match nothing;
+a later config object's `no-restricted-imports` replaces an earlier one for the same file, it
+does not merge. Prove each rule by writing a violating import once and seeing the error.
 
 ## Ask the user
 

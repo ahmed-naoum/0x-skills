@@ -43,6 +43,7 @@ export default defineConfig({
   webServer: {
     command: 'pnpm build && pnpm start',
     url: 'http://localhost:3000',
+    timeout: 180_000, // the 60 s default is often too short for a production build
     reuseExistingServer: !process.env.CI,
   },
   projects: [
@@ -122,7 +123,7 @@ the bug bash (test-strategy.md).
 | Flow | Approach |
 |---|---|
 | Email and password | Real form in one test; saved `storageState` everywhere else |
-| OAuth or social sign-in | Do not automate the provider's login page: bot detection, CAPTCHA and 2FA make it flaky and may violate terms. Test the callback handler in integration tests with a faked provider; for end to end, run a local mock OIDC provider or a test-only sign-in route that is compiled out or hard-disabled in production |
+| OAuth or social sign-in | Do not automate the provider's login page: bot detection, CAPTCHA and 2FA make it flaky and may violate terms. Test the callback handler in integration tests with a faked provider; for end to end, run a local mock OIDC provider, or a test-only sign-in route. That route is an authentication bypass if it ever ships: exclude it from the production build, require a secret as well, and keep a test that it returns 404 on the production build |
 | Magic link, verification, reset email | Send to a test inbox the test can query: a local SMTP catcher (Mailpit) in dev and CI, or a hosted test-inbox API against staging. Poll the inbox API for the message to the unique address, extract the link, `page.goto` it |
 | TOTP 2FA | Seed the user with a known TOTP secret and generate the code in the test |
 | CAPTCHA | Use the vendor's documented test keys in non-production environments |
@@ -201,7 +202,7 @@ both together. Choose by who the consumers are:
 | Situation | Guard |
 |---|---|
 | Frontend and backend in one TypeScript repo, deployed together | Shared types are the contract: one schema (Zod, tRPC router, or generated OpenAPI types) imported by both sides; the type check fails on drift. No separate contract tests |
-| Same repo but deployed separately, or mobile apps and old clients in the field | Types are not enough: old clients keep calling the new server. Keep the OpenAPI document in the repo and fail CI on breaking changes with a spec diff tool (`oasdiff breaking old.yaml new.yaml`), and validate real responses against the spec in integration tests |
+| Same repo but deployed separately, or mobile apps and old clients in the field | Types are not enough: old clients keep calling the new server. Keep the OpenAPI document in the repo and fail CI on breaking changes with a spec diff tool (`oasdiff breaking old.yaml new.yaml --fail-on ERR`; without `--fail-on` it reports and still exits 0), and validate real responses against the spec in integration tests |
 | Several services or teams, each deploying independently | Consumer-driven contracts (Pact): each consumer's tests record the requests it makes and the response fields it reads; the provider's CI replays them against the real provider. Needs a broker and a "can I deploy" check to be worth it |
 | Third-party API consumed by the app | Recorded fixtures plus a scheduled check against the vendor's sandbox (unit-integration-tests.md) |
 | Webhooks and events the app emits to customers | Versioned JSON Schema per event, validated in the emitter's tests; schema diff in CI |

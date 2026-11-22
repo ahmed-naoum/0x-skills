@@ -3,24 +3,13 @@
 Read this when: a bug is reported or its cause is unknown, a failure cannot be reproduced, a bug
 appears only in production, a server process leaks memory, or a failure is intermittent.
 
-Contents: order of work · bug report and triage · reproduce · read the error · bisecting ·
-debugger and logpoints · regression test · production error to local reproduction · debugging
-in production safely · memory leak in a Node server · intermittent concurrency failures.
-
-## The order of work
-
-1. Capture the report in a reproducible form and set severity.
-2. Reproduce it, at the cheapest layer that still shows it.
-3. Read the actual error. Form one hypothesis, design the observation that would disprove it,
-   look, record the result.
-4. Narrow by halving: history, input, configuration, or code path.
-5. Write the regression test and watch it fail.
-6. Fix the cause, watch the test pass, check for siblings of the same bug.
-7. Confirm in the environment where it was reported.
-
-Skipping step 2 or 5 is the usual reason a bug "comes back": it was never shown to be fixed.
-Time-box: if 30 to 45 minutes pass without the hypothesis space getting smaller, stop guessing
-and switch to a mechanical method (bisect, or instrument and wait).
+Order of work: capture the report and set severity; reproduce at the cheapest layer that shows
+it; read the actual error and test one hypothesis at a time; narrow by halving; write the
+regression test and watch it fail; fix the cause and check for siblings; confirm in the
+environment where it was reported. Skipping the reproduction or the failing test is the usual
+reason a bug "comes back": it was never shown to be fixed. Rule of thumb: after 30 to 45
+minutes in which the hypothesis space has not shrunk, stop guessing and switch to a
+mechanical method (bisect, or instrument and wait).
 
 ## Bug report and triage
 
@@ -48,11 +37,10 @@ discount.
 | S4 | Cosmetic or rare, minor annoyance | Batch, or close with a reason |
 
 Reach: count affected users or accounts from the error tracker and logs, not from the number
-of complaints; most users do not report. One enterprise customer blocked can outrank many free
-users mildly annoyed, which is a business call. For S1 and S2, mitigation and diagnosis are
-separate tracks: restore service by the fastest reversible means before understanding the
-cause (incident handling is in `0x:site-reliability`). Close "cannot reproduce" reports only
-after adding the logging that would capture the next occurrence.
+of complaints; most users do not report. For S1 and S2, mitigation and diagnosis are separate
+tracks: restore service by the fastest reversible means before understanding the cause
+(incident handling is in `0x:site-reliability`). Close "cannot reproduce" reports only after
+adding the logging that would capture the next occurrence.
 
 ## Reproduce before fixing
 
@@ -69,30 +57,23 @@ down this ladder until it fails on demand:
 5. If it stays intermittent, loop it and measure the failure rate (see the last section), so
    that "fixed" can be stated as a rate change and not as a hope.
 
-Then shrink: remove steps, data and code until the smallest case that still fails remains.
-The minimal case usually names the cause. When no reproduction is reachable, do not ship a
-speculative fix on its own; ship instrumentation that will identify the cause at the next
-occurrence, optionally with the speculative fix behind it, and say that it is unconfirmed.
+Then shrink: remove steps, data and code until the smallest failing case remains; it usually
+names the cause. With no reproduction reachable, ship instrumentation that will identify the
+cause at the next occurrence; a speculative fix may ride along, labeled unconfirmed.
 
 ## Read the error, one hypothesis at a time
 
-- Read the whole message and the whole stack. Find the first frame in the project's own code;
-  frames above it are usually messengers. Follow `cause` chains to the bottom.
-- In a log with many errors, the first one in time is the cause candidate; later ones are
-  usually consequences.
-- Check that the error is current: stale build, cached bundle, wrong branch, wrong environment
-  variable file, a server not restarted. Prove the running code is the edited code (change a
-  log line) when behavior ignores an edit.
+- Read the whole message and stack. The first frame in the project's own code is the lead;
+  follow `cause` chains to the bottom. In a log, the earliest error is the cause candidate.
+- Prove the running code is the edited code (change a log line) when behavior ignores an
+  edit: stale build, cached bundle, wrong branch, wrong env file, server not restarted.
 - Search the exact message in the codebase and the dependency's issue tracker before
   theorizing; it identifies the throw site.
 - State the hypothesis as a prediction: "if the session cookie is missing on the callback
   request, the handler logs `no session` before the redirect". Then make the one observation.
   Change one thing at a time; two simultaneous changes that fix the bug leave it unexplained.
-- Keep notes of what was tried and seen. Notes prevent re-testing the same idea and are the
-  raw material for the commit message.
-- Question the assumptions held most firmly: "that function is never called with null",
-  "the migration ran", "that value is cached". Verify each by observation; most long hunts end
-  at an unchecked assumption.
+- Verify the assumptions held most firmly ("never called with null", "the migration ran",
+  "that value is cached") by observation; most long hunts end at an unchecked one.
 - Explain why the bug occurred and why it was not caught. A fix that makes the symptom vanish
   without that explanation is a mask (a retry, a null check, a longer timeout).
 
@@ -110,10 +91,10 @@ git bisect reset
 ```
 
 `git bisect run` takes any command: exit code 0 marks good, 1 to 127 except 125 marks bad, and
-125 skips a commit that cannot be tested (does not build). Write the check as a script kept
-outside the tracked tree, so checkouts do not change it. Reinstall dependencies in the script
-when the lockfile changes between commits. Bisect needs commits that each build; that is one
-reason to keep refactoring and behavior changes in separate small commits.
+125 skips a commit that cannot be tested (does not build). Keep the check as a script outside
+the tracked tree: a test file that does not exist yet at an older commit makes the runner
+exit non-zero, which bisect records as bad. Reinstall dependencies in the script when the
+lockfile differs, and exit 125 when the install or build fails.
 
 The same halving applies when history is not the variable:
 
@@ -123,7 +104,6 @@ The same halving applies when history is not the variable:
 | Dependencies | Diff the lockfile between good and bad; revert half of the version changes |
 | Configuration | Diff environment variables and flags between the working and failing environment; flip half |
 | Code path | Return early or stub half of the pipeline; see whether the wrong value already exists at the midpoint |
-| Data | Run against a copy with half of the rows or tenants |
 | Time | Compare the deploy, migration, flag-change and vendor-incident timeline against the first occurrence in the error tracker |
 
 ## Debugger, breakpoints and logpoints
@@ -137,40 +117,28 @@ a dependency's.
   `pnpm dev` and test runs, with no configuration.
 - Vitest: `vitest --inspect-brk --no-file-parallelism` so one process holds the breakpoint.
 - Playwright: `npx playwright test --debug`, or `await page.pause()` at the point of interest.
-- Browser: the Sources panel; `debugger;` in code as a temporary breakpoint.
 
-Techniques that pay:
+Techniques that pay: a **conditional breakpoint** (`order.id === 'ord_123'`) for the one bad
+iteration; a **logpoint**, which logs an expression and continues, so nothing is edited,
+rebuilt or left behind in a commit; **pause on exceptions**, including caught ones, to stop
+at the throw site of an error a `catch` swallows or rewraps. Source maps must be on for
+stacks and breakpoints to map to source (`node --enable-source-maps` for compiled server
+code).
 
-- **Conditional breakpoint** (`order.id === 'ord_123'`) for the one bad iteration in a loop.
-- **Logpoint**: a breakpoint that logs an expression and continues. Nothing is edited, rebuilt
-  or left behind in a commit.
-- **Pause on exceptions**, including caught ones, to stop at the throw site of an error that a
-  `catch` swallows or rewraps.
-- **Walk the call stack** and inspect each frame's variables to find where the bad value
-  first appears, then set the next breakpoint earlier. Watch expressions and DOM or XHR
-  breakpoints do the same in the browser.
-- Source maps must be on for stacks and breakpoints to map to source: `node
-  --enable-source-maps` for compiled server code.
-
-Logging is the better tool when timing matters (pausing hides races), when the failure is
-rare, or when the process cannot be paused (production). Make debug logs structured, with the
-request ID and the values that discriminate between hypotheses, and remove or demote them in
-the fix commit.
+Logging is the better tool when timing matters (pausing hides races), the failure is rare, or
+the process cannot be paused (production). Log the request ID and the values that discriminate
+between hypotheses, structured, and remove or demote those lines in the fix commit.
 
 ## The regression test
 
 Before changing the code, write the test that encodes the report at the cheapest layer that
 shows the failure, and run it: it must fail, and fail with the reported symptom, not with a
-setup error. Then fix, and see it pass. This proves the reproduction, proves the fix, and
-keeps the bug from returning.
+setup error. Then fix, and see it pass.
 
-- Name it after the behavior, with the issue reference in a comment: `does not double-charge
-  when the webhook is delivered twice`.
 - Test the class, not only the instance: if the bug was an off-by-one at a month end, add the
   other boundaries (leap day, year end).
 - Look for siblings: search for the same pattern elsewhere and fix those in the same change or
   list them.
-- Commit test and fix together; the pull request should show the failing output before the fix.
 - If the only test that reproduces it is an end-to-end test, keep it only if the journey is
   critical; otherwise extract the faulty logic and test it lower.
 
@@ -204,9 +172,8 @@ When it will not reproduce locally, the difference between environments is the c
 | Platform limits | Memory ceilings, function timeouts, cold starts, read-only filesystems |
 | UTC clock, other locales, real user devices | Time zone and locale math, old browsers, extensions |
 
-If the telemetry cannot answer "which request, which user, which release, which inputs", the
-first fix is the telemetry: request IDs in every log line, release tagging in the error
-tracker, input shapes logged at trust boundaries (setup is in `0x:site-reliability`).
+If telemetry cannot answer "which request, user, release and inputs", fix that first: request
+IDs in every log line, release tags in the error tracker (setup is in `0x:site-reliability`).
 
 ## Debugging in production safely
 
@@ -217,8 +184,8 @@ debug code behind.
   and bound the session:
 
 ```sql
-SET statement_timeout = '5s';
 BEGIN TRANSACTION READ ONLY;
+SET LOCAL statement_timeout = '5s';  -- LOCAL: a pooled connection must not keep the setting
 -- queries
 ROLLBACK;
 ```
@@ -229,7 +196,7 @@ ROLLBACK;
   count check before commit and a backup of the affected rows. Manual writes are an S1 source.
 - **Targeted verbosity by flag.** Turn debug logging on for one user, tenant or request header
   through a feature flag or a runtime log-level setting, not through a redeploy with debug on
-  globally. Give the flag an expiry.
+  globally. Give the flag an expiry; instrumentation ships through review like any code.
 - **Sampled logs** for high-volume paths: log 1 in N requests, but always log errors and the
   flagged target. Unsampled debug logging on a hot path can itself cause the incident and the
   bill.
@@ -237,9 +204,6 @@ ROLLBACK;
   tokens, or card and password fields.
 - **Do not attach a pausing debugger** to a serving process: a breakpoint halts every request
   on that instance, and an open inspector port is remote code execution for whoever reaches it.
-- **Reproduce on one instance or a canary** behind a flag for the affected account when the
-  bug needs production conditions; ship the instrumentation the same way as code, through
-  review and deploy.
 - Record what was accessed and why, and revoke temporary access when done.
 
 Flag mechanics are in `0x:ci-cd-release`; log pipelines and sampling in `0x:site-reliability`.
@@ -269,7 +233,7 @@ Procedure, on a local or staging copy running the production build:
    emitter's listener array, a timer, a closure.
 6. Fix, repeat the same load, and confirm the delta is gone.
 
-Usual causes, in rough order of frequency: a cache or `Map` keyed by user or request with no
+Usual causes: a cache or `Map` keyed by user or request with no
 size bound or expiry; listeners added per request to a long-lived emitter and not removed
 (Node's `MaxListenersExceededWarning` is this bug announcing itself); `setInterval` or timers
 never cleared; per-request data pushed to a module-level array or closed over by a long-lived
@@ -316,8 +280,8 @@ for i in $(seq 1 200); do pnpm vitest run src/orders/reserve.test.ts >/dev/null 
    an idempotency key, or a queue with one consumer per key. Sleeps, retries and reordering
    only lower the rate. Patterns are in `0x:postgres-database` and `0x:backend-architecture`.
 6. **Prove by rate.** Rerun the stress loop for many times the iterations that used to produce
-   a failure. Zero failures in 3 times the previous mean interval is weak evidence; aim for
-   10 times or more, plus the deterministic test from step 4.
+   a failure. With a failure rate of 1 in N, an unfixed bug still passes 3N runs in a row
+   about 5% of the time and 5N under 1%; run at least that, plus the test from step 4.
 
 For deadlocks, read the database's deadlock report: it names both statements and the locks
 held and awaited; fix by acquiring locks in one consistent order or shortening transactions.
@@ -331,7 +295,5 @@ held and awaited; fix by acquiring locks in one consistent order or shortening t
   mitigation but removes the feature for everyone. Assume yes for S1.
 - **May production data be queried or copied to reproduce this?** Privacy and contract limits
   apply. Assume read-only queries by identifier are fine and copies must be anonymized.
-- **When did it last work, and what changed around then?** Deploys, flags, migrations, vendor
-  changes, traffic. Assume the most recent deploy until the timeline says otherwise.
 - **Is a restart or more memory acceptable as a stopgap for a leak?** It costs money and hides
   the trend. Assume yes for days, not as the resolution.
