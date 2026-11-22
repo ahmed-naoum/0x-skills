@@ -134,6 +134,8 @@ oasdiff breaking /tmp/openapi.base.yaml openapi.yaml --fail-on ERR
 
 - First fail CI if regenerating the document from code changes the committed file; otherwise the
   diff compares stale artifacts.
+- The base branch must exist in the CI checkout: the default shallow clone on GitHub Actions has
+  no `origin/main`, so fetch it first (`fetch-depth: 0`, or `git fetch origin main`).
 - An intentional breaking change is merged through an explicit override (a label or an
   allowlist entry with a reason), so it is a decision in review rather than an accident.
 - Run `oasdiff changelog` (or an equivalent) to draft the public changelog entry from the same diff.
@@ -166,8 +168,9 @@ Sunset: Thu, 31 Dec 2026 23:59:59 GMT
 Link: <https://docs.example.com/migrations/invoices-v2>; rel="deprecation"
 ```
 
-   `Deprecation` (RFC 9745) carries the date the deprecation took effect as a Unix timestamp
-   prefixed with `@`; `Sunset` (RFC 8594) carries the removal date as an HTTP date. Few clients
+   `Deprecation` (RFC 9745) carries the date the deprecation took or will take effect as a Unix
+   timestamp prefixed with `@`; `Sunset` (RFC 8594) carries the removal date as an HTTP date and
+   must not be earlier than the deprecation date. Few clients
    read them automatically, so treat them as support for the emails, not a replacement.
 5. **Chase the tail.** Usage follows a power law: most consumers migrate after the first notice,
    a few never read email. Contact the remaining large accounts personally. Re-send notices at

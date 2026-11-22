@@ -24,8 +24,10 @@ keys are enough.
 ## Idempotency keys: the protocol
 
 The client sends `Idempotency-Key: <unique value>` (a UUID is the norm) and reuses the same value
-for every retry of the same logical operation. The header name follows the convention set by
-payment APIs and an IETF draft. Server behavior:
+for every retry of the same logical operation. The header name and the status codes below follow
+the convention set by payment APIs and an IETF draft (`draft-ietf-httpapi-idempotency-key-header`,
+still not an RFC, so a convention rather than a standard). Providers differ on the codes (some answer a mismatched body with
+400); what clients need is a distinct, documented `code` per case. Server behavior:
 
 | Situation | Response |
 |---|---|
@@ -52,13 +54,18 @@ Decisions inside the mechanism:
 
 - **Scope the key to the credential's tenant** (and include the route in the fingerprint). A
   global key namespace lets one customer collide with, or probe, another's keys.
+- **Bound the key**: it is client-controlled text stored in an index. Reject anything over 255
+  characters with 400.
 - **Claim the key atomically**: `INSERT ... ON CONFLICT DO NOTHING RETURNING`; zero rows returned
   means another request owns it. A read-then-write check has the exact race the key exists to prevent.
 - **Fingerprint the request**: hash the method, route and the parsed body (serialized with
   sorted keys), not the raw bytes, so harmless whitespace differences do not read as a different request.
 - **Put the key row, the business write and the stored response in one database transaction**
   whenever the operation is database-only. Commit makes all three true together; a crash leaves
-  nothing, and the retry runs cleanly.
+  nothing, and the retry runs cleanly. At Postgres's default READ COMMITTED isolation a concurrent
+  duplicate blocks on the insert until the first commits, then reads and replays its result; the
+  in-progress row and its 409 only become visible when the claim is committed separately, as in
+  the next case.
 - **When an external call is involved**, the transaction cannot cover it. Derive a downstream
   idempotency key from the incoming one and pass it on (payment providers accept one), so a
   re-execution after a crash is absorbed by the provider. Record progress in steps so a retry
@@ -74,11 +81,13 @@ Decisions inside the mechanism:
 - **Retention**: keep keys at least 24 hours, longer than the longest client or queue retry
   window, and document the number. Delete older rows with a scheduled job.
 - **Store the response body as returned**, not a pointer to the resource: a replay must show the
-  original result even if the resource changed since.
+  original result even if the resource changed since. The stored copy is as sensitive as the
+  resource: scope reads by tenant and delete it on the retention schedule.
 
 Check: send the same POST with the same key twice concurrently and twice sequentially; exactly one
-row and one side effect exist, both responses carry the same resource ID, and a third request with
-the same key and a different body gets 422.
+row and one side effect exist, every completed response carries the same resource ID (a concurrent
+duplicate may instead get the 409 in-progress), and a further request with the same key and a
+different body gets 422.
 
 ## Optimistic concurrency with ETags
 
@@ -103,7 +112,7 @@ WHERE id = $2 AND tenant_id = $3 AND version = $4;
    missing, return **428 Precondition Required**.
 
 Traps: `If-Match` uses strong comparison, so a weak validator (`W/"42"`) never matches, and some
-proxies weaken ETags when they compress a response (nginx does when it gzips). If ETags arrive
+proxies and CDNs weaken ETags when they compress a response (nginx does when it gzips). If ETags arrive
 weakened or stripped, send the version in the body as well and accept it there. The check and the
 write must be one statement or one transaction; comparing in application code and then updating
 reintroduces the race. Decide per resource whether the header is required (data integrity
@@ -128,6 +137,11 @@ Limits exist for different reasons, and each wants its own mechanism:
   and by target (account, email) together, with stricter numbers. For IPv6, key on the /64
   prefix; a single address is free to rotate. Abuse defense beyond counting is in
   `0x:auth-identity`, `abuse-defense.md`.
+- **Take the client IP from the hop you trust.** Behind a proxy or CDN the socket address is the
+  proxy's, and `X-Forwarded-For` is whatever the client sent until a trusted proxy appends to it.
+  Use the platform's documented client-IP header, or the framework's trusted-proxy setting with
+  the exact hop count. The leftmost `X-Forwarded-For` value lets an attacker choose a new identity
+  per request and walk past every IP limit; the proxy's own address puts all users in one bucket.
 - **Check the limit after authentication, before expensive work**, and count failed requests too
   (otherwise invalid requests are free).
 - **Decide failure mode per limiter.** If the limit store is down: fail open for ordinary
@@ -147,8 +161,9 @@ Content-Type: application/problem+json
 
 Always send `Retry-After` in seconds: it is the one header every client library understands.
 Also expose the limit state on successful responses so well-behaved clients slow down before
-hitting it. The header names are not settled: an IETF draft defines `RateLimit` and
-`RateLimit-Policy` fields and has changed shape between revisions, while `X-RateLimit-Limit`,
+hitting it. The header names are not settled: an IETF draft (`draft-ietf-httpapi-ratelimit-headers`)
+defines `RateLimit` and `RateLimit-Policy` fields, is still not an RFC and has changed shape
+between revisions, while `X-RateLimit-Limit`,
 `X-RateLimit-Remaining` and `X-RateLimit-Reset` remain the de facto convention. Pick one set,
 document the unit of the reset value (seconds until reset is less error-prone than a timestamp),
 and keep it. Give quota exhaustion a different `code` (`quota_exceeded`) from short-term
@@ -169,8 +184,19 @@ Store: a per-process in-memory limiter is correct only with one long-lived insta
 instances each allows the full limit, and on serverless the state vanishes between invocations.
 Use Redis (or a compatible managed store) with the check-and-update done atomically in one Lua
 script or a maintained library (`rate-limiter-flexible`, `@upstash/ratelimit`); separate GET and
-SET calls race under concurrency and let bursts through. Postgres is fine for low-frequency
-counters (per-day, per-month quotas, login attempts), not for per-request checks on a hot path.
+SET calls race under concurrency and let bursts through.
+
+Do not add Redis for this alone. Postgres is fine for low-frequency counters (per-day, per-month
+quotas, login attempts) and, at Launch on modest traffic, for a per-request fixed-window counter
+in one atomic statement. Move to Redis when the limiter shows up in database load: every request
+becomes a write to one hot row per caller.
+
+```sql
+INSERT INTO rate_counters (bucket, window_start, hits)
+VALUES ($1, date_trunc('minute', now()), 1)
+ON CONFLICT (bucket, window_start) DO UPDATE SET hits = rate_counters.hits + 1
+RETURNING hits;   -- over the limit when hits > N; delete old windows on a schedule
+```
 
 A token bucket that also supports cost per request:
 
@@ -188,7 +214,8 @@ redis.call('PEXPIRE', KEYS[1], math.ceil(cap / rate * 1000))
 return { allowed and 1 or 0, math.floor(tokens) }
 ```
 
-When denied, `Retry-After` is `ceil((cost - tokens) / rate)` seconds. Passing the clock from the
+When denied, `Retry-After` is `ceil((cost - tokens) / rate)` seconds. Reject a cost above the
+capacity before calling the limiter: it can never pass. Passing the clock from the
 application assumes app servers agree on time to within the precision that matters. Starting
 numbers when nobody has decided: a burst of 2 to 5 times the per-second rate, limits set well
 above what the product's own UI produces at its busiest, and separate, lower buckets for writes
@@ -241,7 +268,7 @@ or retry everything in a tight loop.
 | Response | Retry? | How |
 |---|---|---|
 | Connection error, timeout | Yes | Backoff; for POST only with an idempotency key |
-| 408, 502, 503, 504 | Yes | Backoff; honor `Retry-After` |
+| 408, 502, 503, 504 | Yes | Backoff; honor `Retry-After`. The write may have run: for POST only with an idempotency key |
 | 429 | Yes | Wait at least `Retry-After` |
 | 409 `idempotency_in_progress` | Yes | Short delay, same key |
 | 500 | Yes, bounded | Same key; the failure may repeat |

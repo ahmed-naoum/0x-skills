@@ -64,7 +64,7 @@ consistent with it; a second convention is worse than an imperfect first one.
 | Slow work | 202 plus a pollable job resource when p99 exceeds a few seconds | |
 | Retried writes | `Idempotency-Key` on POSTs with side effects, stored with the response for at least 24 h | Operation is naturally idempotent or covered by a unique constraint |
 | Concurrent edits | Version column, `ETag`, `If-Match`, 412 on mismatch | Append-only resources: skip |
-| Rate limits | Per tenant and key, token bucket in Redis, 429 with `Retry-After`; edge limits by IP in front | Single long-lived instance: in-memory is enough |
+| Rate limits | Per tenant and key, 429 with `Retry-After`, state in a store every instance shares: a token bucket in Redis where the project already runs Redis, otherwise an atomic Postgres counter; edge limits by IP in front | Single long-lived instance: in-memory is enough. Limiter shows up in database load: move it to Redis |
 | Inbound webhooks | Verify on raw bytes, store in an inbox table, 2xx, process in a worker, reconcile by polling | |
 | Outbound webhooks | Outbox, HMAC signature with timestamp, retries over days, delivery log, SSRF checks on resolved IPs | |
 | Versioning | `/v1` in the path, evolved additively; no `/v2` planned | Regular breaking changes: date-pinned versions with a transform layer |
@@ -96,11 +96,13 @@ By stage:
 6. Dates are RFC 3339 UTC, money is never a float, IDs are strings, and null-versus-absent
    follows one rule.
 7. Each POST with side effects has a stated duplicate behavior; sending it twice concurrently
-   with the same idempotency key produces one side effect and identical responses.
+   with the same idempotency key produces one side effect, and the second caller gets the
+   replayed response or a 409 in-progress, never a second execution.
 8. PATCH leaves absent fields untouched (no schema defaults applied), and resources that can be
    edited concurrently reject stale writes with 412.
 9. Limits exist for body size, request duration, page and batch size, and rate; 429 and 503
-   carry `Retry-After`; the limiter's store is shared across instances.
+   carry `Retry-After`; the limiter's store is shared across instances; IP-keyed limits take the
+   client address from the trusted proxy hop, not from a client-set `X-Forwarded-For`.
 10. Webhook receivers verify the signature over raw bytes in constant time, check timestamp
     freshness, deduplicate on event ID, respond before processing, and have a reconciliation job.
 11. Outbound webhook URLs are checked against private address ranges at send time on the

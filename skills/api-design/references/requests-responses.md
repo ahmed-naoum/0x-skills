@@ -3,6 +3,10 @@
 Read this when: defining what an endpoint accepts and returns, adding a list endpoint, choosing an
 error format, or designing PATCH, batch or long-running operations.
 
+Stage: validation, the error shape, paginated lists and value formats apply from Prototype,
+because they are contract and cannot be retrofitted without breaking clients. Explicit caps
+become mandatory at Launch. Add job resources and batch endpoints only when a real operation needs them.
+
 ## Validate at the boundary, in and out
 
 Every surface (route handler, server function, RPC procedure, webhook receiver, queue consumer)
@@ -12,8 +16,10 @@ parsed, typed value. TypeScript types prove nothing about bytes from the network
 - **Parse, do not check.** Use the schema's output (`schema.parse(body)`), never the raw input
   after validating it; coercions, defaults and stripped keys only exist in the output.
 - **Validate all four inputs**: path params, query string, headers that carry meaning, body.
-  Query values are strings: coerce explicitly (`z.coerce.number().int().min(1).max(100)`), and
-  remember that naive boolean coercion turns the string `"false"` into `true`.
+  Query values are strings: coerce explicitly (`z.coerce.number().int().min(1).max(100)`).
+  Two traps: `z.coerce.boolean()` turns the string `"false"` into `true` (accept the literal
+  strings instead; Zod 4 has `z.stringbool()`), and `z.coerce.number()` turns an empty string
+  into `0`, so a coerced number always carries a range.
 - **Bound everything.** Every string has a max length, every array a max item count, every number
   a range, every nested object a known depth. Unbounded inputs are the cheapest denial of service.
 - **Decide unknown-field policy for requests and state it.** Zod's `z.object` silently drops
@@ -94,10 +100,15 @@ LIMIT $4 + 1;                                           -- one extra row answers
 - **The order must be total.** Sorting on `created_at` alone skips or repeats rows that share a
   timestamp at a page boundary. Always append the unique ID as tie-breaker, and have an index
   matching the full order (`tenant_id, created_at DESC, id DESC`).
+- **Sort keys are NOT NULL and share one direction.** A row comparison with a NULL on either side
+  yields NULL, so those rows silently vanish from every page: sort on non-null columns, or on an
+  indexed `COALESCE` expression. `(a, b) < ($1, $2)` also matches an index only when both columns
+  sort the same way; mixed directions need the expanded `a < $1 OR (a = $1 AND b > $2)` form.
 - **The cursor is opaque**: base64url of the sort-key values (plus a version marker). Clients
   must not build or parse it, which keeps the freedom to change the ordering strategy. Validate
-  it on input and return 400 for a bad one. Sign it only if a forged cursor could reveal
-  something the filters would not.
+  it on input and return 400 for a bad one. The tenant and every permission filter come from
+  the credential on each request, never from the cursor. Sign it only if a forged cursor could
+  still reveal something those filters would not.
 - **Precision trap**: Postgres timestamps have microsecond precision, a JavaScript `Date` has
   milliseconds. A cursor built from a `Date` rounds the boundary and silently drops or repeats
   rows. Carry the value as the database's text form, or order by a column that survives the round trip.
@@ -136,7 +147,7 @@ Prefer a status enum over a boolean whenever the concept may grow (`is_active` b
 `active | paused | archived` within a year). Use UUIDv7 or another time-ordered ID under the
 prefix for new tables so IDs index well and sort roughly by creation; do not expose sequential
 integers, which leak volume and invite enumeration. Send and require `Content-Type:
-application/json` with UTF-8.
+application/json` with UTF-8, and answer a body in any other type with 415.
 
 ## Filtering, sorting and field selection
 
@@ -170,7 +181,7 @@ differ per layer and the lowest one wins, usually by surprise.
 |---|---|---|
 | JSON body | 100 KB to 1 MB; raise per route, not globally | 413 |
 | File upload | Not through the API body: direct-to-storage upload (`0x:backend-architecture`, `file-uploads.md`) | |
-| Header size | Leave the server default (Node's is 16 KB total); the usual cause of overflow is cookie bloat | 431 |
+| Header size | Leave the server default (Node's is 16 KB total; the proxy or platform in front is often lower, so check it); the usual cause of overflow is cookie bloat | 431 |
 | URL length | Keep under about 2,000 characters; move large filters to a POST search endpoint | 414 |
 | Request duration | 10 to 30 s for interactive endpoints; anything longer becomes a job | 504 from the proxy, or 503 |
 | Array items, string length, nesting | In the schema, per field | 422 |
@@ -200,9 +211,10 @@ replaced whole**. State these three rules in the docs.
 
 Traps:
 
-- **Defaults in the update schema.** Reusing the create schema with `.partial()` keeps its
-  `.default()` values, so an absent field is parsed as its default and overwrites stored data.
-  Define the update schema without defaults.
+- **Defaults in the update schema.** Reusing the create schema with `.partial()` can keep its
+  `.default()` values: in Zod 4 an absent field is parsed as its default and overwrites stored
+  data (Zod 3 left it absent, so an upgrade introduces the bug silently). Define the update
+  schema without defaults, and test that parsing `{}` returns `{}`.
 - **`undefined` and `null` collapse** in careless code (`if (!body.name)`, spreading into an
   update). Build the update from keys that are present (`key in body`), and keep `.optional()`
   (may be absent) and `.nullable()` (may be null) as separate decisions per field.
@@ -264,4 +276,5 @@ idempotency reference if the batch can be retried, and move very large batches t
 - **Should unknown request fields be rejected?** Strictness helps integrators find mistakes but
   makes some future changes noisier. Default: reject on public APIs, strip on internal ones.
 - **How long may job results and downloadable files be kept?** A retention and privacy choice.
-  Default: 24 hours for download links, 30 days for job records.
+  Default: results downloadable for 24 hours, through short-lived signed URLs minted on each
+  status read; job records kept 30 days.

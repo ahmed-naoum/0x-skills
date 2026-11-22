@@ -116,8 +116,8 @@ that reads descriptions, pays for every token returned, and may be steered by ho
 
 | Decision | Rule |
 |---|---|
-| Transport | Remote server over the Streamable HTTP transport for a hosted product; stdio only for tools run on the user's machine. Check the current protocol revision before implementing, since transports and auth details have changed between revisions |
-| Auth | OAuth as the protocol specifies for remote servers, with the MCP server as a resource server validating tokens for itself; a scoped API key in a header is acceptable where clients support it. Never a shared credential |
+| Transport | Remote server over the Streamable HTTP transport for a hosted product; stdio only for tools run on the user's machine. The protocol is versioned by date and revisions break things: the 2026-07-28 revision removed protocol-level sessions and the initialize handshake so each request is self-contained, while deployed clients may still speak earlier revisions. Keep the server stateless (anything a later call needs is in its arguments or the database), build on the official SDK at a version covering the revisions the target clients use, and read the current specification changelog and deprecation list before implementing (the same revision deprecated Roots, Sampling and Logging, so do not build on them) |
+| Auth | OAuth as the protocol specifies for remote servers, with the MCP server as a resource server that accepts only tokens issued for itself (check the audience) and never forwards a client's token to another API. The server publishes OAuth Protected Resource Metadata so clients can find the authorization server. How clients register changes between revisions (2026-07-28 prefers Client ID Metadata Documents and deprecates dynamic client registration), so choose an auth provider that documents support for the revisions the target clients speak. A scoped API key in a header is acceptable where clients support it. Never a shared credential |
 | Tool granularity | Tools are tasks, not endpoints. A handful of well-chosen tools (`search_invoices`, `create_invoice`, `get_account_summary`) outperforms a generated mirror of 80 operations, which floods the model's context and makes it pick wrongly |
 | Descriptions | Written as instructions to a model: what the tool does, when to use it and when not, what each parameter means, with constrained types and enums. The description is the documentation |
 | Results | Small and structured: names alongside IDs, only fields useful for the next step, small default page sizes with a cursor, and an explicit note when output was truncated |
@@ -142,14 +142,17 @@ syntax is `claude-api`.
 
 ## SDKs
 
-Skip until Launch-with-demand. A correct OpenAPI file, good curl examples and published types
+Skip until Scale, or until Launch if customers are asking for one. A correct OpenAPI file, good curl examples and published types
 let developers and their coding agents generate what they need. Ship SDKs when integrators
 repeatedly get the same things wrong (retries, pagination, signature verification), or when the
 main audience expects `npm install`.
 
-- **Generate from the OpenAPI document**, with a commercial generator (Stainless, Speakeasy,
-  Fern) or an open-source one. Hand-written SDKs fall behind the API within months; a solo team
-  cannot maintain several by hand.
+- **Generate from the OpenAPI document**, with a hosted generator (Fern, Speakeasy and similar)
+  or an open-source one (OpenAPI Generator). This market changes hands: Stainless shut down its
+  hosted generator after being acquired in 2026, and Fern became part of Postman the same year.
+  Before committing, check the vendor's current ownership, license and pricing, and confirm the
+  generated code is yours and builds without their service. Hand-written SDKs fall behind the
+  API within months; a solo team cannot maintain several by hand.
 - **Start with the languages the customers use**, usually TypeScript and Python. Each language
   is a permanent maintenance and support line.
 - **What an SDK must add beyond typed calls**: automatic retries with backoff and jitter that
@@ -189,7 +192,9 @@ marketplace, integrations built by other vendors, or remote MCP clients. For a c
 their own account from their own server, API keys are simpler and sufficient.
 
 - **Do not write the authorization server.** Use the auth provider's or a maintained library's
-  OAuth 2.1 implementation; the protocol's failure modes are subtle (`0x:auth-identity`, `oauth-oidc.md`).
+  implementation, configured to the OAuth 2.1 profile (still an IETF draft: OAuth 2.0 plus the
+  security best current practice, RFC 9700); the protocol's failure modes are subtle
+  (`0x:auth-identity`, `oauth-oidc.md`).
 - **Flows**: authorization code with PKCE for every client type. No implicit flow, no password
   grant. Client credentials only for app-level access with no user.
 - **Redirect URIs** are pre-registered and matched exactly, with no wildcards or prefix matching.

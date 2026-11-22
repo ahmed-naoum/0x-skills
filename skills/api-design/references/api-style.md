@@ -68,13 +68,13 @@ Methods and status codes carry meaning that clients, proxies and retry logic rel
 |---|---|---|---|
 | GET | Read; no side effects, no body | Yes | 200 |
 | POST | Create or run an action | No, unless idempotency key | 201 + `Location` for create; 200 for action; 202 for async |
-| PUT | Replace the whole resource, or create at a client-chosen ID | Yes | 200 or 204 |
+| PUT | Replace the whole resource, or create at a client-chosen ID | Yes | 200 or 204; 201 when it created the resource |
 | PATCH | Partial update | Not by definition; make it so | 200 with the updated resource |
 | DELETE | Remove | Yes | 204; repeat delete returns 404 or 204, pick one and document it |
 
 | Status | Meaning to commit to |
 |---|---|
-| 400 | Malformed request: unparseable JSON, wrong content type |
+| 400 | Malformed request: unparseable JSON, bad parameter syntax. A wrong `Content-Type` is 415 |
 | 401 | No valid credential. 403: valid credential, not allowed |
 | 404 | Not found, and also "exists in another tenant": do not confirm existence across tenants |
 | 409 | Conflict with current state (duplicate, illegal state transition) |
@@ -113,11 +113,13 @@ one transaction on the server.
 ## OpenAPI and typed clients
 
 Use OpenAPI 3.1 (its schemas are JSON Schema 2020-12, so one schema serves validation and
-documentation). Two workable sources of truth; pick one and never hand-edit the other:
+documentation). OpenAPI 3.2 (2025) is a compatible successor: emit it only once every tool in the
+chain (generator, linter, diff, docs renderer, SDK generator) reads it, because the oldest tool
+sets the version. Two workable sources of truth; pick one and never hand-edit the other:
 
 | Approach | How | Choose when |
 |---|---|---|
-| Code-first from schemas | Zod schemas define routes; the OpenAPI document is generated (Hono with `@hono/zod-openapi`, `zod-openapi`, ts-rest, Fastify with a type provider) | TypeScript server; default. The validator and the document cannot drift |
+| Code-first from schemas | Zod schemas define routes; the OpenAPI document is generated (Hono with `@hono/zod-openapi`, `zod-openapi`, Fastify with a type provider, or a contract library such as ts-rest; confirm the one chosen supports the project's Zod major version) | TypeScript server; default. The validator and the document cannot drift |
 | Spec-first | Hand-written `openapi.yaml`; server types and client generated from it | Several server languages, or the API is designed with partners before code exists |
 
 Decorators or comments that describe routes separately from the validation code are the trap:
@@ -153,8 +155,9 @@ const api = createClient<paths>({ baseUrl: "https://api.example.com" });
 const { data, error } = await api.GET("/invoices/{id}", { params: { path: { id } } });
 ```
 
-Types only, no runtime code generated, so regenerating is safe to automate. Full multi-language
-SDKs are a separate decision: see `public-api-platform.md`.
+Types only, no runtime code generated, so regenerating is safe to automate. `openapi-fetch` does
+not throw on 4xx or 5xx: check `error` (typed from the documented error responses) on every call.
+Full multi-language SDKs are a separate decision: see `public-api-platform.md`.
 
 ## GraphQL, when it is chosen
 

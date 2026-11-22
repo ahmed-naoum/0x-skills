@@ -45,7 +45,7 @@ The header names and the signed string differ per provider; the structure does n
   parser on that route only.
 - **Compare in constant time** with `timingSafeEqual`. It throws when lengths differ, so check
   length first.
-- **Reject stale timestamps** (a tolerance of 5 minutes is the common default) when the
+- **Reject stale timestamps** (5 minutes is a common tolerance; use the provider's value) when the
   timestamp is part of the signed content; an unsigned timestamp protects nothing. This blocks
   replay of a captured request later.
 - **Deduplicate on the provider's event ID** with a unique constraint. The timestamp window
@@ -132,7 +132,8 @@ anything involving money or access.
 
 Decide build versus buy first. A correct sender is a queue, a retry scheduler, signing, an SSRF
 boundary, a delivery log, an endpoint-management UI and customer support for all of it. A
-hosted or open-source delivery service (Svix, Hookdeck, Convoy and similar) is a reasonable
+hosted or self-hostable delivery service (Svix, Hookdeck Outpost, Convoy and similar; check the
+current license and pricing, since some are source-available, not open source) is a reasonable
 default at Launch if webhooks are a feature customers pay for; build in-house when volume is
 small and the job queue already exists. Skip outbound webhooks entirely at Prototype.
 
@@ -144,9 +145,11 @@ small and the job queue already exists. Skip outbound webhooks entirely at Proto
 - **Sign every delivery with HMAC-SHA256 over an ID, a timestamp and the exact body**, with a
   per-endpoint secret. Follow the Standard Webhooks conventions rather than inventing a scheme:
   headers `webhook-id`, `webhook-timestamp`, `webhook-signature`; signed content
-  `{id}.{timestamp}.{body}`; signatures prefixed with a scheme version (`v1,<base64>`), and
-  several signatures allowed in the header to support rotation. Customers then get ready-made
-  verification libraries.
+  `{id}.{timestamp}.{body}` with the timestamp in Unix seconds; signatures prefixed with a scheme
+  version (`v1,<base64>`), and several space-separated signatures allowed in the header to
+  support rotation. Customers then get ready-made verification libraries. Generate each secret
+  from a CSPRNG: 24 to 64 random bytes, shown base64-encoded with the `whsec_` prefix those
+  libraries expect (they strip the prefix and decode the rest to get the HMAC key).
 - **The `webhook-id` is the event's stable ID and stays the same across retries**; it is the
   consumer's deduplication key. Document that delivery is at-least-once and unordered.
 - **Retry on any non-2xx, timeout or connection error** with exponential backoff and jitter over
@@ -175,8 +178,10 @@ admin ports, databases and localhost services.
 2. Resolve the hostname and reject the delivery if **any** resolved address is not public:
    loopback (`127.0.0.0/8`, `::1`), RFC 1918 private ranges, link-local (`169.254.0.0/16`, which
    contains the metadata address `169.254.169.254`, and `fe80::/10`), carrier-grade NAT
-   (`100.64.0.0/10`), unique-local IPv6 (`fc00::/7`), unspecified and multicast addresses, and
-   IPv4-mapped IPv6 forms of all of these.
+   (`100.64.0.0/10`), unique-local IPv6 (`fc00::/7`), unspecified (`0.0.0.0/8`, `::`), multicast
+   and reserved addresses, and the IPv4-mapped (`::ffff:0:0/96`) and NAT64 (`64:ff9b::/96`) forms
+   of all of these. A hand-kept blocklist goes stale: classify each address with a maintained IP
+   library and deliver only to what it reports as global unicast.
 3. **Connect to the address that was validated.** Validating the name and then letting the HTTP
    client resolve again allows DNS rebinding: the second lookup returns an internal address. Pin
    the resolved IP for the connection (keeping the hostname for TLS and `Host`), or do the check
@@ -245,5 +250,8 @@ give events a constant envelope:
   webhooks are a selling point; in-house on the existing job queue if they are a minor feature.
 - **How long should failed deliveries be retried and logs kept?** Affects storage and what support
   can promise. Default: retry for about 3 days, keep logs 30 days.
-- **May payloads contain personal or sensitive data?** If not, send thin events. Default: fat
-  events without secrets or payment details.
+- **May payloads contain personal or sensitive data?** A fat event copies that data onto servers
+  the customer runs and into their logs. Whether that is allowed depends on the contracts with
+  customers and on the data-protection rules covering the product's users, which differ by
+  jurisdiction (`0x:privacy-compliance`). If it is not, send thin events. Default: fat events
+  without secrets, payment details, or health and similarly sensitive data.
