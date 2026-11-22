@@ -37,8 +37,9 @@ Every file this prints needs a reason.
 
 Put `import 'server-only'` on the first line of the database client, the data access layer, the
 session code, the server env module and anything holding an API key. A client import then fails
-the build with `You're importing a module that depends on "server-only"` followed by import
-traces; the trace labeled `[Client Component Browser]` is the offending chain.
+the build with an error that names the package (in Next 16: `'server-only' cannot be imported
+from a Client Component module`) and an import trace. Read the trace from the bottom up to find
+the `'use client'` file where the chain enters client code.
 
 Without the marker the bundler includes the module without complaint. Server environment variables
 are `undefined` in the browser, so the result is a runtime bug at best and a leaked secret at
@@ -66,16 +67,19 @@ import { verifySession } from '@/lib/dal'
 
 const Input = z.object({ id: z.string().min(1), title: z.string().trim().min(1).max(120) })
 
+// RenameState: null | { ok: true } | { ok: false; message?; fieldErrors?; values? }
 export async function renamePost(_prev: RenameState, formData: FormData): Promise<RenameState> {
   const session = await verifySession()                          // 1. who is calling
   const parsed = Input.safeParse(Object.fromEntries(formData))   // 2. what did they send
   if (!parsed.success) {
-    return { ok: false, fieldErrors: z.flattenError(parsed.error).fieldErrors }
+    const fieldErrors = z.flattenError(parsed.error).fieldErrors // Zod 3: parsed.error.flatten()
+    return { ok: false, fieldErrors, values: { title: String(formData.get('title') ?? '') } }
   }
   const post = await db.post.findById(parsed.data.id)            // 3. may they touch this row
   if (!post || post.authorId !== session.userId) return { ok: false, message: 'Not found' }
   await db.post.rename(post.id, parsed.data.title)               // 4. write
-  updateTag(`post:${post.slug}`)                                 // 5. expire what displays it
+  updateTag(`post:${post.slug}`)                                 // 5. expire the entity
+  updateTag('posts')                                             //    and the lists showing it
   return { ok: true }                                            // 6. minimal result
 }
 ```
@@ -92,11 +96,15 @@ export async function renamePost(_prev: RenameState, formData: FormData): Promis
 - `redirect()` and `notFound()` work by throwing. Call them outside `try`/`catch`.
 - Next.js runs one server function at a time per client. They are for mutations. Reads belong in
   server components or route handlers, where they run in parallel.
-- The request body limit defaults to 1 MB. Files go from the browser to object storage through a
-  presigned URL (`0x:backend-architecture`, file uploads), and the function receives the key.
+- The request body limit defaults to 1 MB (`serverActions.bodySizeLimit`). Do not raise it for
+  uploads: files go from the browser to object storage through a presigned URL
+  (`0x:backend-architecture`, file uploads), and the function receives the key.
 - Callers that are not this app's browser code (mobile app, webhook, cron) get a route handler.
   Both call the same data-layer function.
 - Rate-limit functions that send email, cost money or write in bulk (`0x:api-design`).
+- Next.js accepts a server function call only as a POST whose `Origin` matches the host, which
+  blocks cross-site form posts. Keep `serverActions.allowedOrigins` to the app's own domains so
+  that stays true.
 - The wire protocol is attack surface: December 2025 brought an unauthenticated remote code
   execution in React Server Components (CVE-2025-55182). A security release of `react`, the
   `react-server-dom-*` packages or the framework is deployed the day it lands.
@@ -114,7 +122,8 @@ segment's own layout stays outside it.
 - The largest element of the first screen (headline, hero image, primary content) is not behind a
   boundary waiting on slow data. Cache that data or make it part of the shell.
 - Existence, permission and redirect decisions happen before the first boundary. After the first
-  byte the status code is fixed.
+  byte the status code is fixed, and under Cache Components the prerendered shell is the first
+  byte (`rendering-strategies.md`).
 - Pair each boundary with an error boundary. A failure inside a streamed region should replace
   that region, not the page.
 - Recommendations, activity feeds and analytics panels always stream; they never hold up the
@@ -153,8 +162,9 @@ export default async function Page(props: PageProps<'/items/[id]'>) {
 }
 ```
 
-`React.cache` deduplicates within one request and matches arguments by identity, so pass
-primitives, not fresh objects. Find waterfalls instead of guessing: set `logging: { fetches: {
+`PageProps` is a global type that `next typegen`, `next dev` and `next build` generate (Next 15.5
+and later; before that, type `params` as a `Promise`). `React.cache` deduplicates within one
+request and matches arguments by identity, so pass primitives, not fresh objects. Find waterfalls instead of guessing: set `logging: { fetches: {
 fullUrl: true } }` in `next.config.ts` and read the order and duration of server fetches in the
 dev log, or read the spans in a trace (`0x:site-reliability`).
 

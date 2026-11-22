@@ -68,7 +68,8 @@ the fixes are in `server-components.md`.
 Put there anything the user expects to survive reload, Back, or a pasted link.
 
 - The server reads `searchParams` and renders from it. The client writes with `<Link>`, the
-  router, or a typed helper such as nuqs.
+  router, or a typed helper such as nuqs (version 2 needs its `NuqsAdapter` for the framework
+  mounted in the root layout).
 - Push or replace: would the user expect Back to undo it? Pagination, a tab, an opened item:
   push. Each keystroke in a search box or each step of a slider: replace, debounced around 300 ms.
 - The URL is user input. Parse with defaults and never throw: an unknown sort becomes the
@@ -132,7 +133,8 @@ When the screen is still stale after a successful write, check in this order:
 4. `revalidateTag(tag, 'max')` in the action that the writer is waiting on. It marks stale but
    does not re-render the current page. Use `updateTag`.
 5. The write went through a route handler or a direct `fetch`, not a server action. The client
-   router keeps visited pages for minutes; call `router.refresh()`.
+   router still holds its copy of the route (prefetched and static segments for minutes, and
+   always for Back and Forward); call `router.refresh()`.
 6. `redirect()` ran before the invalidation, or the invalidation sits in a `try` whose `catch`
    swallowed the redirect.
 7. Self-hosted on several instances, or a CDN caching HTML (`rendering-strategies.md`).
@@ -155,8 +157,9 @@ const toggle = () =>
 With a query cache the sequence is fixed: in `onMutate`, `cancelQueries` for the key (a refetch
 in flight would overwrite the patch), snapshot the previous value, `setQueryData`, return the
 snapshot; in `onError`, restore the snapshot; in `onSettled`, invalidate, and only when no other
-mutation for that key is still running (`queryClient.isMutating() === 1`), or an early refetch
-undoes a later optimistic change. Give new items a client-generated UUID that the server accepts
+mutation for that data is still running (give those mutations one `mutationKey` and test
+`queryClient.isMutating({ mutationKey }) === 1`; the settling mutation still counts), or an
+early refetch undoes a later optimistic change. Give new items a client-generated UUID that the server accepts
 as the real ID. A temporary ID swapped on success changes the React key and remounts the row.
 
 ## Forms and mutations
@@ -258,8 +261,8 @@ qc.setQueryData<Message[]>(['messages', roomId], (old = []) => {
 
 The compiler (1.0, stable since late 2025) memoizes components and hooks at build time. Turn it
 on for new projects: in Next.js `reactCompiler: true` plus the `babel-plugin-react-compiler` dev
-dependency; in Vite through `@vitejs/plugin-react` as its README describes for the installed
-version. Builds get somewhat slower.
+dependency; in Vite through `@vitejs/plugin-react` as the README of the installed version
+describes (the setup changed when version 6 dropped Babel). Builds get somewhat slower.
 
 - New code: no `useMemo`, `useCallback` or `React.memo` by default. Write the plain version.
 - Existing code: leave manual memoization in place. Removing it changes when effects fire where a

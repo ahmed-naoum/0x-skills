@@ -9,7 +9,8 @@ list, or reviewing a frontend pull request.
 Behavior comes from an accessible headless library (Radix, Base UI, React Aria, Ark). Styles are
 the project's own, in files the project owns. The shadcn model copies component source into
 `components/ui/` instead of installing a styled dependency: the code is yours to edit, and
-updates arrive as diffs you choose to take (`npx shadcn@latest add button --diff`).
+updates arrive as diffs you choose to take (`npx shadcn@latest add button --diff` in CLI
+version 4 and later prints the diff without writing files).
 
 - Never hand-build a dialog, menu, combobox, select, tooltip, popover or tabs from `<div>`s.
   Focus trapping, dismissal, typeahead, roving focus and screen-reader semantics are most of the

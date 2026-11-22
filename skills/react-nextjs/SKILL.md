@@ -89,7 +89,9 @@ By stage:
 1. The route table printed by `next build` shows each route with the rendering intended. No
    public page became dynamic through a cookie or header read in a layout.
 2. `curl -s` of each public page contains the title, the `<h1>`, the main text, the canonical
-   link and the Open Graph tags, and an unknown slug answers 404 on the first and second request.
+   link and the Open Graph tags. An unknown slug, requested twice, answers 404 both times; where
+   the route streams a shell first it answers 200 and the HTML must carry `noindex`, which is
+   acceptable only if the user accepted soft 404s for that route.
 3. Every cached function states a lifetime and tags. Every mutation invalidates the entity and
    its collection (tags or query keys). Proven by writing and seeing the new value in the list
    and the detail view without a reload.
@@ -108,10 +110,13 @@ By stage:
     and a double submit creates one record.
 11. Signed-out and wrong-tenant requests to protected pages and to their server functions
     return a redirect or "not found", never content. Tested with `curl`, not by clicking.
-12. `next typegen && tsc --noEmit` and the linter pass, and a fresh clone builds after
+12. `next typegen && tsc --noEmit` and the linter pass (before Next 15.5 there is no `typegen`;
+    `next build` generates the route types), and a fresh clone builds after
     `pnpm install --frozen-lockfile` with no other steps.
-13. `grep -rlE "sk_live|SECRET|PRIVATE KEY" .next/static` prints nothing, and every
-    public-prefixed variable is a value meant to be public.
+13. No server secret is in the client bundle: `grep -rlF -- "$VALUE" .next/static` prints
+    nothing for the value of each server secret, and neither does
+    `grep -rlE "sk_live_|PRIVATE KEY" .next/static`. Every public-prefixed variable is a value
+    meant to be public.
 14. Interactive widgets come from the primitive library and list keys are stable IDs from the
     data.
 

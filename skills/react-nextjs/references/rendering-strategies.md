@@ -8,7 +8,7 @@ moving a Next.js app off a managed platform.
 
 ```bash
 node -p "require('next/package.json').version"     # the installed version, not the remembered one
-grep -nE "cacheComponents|output:|experimental|webpack" next.config.*
+grep -nE "cacheComponents|partialPrefetching|output:|experimental|webpack" next.config.*
 ls node_modules/next/dist/docs 2>/dev/null          # docs for exactly this version (16.2 and later)
 ```
 
@@ -32,8 +32,6 @@ crawler or link preview read it without running JavaScript; is it behind login.
 | Search and filtered lists | Server-rendered from the URL query; cache the query function by its arguments |
 | Internal admin tool or embeddable widget | A client-rendered SPA is acceptable |
 
-- Rendering is a per-route and, with partial prerendering, per-component choice. "Is this app SSR
-  or static?" is the wrong question.
 - Default to static. A static page cannot be slow under load and survives a database outage. Move
   down the table only when a question above forces it.
 - Client-only rendering of public content gives up crawlability and first paint. Keep it behind
@@ -41,9 +39,10 @@ crawler or link preview read it without running JavaScript; is it behind login.
 - Per-user data never enters a shared cache. In practice: a cached function receives the user or
   tenant ID as an argument, or it is not cached.
 
-Check the result in the route table `next build` prints: `○` static, `◐` partial prerender, `ƒ`
-dynamic. A marketing page marked `ƒ` is a bug: something in its tree reads cookies, headers or
-search params, usually an auth or theme lookup in the root layout.
+Check the result in the route table `next build` prints and read its legend: `○` static, `◐`
+partial prerender, `ƒ` dynamic (the previous model also prints `●` for static pages built from
+`generateStaticParams`). A marketing page marked `ƒ` is a bug: something in its tree reads
+cookies, headers or search params, usually an auth or theme lookup in the root layout.
 
 ## Next.js has two caching models
 
@@ -53,13 +52,17 @@ search params, usually an auth or theme lookup in the root layout.
 | Default | Nothing is cached; request-time work must sit in `<Suspense>` or be cached, and the dev overlay and build say so | `fetch` is uncached; a route is static unless it uses request APIs |
 | Opt into caching | `'use cache'` with `cacheLife()` and `cacheTag()` in a function or component | `fetch(url, { next: { revalidate, tags } })`, `unstable_cache`, `export const revalidate` |
 | Force request time | `await connection()`, or read `cookies()`/`headers()`, inside `<Suspense>` | `export const dynamic = 'force-dynamic'` |
-| Segment config | `dynamic`, `revalidate` and `fetchCache` exports are rejected | Available |
+| Segment config | `dynamic`, `revalidate`, `fetchCache`, `dynamicParams` and `runtime` exports fail the build; so does a `generateStaticParams` that returns `[]` | Available |
+| Runtime | Node.js only | Node.js, or the deprecated edge runtime |
 | Partial prerendering | The default behavior | Not available |
 
 Use the column the project is in and do not mix them. Turning the flag on in an existing app is a
 migration, not a setting: every request-time read needs a boundary or a cache directive, and the
-build names the routes that lack one. Do it on a branch, one route at a time, and not at all
-during Prototype unless the app is new.
+build names the routes that lack one. Follow the migration guide in the installed docs, on a
+branch, one route at a time, and not at all during Prototype unless the app is new. From 16.4
+the config also expects `partialPrefetching` to be set explicitly beside `cacheComponents`; it
+changes what `<Link>` prefetches and how params outside `generateStaticParams` are served, so
+read both config pages for the installed version before setting either.
 
 ## Cache with explicit lifetimes and tags
 
@@ -78,12 +81,14 @@ export async function getPost(slug: string) {
 
 - **Tag scheme**: one tag per collection (`posts`), one per entity (`post:<slug>`), and the tenant
   in both for tenant data (`t:<id>:posts`). Build tags with functions in one file. A misspelled
-  tag fails silently: nothing errors and nothing updates. Tags are case-sensitive, 256 characters
-  at most.
-- **Lifetime**: every cached scope calls `cacheLife` so the choice is visible. Profiles `minutes`,
-  `hours`, `days`, `weeks`, `max` regenerate after 1 minute to 30 days. Content that changes only
-  when someone publishes gets `max` plus a tag. The `seconds` profile, or an `expire` under 5
-  minutes, is too short to prerender and becomes a dynamic hole.
+  tag fails silently: nothing errors and nothing updates. Tags are case-sensitive; one longer
+  than 256 characters is dropped with only a console warning.
+- **Lifetime**: every cached scope calls `cacheLife` so the choice is visible; without the call
+  the `default` profile applies (regenerate after 15 minutes). Profiles `minutes`, `hours`,
+  `days`, `weeks`, `max` regenerate after 1 minute to 30 days, unless `next.config` redefines
+  them. Content that changes only when someone publishes gets `max` plus a tag. The `seconds`
+  profile, a `revalidate` of 0 or an `expire` under 5 minutes is too short to prerender and
+  becomes a dynamic hole.
 - **Cache key**: arguments, closed-over values and the build ID. So pass IDs, not request-shaped
   objects; a deploy starts with an empty cache; and a cached scope cannot call `cookies()` or
   `headers()`. Read them outside and pass the value in.
@@ -99,9 +104,9 @@ export async function getPost(slug: string) {
 | `revalidatePath(path)` | Actions, route handlers | Invalidates one route | Only when no tag exists |
 | `refresh()` | Server Actions | Re-renders the uncached parts of the current route | A write that touched only uncached data |
 
-The one-argument `revalidateTag(tag)` is deprecated in 16. Regeneration is triggered by the next
-request, not by the call, so with `'max'` the first visitor after a publish still sees the old
-page. Runtime entries live in memory per instance; on serverless they rarely survive between
+The one-argument `revalidateTag(tag)` is deprecated in 16 (a type error; it acts like `{ expire:
+0 }`). Regeneration is triggered by the next request, not by the call, so with `'max'` the first
+visitor after a publish still sees the old page. Runtime entries live in memory per instance; on serverless they rarely survive between
 requests, and `'use cache: remote'` moves them to a shared handler when the hit rate justifies a
 network round trip.
 
@@ -113,15 +118,19 @@ Partial prerendering sends a shell built ahead of time (static markup, cached re
 - The deeper a request-time read sits, the larger the shell. One `cookies()` call in the root
   layout shrinks the shell to a fallback. Move the read into the leaf that needs it, inside
   `<Suspense>`; pass the `params` promise down and await it in the child.
-- A route with any hole is answered with a private, uncacheable `Cache-Control`. A plain CDN in
-  front of a self-hosted server caches only fully static routes; the shell of a partial route
-  still comes from the origin. Platforms with partial-prerender support serve the shell from the
-  edge.
-- A param not returned by `generateStaticParams` can receive the generic shell with status 200
-  before the page has decided the item exists. A later `notFound()` then arrives in the stream as
-  the not-found UI plus `<meta name="robots" content="noindex">`. Where the status matters (a
-  public catalog), decide existence before anything suspends, and test an unknown slug with the
-  `curl` check below, twice, because the first response and later ones can differ.
+- A route with any hole is answered with a private, uncacheable `Cache-Control` (check with
+  `curl -sI`). A plain CDN in front of a self-hosted server caches only fully static routes; the
+  shell of a partial route still comes from the origin. Platforms with partial-prerender support
+  serve the shell from the edge.
+- Status codes: the prerendered shell is sent first, so the response starts as 200 even when the
+  shell is empty. A `notFound()` that runs at request time then arrives in the stream as the
+  not-found UI plus `<meta name="robots" content="noindex">`: a soft 404. It yields a real 404
+  only when it runs during prerendering. For params outside `generateStaticParams` the outcome
+  depends on the version, on `partialPrefetching` and on whether `params` is awaited inside
+  `<Suspense>` (the ISR guide in the installed docs). Where a real 404 matters, answer it from
+  `proxy` after a fast existence lookup, or make the route wait for its full render (the
+  `ensureStatic` segment export, Next 16.4 and later). Then run the `curl` check
+  below twice, because the first response and later ones can differ.
 - Islands are the same idea from the other direction. In Astro the page is static HTML and each
   interactive component hydrates alone (`client:visible`, `client:idle`); `server:defer` adds a
   per-request server island.
@@ -137,10 +146,12 @@ JavaScript. Google does, later and on a budget. So for every public page:
 - Metadata comes from `generateMetadata` calling the same cached data function as the page. Next
   streams metadata to browsers and blocks on it for bots it recognizes as HTML-limited by user
   agent, so test with a bot user agent.
-- Status is decided before anything suspends. Once streaming starts the status is 200: a late
+- Status is decided before the response starts. Once streaming starts the status is 200: a late
   `notFound()` becomes not-found UI plus `noindex`, and a late `redirect()` becomes a client-side
-  redirect.
-- The Open Graph image is an absolute URL, 1200 by 630, per page (`opengraph-image.tsx`) or static.
+  redirect. In the previous model streaming starts at the first `loading.tsx` or `<Suspense>`
+  fallback; under Cache Components it starts with the shell (above).
+- The Open Graph image is an absolute URL (set `metadataBase`), 1200 by 630 by convention, per
+  page (`opengraph-image.tsx`) or static.
 
 ```bash
 curl -s "$URL" | grep -oE '<title>[^<]*|<h1[^>]*>[^<]*|rel="canonical"[^>]*'
@@ -158,8 +169,8 @@ Follow the project. For a new one:
 |---|---|---|
 | Product with public pages and an app behind login | Next.js App Router | One codebase, server components, per-route rendering, the largest ecosystem. Off its home platform, hosting takes work (last section) |
 | Content site with little interactivity | Astro | No JavaScript by default, islands where needed, typed content collections. Switch to Next when site and app must share components and session |
-| App entirely behind login, explicit loaders and actions preferred | React Router, framework mode | Simple request and response model on Vite, runs on any Node host. Its server components support is still experimental |
-| Client-heavy app that wants typed routes and search params end to end | TanStack Start | The typed router is the reason to pick it. 1.0 is recent, the ecosystem is smaller, server components are experimental |
+| App entirely behind login, explicit loaders and actions preferred | React Router, framework mode | Simple request and response model on Vite, runs on any Node host. Its server components support was still marked unstable in late 2026; check its docs |
+| Client-heavy app that wants typed routes and search params end to end | TanStack Start | The typed router is the reason to pick it. It is younger than the others, the ecosystem is smaller, and its server components support is experimental; check current status |
 | Team already fluent in Svelte or Vue | SvelteKit or Nuxt | The UI library decides. All of these render static, on the server and streamed |
 | Internal tool over an existing API, no SEO | Vite SPA with a router and a query cache | No server to run |
 | Existing Rails, Django, Laravel or Go app with modest interactivity | HTML over the wire | Below |
@@ -206,7 +217,8 @@ renamed field fails the build instead of rendering `undefined`.
 
 1. Data functions are cached with `cacheLife('max')` and tagged. Nothing regenerates on a timer.
 2. The CMS webhook for publish, unpublish and delete calls a route handler that verifies the
-   signature and invalidates the tags:
+   signature and invalidates the tags. The header name, encoding and signing scheme below are
+   placeholders: use the CMS's own verifier where its SDK has one, over the raw body:
 
 ```ts
 // app/api/revalidate/route.ts
@@ -250,18 +262,18 @@ behind a CDN, as long as possible. Each row is something a managed platform did 
 
 | Concern | Do |
 |---|---|
-| Build output | `output: 'standalone'`; copy `public/` and `.next/static/` beside `server.js`; set `HOSTNAME=0.0.0.0` and `PORT` in a container |
+| Build output | `output: 'standalone'`; copy `public/` to `.next/standalone/public` and `.next/static/` to `.next/standalone/.next/static` (the output omits both); run `node server.js` with `HOSTNAME=0.0.0.0` and `PORT` in a container |
 | Static assets | `/_next/static/*` is content-hashed: cache it forever at the CDN. Honor the `Cache-Control` and `Vary` Next sends for HTML, and never give HTML and RSC responses different TTLs |
 | Streaming | Proxies buffer by default, which removes streaming. nginx: `proxy_buffering off` or an `X-Accel-Buffering: no` response header. Check the load balancer, then verify with `curl -N` |
 | Images | Optimization runs in the Node process with sharp and costs CPU and memory. Acceptable when small; otherwise a custom `loader` pointing at an image CDN |
-| More than one instance | Each instance has its own cache and `revalidateTag` reaches only one. Shared `cacheHandler` (ISR, `fetch`) and `cacheHandlers` (`use cache`) on Redis, tag sync, `cacheMaxMemorySize: 0` |
-| Server functions | Instances built separately need the same `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` at build time, or calls fail with "Failed to find Server Action" |
+| More than one instance | Each instance has its own cache and `revalidateTag` reaches only one. Shared `cacheHandler` (ISR, `fetch`) and `cacheHandlers` (`use cache`) on Redis or similar, a `refreshTags()` implementation so invalidations reach every instance, `cacheMaxMemorySize: 0` |
+| Server functions | Every instance needs the same `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` (a base64 AES key, generated once, kept as a secret, present at build time), or calls fail with "Failed to find Server Action". Calls are also rejected when `Origin` does not match `Host` or `X-Forwarded-Host`: forward the original host from the proxy, or list the public domain in `serverActions.allowedOrigins` and nothing wider |
 | Rolling deploys | Set `deploymentId` so a client from the old build reloads instead of failing; keep the previous build's static assets reachable |
 | Environment | `NEXT_PUBLIC_*` values are frozen at build: one build per environment, or read on the server at request time (`build-tooling.md`) |
 | Shutdown | Send SIGTERM and allow a 10 to 30 second drain so in-flight streams and `after()` callbacks finish |
 | No longer included | Preview deploy per pull request, instant rollback, cron, WAF, log drains: `0x:ci-cd-release`, `0x:cloud-infrastructure` |
 
-Other targets go through the Deployment Adapter API. Before choosing a workers or edge runtime,
+Other targets go through the Deployment Adapter API (`adapterPath`). Before choosing a workers or edge runtime,
 check the provider's current support list for the features in use (partial prerendering, `use
 cache`, image optimization, `proxy`). Multi-instance self-hosting is a Scale concern; at Prototype
 and Launch run on a platform that supports Next natively, or one container on a PaaS.
@@ -274,6 +286,9 @@ and Launch run on a platform that supports Next natively, or one container on a 
   is needed. Default: updated within a minute of publishing, by tag invalidation.
 - **Do search engines, social previews or AI assistants need to read these pages?** Default: yes
   for everything public, no behind login.
+- **Must a missing page answer with a real 404 status, or is a "not found" page marked `noindex`
+  enough?** Streamed routes give the second unless extra work is done; SEO audits, compliance
+  and analytics sometimes require the first. Default: a real 404 on public, indexable sections.
 - **Must this run on your own servers or cloud account?** Compliance and cost can force it, and it
   adds the work in the last section. Default: a managed platform until Scale.
 - **Does a marketer need to change the marketing site without engineering?** That is the case for

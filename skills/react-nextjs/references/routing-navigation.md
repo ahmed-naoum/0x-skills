@@ -71,8 +71,8 @@ export const verifySession = cache(async () => { // one lookup per request, howe
   else is an open redirect.
 - A statically cached page is identical for everyone. Per-user content on it goes in a dynamic
   hole or the route is not cached.
-- `forbidden()` and `unauthorized()` are still behind an experimental flag. Use `redirect()` and
-  `notFound()`.
+- `forbidden()` and `unauthorized()` were still behind `experimental.authInterrupts` in Next
+  16.4. Use `redirect()` and `notFound()` unless the installed docs list them as stable.
 
 Session mechanics and permission models: `0x:auth-identity`.
 
@@ -81,37 +81,29 @@ Session mechanics and permission models: `0x:auth-identity`.
 | File | Purpose | Notes |
 |---|---|---|
 | `loading.tsx` | Instant fallback while the segment's page loads | A Suspense boundary around the page. Size it like the content |
-| `error.tsx` | Replaces the segment when rendering throws | Client component. Receives `error` and `reset`. Does not catch errors from the same segment's `layout.tsx`: the parent's boundary does |
+| `error.tsx` | Replaces the segment when rendering throws | Client component. Receives `error`, `reset` and, from Next 16.3, `retry`. Does not catch errors from the same segment's `layout.tsx`: the parent's boundary does |
 | `global-error.tsx` | Catches errors in the root layout | Must render its own `<html>` and `<body>` |
 | `not-found.tsx` | UI for `notFound()` and unmatched URLs | One at the root; add one per section that deserves a tailored message |
 | `default.tsx` | Fallback for a parallel slot with no match | Required for every named slot since Next 16 |
 
 ```tsx
 'use client'
-import { startTransition } from 'react'
-import { useRouter } from 'next/navigation'
+// Next 16.3 and later. Earlier versions have no `retry` (16.2 names it `unstable_retry`):
+// there, call router.refresh() and then reset() inside one startTransition.
+type Props = { error: Error & { digest?: string }; retry: () => void }
 
-type Props = { error: Error & { digest?: string }; reset: () => void }
-
-export default function ProjectError({ error, reset }: Props) {
-  const router = useRouter()
-  const retry = () =>
-    startTransition(() => {
-      router.refresh() // refetch the server data that failed
-      reset()          // then re-render what the boundary replaced
-    })
+export default function ProjectError({ error, retry }: Props) {
   return (
     <div role="alert">
       <p>Something went wrong{error.digest ? ` (ref ${error.digest})` : ''}.</p>
-      <button onClick={retry}>Try again</button>
+      <button onClick={() => retry()}>Try again</button>
     </div>
   )
 }
 ```
 
-- `reset()` alone re-renders the boundary with the same failed server result. Pair it with
-  `router.refresh()` in one transition, as above. Where the installed version's docs list a retry
-  function among the error props that does both, use that.
+- `retry()` refetches the segment's server data and re-renders it. `reset()` alone re-renders
+  the boundary with the same failed server result, so it cannot recover from a server error.
 - Every segment that loads its own data gets `loading.tsx` or Suspense boundaries, and the app
   has more than a root `error.tsx`. With only a root boundary, one failed widget blanks the whole
   shell.
@@ -120,7 +112,8 @@ export default function ProjectError({ error, reset }: Props) {
   `instrumentation.ts` (`onRequestError`). Never render `error.message` from a server error.
 - Expected failures (validation, empty results, no permission) are rendered states or return
   values, not thrown errors.
-- A true 404 status needs `notFound()` before anything streams (`rendering-strategies.md`).
+- A true 404 status needs `notFound()` to run before the response starts. Under Cache Components
+  that means during prerendering or in `proxy` (`rendering-strategies.md`).
 - Check each state by hand once: throttle the network for loading, throw in a data function for
   error, request an unknown ID for not-found.
 
@@ -136,10 +129,12 @@ loaded items, typed input intact.
 - Infinite lists: Back lands at the top unless the loaded pages are still in a cache. Keep them
   in the query cache, or put the page or cursor in the URL. For virtualized lists also restore the
   scroll offset.
-- With Cache Components, Next.js keeps recently visited routes mounted but hidden (`<Activity>`),
-  so component state and form drafts survive Back without extra work. State that should reset on
-  each visit now needs a `key`, and effects must clean up properly because they are torn down
-  while hidden. After sign-out do a full page load so no previous user's state survives.
+- With Cache Components, Next.js keeps the last few visited routes (up to three in the 16.4
+  docs) mounted but hidden with `<Activity>`, so component state and form drafts survive Back
+  without extra work. State that should reset on each visit needs an explicit reset or a `key`,
+  and effects must clean up properly because they are torn down while hidden. After sign-out do
+  a full page load so no previous user's state survives. In end-to-end tests a selector can now
+  match an element of a hidden page: scope locators to visible content.
 - Full page loads are restored from the browser's back/forward cache unless the page opts out
   with `unload` handlers and similar (`0x:web-performance`).
 - Focus: after a client navigation a screen-reader user needs to know the page changed. Next.js
@@ -209,9 +204,11 @@ export const config = {
 }
 ```
 
-- `proxy` runs for every matched request, prefetches included. No database or network call per
-  request: read cookies and headers and decide. `proxy.ts` runs on the Node.js runtime; code that
-  needs the edge runtime stays in the deprecated `middleware.ts`.
+- `proxy` runs for every matched request, prefetches included. Read cookies and headers and
+  decide; no session query and no content fetch. The exception is a fast keyed lookup (redirect
+  map, known tenants, whether a slug exists) behind a matcher narrowed to the routes that need
+  it. `proxy.ts` runs on the Node.js runtime; code that needs the edge runtime stays in the
+  deprecated `middleware.ts`.
 - Pass facts to the app as request headers, and delete any incoming header of the same name
   first, or a client can forge it.
 - Permanent redirects (308, 301) are cached by browsers for a long time. Ship as 307, confirm,

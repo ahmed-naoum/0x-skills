@@ -21,7 +21,7 @@ what it does and translate each item:
 | A loader (SVGR, raw, YAML, GraphQL) | `turbopack.rules`, which runs most webpack loaders; a Vite plugin |
 | `DefinePlugin` | Public env variables |
 | `resolve.fallback` for `fs`, `path` | Remove the server import from client code. The fallback hid a bug |
-| A plugin (bundle analyzer, error-tracker upload, module federation) | No plugin API in Turbopack. Use the built-in analyzer (`next experimental-analyze` when it shipped in 16.1; `next --help` shows the current name; a Rollup-style visualizer plugin in Vite) or the vendor's current integration; stay on `--webpack` only if neither exists |
+| A plugin (bundle analyzer, error-tracker upload, module federation) | No plugin API in Turbopack. Use the built-in analyzer (`next analyze`, named `next experimental-analyze` when it shipped in 16.1; `next --help` lists what the installed version has; a Rollup-style visualizer plugin in Vite) or the vendor's current integration; stay on `--webpack` only if neither exists |
 
 A minimal Vite config is the whole setup:
 
@@ -70,14 +70,18 @@ Bundlers strip types without checking them. The type check is a separate step an
   relative imports.
 - `noUncheckedIndexedAccess` makes `rows[0]` possibly `undefined`. Turn it on at the start;
   retrofitting it means hundreds of errors.
-- TypeScript 6 changed defaults and 7 (the native compiler, about ten times faster) removed old
-  options. `baseUrl` is gone: write `paths` targets relative to the tsconfig with a leading `./`.
-  `moduleResolution: "node"` is gone. `types` defaults to an empty list, so globals such as
-  `process` vanish until `"types": ["node"]` is added (for Vite, `"vite/client"`). Go through 6
-  before 7 and fix deprecations there.
-- The native compiler does not expose the JavaScript compiler API that earlier versions did.
-  Before upgrading to 7, check every tool that imports the `typescript` package (the framework's
-  build-time check, lint rules that use type information, code generators, doc tools).
+- TypeScript 6 changed defaults and deprecated old options; 7 (the native compiler, stable since
+  mid-2026, which Microsoft reports as roughly ten times faster) removed them. `baseUrl` is gone:
+  write `paths` targets relative to the tsconfig with a leading `./`. `moduleResolution: "node"`
+  is gone. Since 6, `types` defaults to an empty list, so globals such as `process` vanish until
+  `"types": ["node"]` is added (for Vite, `"vite/client"`). Go through 6 before 7 and fix
+  deprecations there.
+- TypeScript 7.0 shipped without the JavaScript compiler API that earlier versions exposed; it
+  is planned for a later 7.x. Before upgrading, check every tool that imports the `typescript`
+  package: lint rules that use type information, code generators, doc tools, editor plugins.
+  Next.js type-checks a build under 7 by running the `tsc` CLI, from 16.3; the TypeScript page
+  of the installed docs says whether that needs a config flag. One tool that cannot run on 7 is
+  reason enough to stay on 6.
 - One alias, declared once in `paths`. Next.js reads it; Vite reads it with
   `resolve.tsconfigPaths`; Vitest inherits the Vite config. For code that Node also runs
   unbundled, use the `imports` field of `package.json` (`"#*": "./src/*"`), which Node, TypeScript
@@ -107,7 +111,9 @@ Stricter flags, lint rules and type-level practice: `0x:code-quality`.
 - Commit `.env.example` with names and dummy values, never `.env*.local`.
 
 ```bash
-grep -rlE "sk_live|SECRET|PRIVATE KEY" .next/static dist/assets 2>/dev/null   # must print nothing
+# each server secret's literal value, then well-known secret shapes: all must print nothing
+grep -rlF -- "$DATABASE_URL" .next/static dist/assets 2>/dev/null
+grep -rlE "sk_live_|PRIVATE KEY" .next/static dist/assets 2>/dev/null
 ```
 
 Storing and rotating secrets: `0x:web-security`. Config per environment: `0x:ci-cd-release`.
@@ -121,8 +127,9 @@ Storing and rotating secrets: `0x:web-security`. Config per environment: `0x:ci-
   third-party connection to every first visit.
 - **Images**: import local images so the bundler emits a hashed file and knows the dimensions.
   With `next/image`, set `sizes` whenever the image is not a fixed pixel width; allow remote
-  hosts explicitly in `images.remotePatterns`; mark the one above-the-fold hero with `preload`
-  (named `priority` before 16) or `fetchPriority="high"`. In Vite an import returns the URL, and
+  hosts explicitly in `images.remotePatterns`; mark the one above-the-fold hero with
+  `fetchPriority="high"` or `loading="eager"`, and add `preload` (named `priority` before 16)
+  only when it must be fetched before the parser reaches it. In Vite an import returns the URL, and
   resizing needs an image CDN or a build plugin. Format and loading strategy: `0x:web-performance`.
 - **SVG**: three options with different costs. As a file (`<img>` or CSS): cacheable, not
   styleable. As a React component through SVGR: styleable with `currentColor`, but every icon is
@@ -130,8 +137,8 @@ Storing and rotating secrets: `0x:web-security`. Config per environment: `0x:ci-
   sprite referenced with `<use href>`: best for dozens of icons. Import icon packages one icon at
   a time.
 - **CSS**: Tailwind 4 is configured in CSS (`@import "tailwindcss"`, tokens in `@theme`) and
-  wired by one plugin for the bundler (`@tailwindcss/vite`, `@tailwindcss/postcss`, or the loader
-  the Next.js scaffold generated). Keep whichever the project already has. Import global CSS once
+  wired by one plugin for the bundler (`@tailwindcss/vite` in Vite, `@tailwindcss/postcss` in
+  Next.js). Keep whichever the project already has. Import global CSS once
   from the root layout. Turbopack orders CSS Modules by import order, so two modules styling the
   same property need an explicit relationship, not luck. Lightning CSS handles prefixes and
   syntax lowering from the browser targets. Do not add autoprefixer on top.
@@ -214,15 +221,18 @@ Measure before changing anything: time a cold start, a hot update, and a product
   --frozen-lockfile`, which fails on drift instead of resolving new versions. `react`, `react-dom`
   and their type packages move together; `next` and `eslint-config-next` share a version.
 - **Install scripts**: pnpm 10 and later run a dependency's install script only when the package
-  is allow-listed in the workspace config (`pnpm approve-builds`). A native package that was not
-  approved installs without its binary and fails at run time. pnpm can also hold back versions
-  published within a set window (`minimumReleaseAge`), and recent majors may turn that on by
-  default; when a just-published fix will not install, that setting is the cause.
+  is allowed in `pnpm-workspace.yaml` (`pnpm approve-builds` writes the entry: `allowBuilds` in
+  pnpm 11, `onlyBuiltDependencies` in 10). Under pnpm 10 an unapproved native package installs
+  without its binary and fails at run time; pnpm 11 fails the install instead. Approval is by
+  package name and covers future versions, so approve only what needs to build.
+- **Release age**: pnpm 11 by default refuses versions published in the last 24 hours
+  (`minimumReleaseAge`, in minutes). When a just-published security fix will not install, add
+  that package to `minimumReleaseAgeExclude` for the upgrade; do not set the age to 0.
 - **Platform binaries**: Rolldown, Turbopack, Lightning CSS and sharp ship per-platform optional
   packages. Build inside the target image so the right ones install.
 - **Upgrades**: one framework major at a time, on a branch with a preview deploy. Read the
-  upgrade guide, run the official codemod (`npx @next/codemod@canary upgrade latest`), then fix
-  what it reports. Security releases of the framework are the exception to batching: apply them
+  upgrade guide, run the official upgrade command (`npx @next/codemod upgrade <version>`, or
+  `next upgrade` where the installed version has it), then fix what it reports. Security releases of the framework are the exception to batching: apply them
   the day they ship. Automated update pull requests, grouped by ecosystem: `0x:web-security`.
 
 Check: the Node and pnpm versions printed at the top of the CI log equal `node -v` and `pnpm -v`
