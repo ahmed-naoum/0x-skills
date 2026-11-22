@@ -4,13 +4,8 @@ Read this when: instrumenting a service with OpenTelemetry, choosing an observab
 deciding which metrics to record, or following one failed request across CDN, proxy, app,
 database and an outside provider.
 
-## What to instrument, by stage
-
-| Stage | Instrument |
-|---|---|
-| Prototype | Error tracker, the platform's built-in request metrics. Nothing else |
-| Launch | Request rate, errors and duration per route; the same per outbound dependency; business counters for the money path; traces sampled; trace IDs in logs |
-| Scale | Per-tenant breakdowns, queue lag, tail sampling, a Collector, SLO-based alerting |
+By stage: Prototype needs only the error tracker and the platform's request metrics. Everything
+below starts at Launch; per-tenant breakdowns, tail sampling and a Collector wait for Scale.
 
 ## Business metrics beside technical ones
 
@@ -55,12 +50,9 @@ Decisions that make these numbers usable:
   the oldest waiting job. Depth alone misleads; age says how late work is.
 - **Connection pools**: in use, idle, waiting, and time spent waiting for a connection. Pool
   exhaustion looks like a slow database when the database is idle.
-- **Resources** (CPU, memory, disk, file descriptors): utilization and saturation, from the host
-  or platform, not from the app.
 
-Auto-instrumentation covers inbound HTTP, outbound HTTP and database clients. Check what it
-produced before adding manual metrics; what is usually missing is the business counters, queue
-age and pool wait.
+Auto-instrumentation covers inbound HTTP, outbound HTTP and database clients. What is usually
+missing afterward is the business counters, queue age and pool wait.
 
 ## OpenTelemetry in a Node service
 
@@ -109,33 +101,15 @@ Notes that save an afternoon:
   packages as external in the server bundle.
 - Serverless: spans are exported in batches; force a flush before the invocation ends or the
   last spans never leave.
-- The filesystem instrumentation produces a span per file read; keep it off.
-- Manual spans go around units of work the auto-instrumentation cannot see (a pricing
-  calculation, a document render, an LLM call). Always end the span and mark failure:
-
-```ts
-import { trace, SpanStatusCode } from "@opentelemetry/api";
-const tracer = trace.getTracer("billing");
-
-await tracer.startActiveSpan("invoice.render", async (span) => {
-  try {
-    span.setAttribute("invoice.line_count", lines.length);
-    return await render(lines);
-  } catch (err) {
-    span.recordException(err as Error);
-    span.setStatus({ code: SpanStatusCode.ERROR });
-    throw err;
-  } finally {
-    span.end();
-  }
-});
-```
-
+- Manual spans (`tracer.startActiveSpan`) go around units of work the auto-instrumentation
+  cannot see: a pricing calculation, a document render, an LLM call. In the callback, call
+  `span.recordException(err)` and `span.setStatus({ code: SpanStatusCode.ERROR })` on failure
+  and `span.end()` in a `finally`; a span that is never ended is never exported.
 - Use semantic-convention attribute names for HTTP, database and messaging, so backends render
   them; put product attributes under one prefix (`app.tenant_id`, `app.plan`). High-cardinality
   values are welcome on spans and forbidden on metrics.
-- Logs: keep writing JSON to stdout with `trace_id` on each line and let the platform ship them
-  (`logging-errors.md`). The OpenTelemetry logs SDK is optional; correlation is what matters.
+- Logs: keep writing JSON to stdout with `trace_id` on each line (`logging-errors.md`). The
+  OpenTelemetry logs SDK is optional; correlation is what matters.
 
 ## Trace context across browser, services and queues
 
@@ -274,25 +248,10 @@ attribute filtering must happen in one place; tail sampling is needed; host and 
 metrics must be collected alongside app telemetry; credentials for the vendor must stay out of
 app containers.
 
-```yaml
-receivers:
-  otlp:
-    protocols:
-      grpc: { endpoint: 0.0.0.0:4317 }
-      http: { endpoint: 0.0.0.0:4318 }
-processors:
-  memory_limiter: { check_interval: 1s, limit_percentage: 80, spike_limit_percentage: 20 }
-  batch: {}
-exporters:
-  otlphttp:
-    endpoint: ${env:OTLP_ENDPOINT}
-    headers: { authorization: "${env:OTLP_AUTH}" }
-service:
-  pipelines:
-    traces: { receivers: [otlp], processors: [memory_limiter, batch], exporters: [otlphttp] }
-    metrics: { receivers: [otlp], processors: [memory_limiter, batch], exporters: [otlphttp] }
-    logs: { receivers: [otlp], processors: [memory_limiter, batch], exporters: [otlphttp] }
-```
+The minimal configuration is one `otlp` receiver (gRPC on 4317, HTTP on 4318), the
+`memory_limiter` and `batch` processors, and one `otlphttp` exporter per backend, wired into
+three pipelines (traces, metrics, logs). Apps then point `OTEL_EXPORTER_OTLP_ENDPOINT` at the
+Collector and hold no vendor credentials.
 
 Traps: `memory_limiter` goes first in every pipeline or a backend outage kills the Collector by
 memory; ports 4317 and 4318 must not be reachable from the internet; tail sampling needs every
