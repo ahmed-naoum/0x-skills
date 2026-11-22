@@ -148,7 +148,9 @@ In DevTools, add the Protocol column to the Network panel: `h3` should appear af
 
 - **HTTP/2 server push is dead.** Browsers removed support; delete any push configuration.
 - **Domain sharding is harmful under HTTP/2 and HTTP/3.** Splitting assets across hostnames was a workaround for HTTP/1.1's per-host connection limit; now it adds handshakes and splits prioritization and congestion state. Consolidate onto one hostname.
-- **`103 Early Hints`** sends `Link: <...>; rel=preload` or `rel=preconnect` headers while the server is still computing the real response, so the browser starts fetching during server think time. It pays off only when think time is substantial (hundreds of milliseconds) and the hinted resources are render-critical. Browsers act on it for navigations over HTTP/2 and HTTP/3. Simplest deployment: the CDN's Early Hints feature, which replays `Link` headers it saw on earlier responses. Emitting 103 from the origin requires every proxy on the path to pass informational responses; test it, and never send it to HTTP/1.1 clients, some of which mishandle 1xx.
+- **`103 Early Hints`** sends `Link: <...>; rel=preload` or `rel=preconnect` headers while the server is still computing the real response, so the browser starts fetching during server think time.
+  It pays off only when think time is substantial (hundreds of milliseconds) and the hinted resources are render-critical. Browsers act on it for navigations over HTTP/2 and HTTP/3. Simplest deployment: the CDN's Early Hints feature, which replays `Link` headers it saw on earlier responses.
+  Emitting 103 from the origin requires every proxy on the path to pass informational responses; test it, and never send it to HTTP/1.1 clients, some of which mishandle 1xx.
 - **Preload sparingly**: only resources discovered late and needed for first render. Over-preloading competes with what matters. Selection and measurement: `0x:web-performance`, `loading-delivery.md`.
 
 ## HTTPS and SVCB DNS records
@@ -177,7 +179,8 @@ Decision rule:
 - **On** only when the audience is latency-sensitive (mobile, far from the edge), and every route reachable in early data is safe to repeat.
 - "Safe to repeat" is stricter than "is a `GET`": a `GET` that consumes a one-time token, logs someone in from a magic link, increments a counter that matters, or triggers a payment-provider callback is not safe.
 
-Mechanism when enabled: the terminator marks forwarded early requests with `Early-Data: 1`; the application answers `425 Too Early` to anything not replay-safe, and the client retries after the handshake completes. In nginx: `ssl_early_data on;` plus `proxy_set_header Early-Data $ssl_early_data;`. A CDN's 0-RTT switch typically limits early data to requests it considers safe by method; read which ones before enabling, and make sure the origin sees the `Early-Data` header.
+Mechanism when enabled: the terminator marks forwarded early requests with `Early-Data: 1`; the application answers `425 Too Early` to anything not replay-safe, and the client retries after the handshake completes. In nginx: `ssl_early_data on;` plus `proxy_set_header Early-Data $ssl_early_data;`.
+A CDN's 0-RTT switch typically limits early data to requests it considers safe by method; read which ones before enabling, and make sure the origin sees the `Early-Data` header.
 
 Check: with the feature on, send a state-changing request flagged `Early-Data: 1` to the origin and confirm it returns 425.
 

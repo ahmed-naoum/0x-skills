@@ -4,7 +4,8 @@ Read this when: putting a CDN in front of an origin, working out the real client
 
 ## What goes through the CDN, and how
 
-Default from Launch: one CDN in front of everything served over HTTP, with DNS for the proxied names on the same provider. It supplies TLS at the edge, HTTP/3, caching, DDoS absorption and a place to block traffic before it costs anything. If the PaaS already includes a CDN, use that one; stacking a second CDN in front doubles the purging, hides client IPs twice and creates conflicting cache rules, so add one only for a capability the first lacks.
+Default from Launch: one CDN in front of everything served over HTTP, with DNS for the proxied names on the same provider. It supplies TLS at the edge, HTTP/3, caching, DDoS absorption and a place to block traffic before it costs anything.
+If the PaaS already includes a CDN, use that one; stacking a second CDN in front doubles the purging, hides client IPs twice and creates conflicting cache rules, so add one only for a capability the first lacks.
 
 Decide per class of traffic, not for the site as a whole:
 
@@ -55,7 +56,8 @@ Protection at the edge is optional for an attacker who can reach the origin dire
 | mTLS from CDN to origin (authenticated origin pulls) | Proves the request came through this account when a per-account certificate is used | The CDN-wide shared certificate proves only "some customer" |
 | Secret header added at the edge and verified at the origin | Simple, works on a PaaS origin with no firewall | Treat as a credential: rotate it, compare in constant time, strip it from anything logged |
 
-How origin addresses leak, to check before relying on secrecy: historical DNS records for the domain; a non-proxied subdomain (`direct.`, `origin.`, `staging.`) on the same IP; `MX` or SPF entries pointing at the same server; internet-wide scans that match the certificate served on the bare IP; outbound requests and emails sent from the origin's address. Make the origin's default virtual host return nothing identifying, and rotate the address after the CDN goes in.
+How origin addresses leak, to check before relying on secrecy: historical DNS records for the domain; a non-proxied subdomain (`direct.`, `origin.`, `staging.`) on the same IP;
+`MX` or SPF entries pointing at the same server; internet-wide scans that match the certificate served on the bare IP; outbound requests and emails sent from the origin's address. Make the origin's default virtual host return nothing identifying, and rotate the address after the CDN goes in.
 
 Check from a machine outside the CDN: `curl -sv --max-time 10 --resolve example.com:443:<origin-ip> https://example.com/` must time out or be rejected.
 
@@ -158,7 +160,8 @@ During:
 5. Protect the database: lower concurrency limits, shed load with 503 and `Retry-After` rather than letting queues grow.
 6. Post a status update; contact the provider with the request IDs and patterns seen.
 
-After: rotate the origin address if it was hit directly, keep the rules that worked in log mode, and write up the timeline (`0x:site-reliability`, `incident-response.md`). Do not pay extortion demands that precede or accompany an attack. Rehearse as a 30-minute tabletop at Launch and a real drill at Scale; load-testing a production site through a CDN needs the provider's permission (`0x:web-performance`, `load-testing.md`).
+After: rotate the origin address if it was hit directly, keep the rules that worked in log mode, and write up the timeline (`0x:site-reliability`, `incident-response.md`). Do not pay extortion demands that precede or accompany an attack.
+Rehearse as a 30-minute tabletop at Launch and a real drill at Scale; load-testing a production site through a CDN needs the provider's permission (`0x:web-performance`, `load-testing.md`).
 
 ## Ask the user
 

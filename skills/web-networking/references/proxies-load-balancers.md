@@ -35,7 +35,8 @@ The status code names the failure; the response's shape names the hop that emitt
 
 Find the emitter:
 
-1. **Read the response itself.** `curl -sv` and look at the `server` header and the body. A CDN-branded error page, a bare `502 Bad Gateway` page with `nginx` in it, a cloud load balancer's minimal HTML, and the app's own JSON error format are all distinguishable. Some CDNs use their own codes in the 52x range to separate "origin refused", "origin timed out connecting", "origin did not answer in time" and "origin TLS failed": look the code up in the CDN's documentation before guessing.
+1. **Read the response itself.** `curl -sv` and look at the `server` header and the body. A CDN-branded error page, a bare `502 Bad Gateway` page with `nginx` in it, a cloud load balancer's minimal HTML, and the app's own JSON error format are all distinguishable.
+   Some CDNs use their own codes in the 52x range to separate "origin refused", "origin timed out connecting", "origin did not answer in time" and "origin TLS failed": look the code up in the CDN's documentation before guessing.
 2. **Bypass hops one at a time** with `curl --resolve` or direct addresses: through the CDN, straight to the load balancer, straight to the proxy, straight to the app on its port. The error disappears at the hop below the one causing it.
 3. **Follow one request ID through the logs** (the CDN's ray or trace ID, `X-Request-ID`). The hop that has no log line for the request never received it.
 4. **Read the proxy's error log**, which states the reason:
@@ -92,7 +93,8 @@ Caddy obtains certificates, sets the forwarded headers, reuses upstream connecti
 
 What each part prevents:
 
-- **Forwarded headers.** Without `Host` and `X-Forwarded-Proto` the app builds wrong absolute URLs, drops `Secure` cookies and redirects in loops. The app must be told to trust the proxy (`trust proxy` in Express, the framework's equivalent). `$proxy_add_x_forwarded_for` appends to whatever arrived; on the outermost, internet-facing proxy overwrite instead (`proxy_set_header X-Forwarded-For $remote_addr;`) so client-supplied values are discarded. Trust rules: `cdn-edge.md`.
+- **Forwarded headers.** Without `Host` and `X-Forwarded-Proto` the app builds wrong absolute URLs, drops `Secure` cookies and redirects in loops. The app must be told to trust the proxy (`trust proxy` in Express, the framework's equivalent).
+  `$proxy_add_x_forwarded_for` appends to whatever arrived; on the outermost, internet-facing proxy overwrite instead (`proxy_set_header X-Forwarded-For $remote_addr;`) so client-supplied values are discarded. Trust rules: `cdn-edge.md`.
 - **Body size.** nginx rejects bodies over 1 MB with 413 unless `client_max_body_size` is raised. Set it deliberately per route; do not set it to unlimited.
 - **Timeouts.** `proxy_connect_timeout` short (a healthy local upstream connects in milliseconds); read and send timeouts from the budget in the timeout section.
 - **Buffering.** Leave `proxy_buffering` on for normal responses: the proxy absorbs slow clients so app workers are freed quickly. Turn it off only for streams.

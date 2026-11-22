@@ -7,7 +7,8 @@ description: "Configures and debugs everything between the browser and the app: 
 
 ## Stance
 
-A request crosses a chain of independent systems: resolver, network path, CDN, load balancer, proxy, app. Each one caches, times out, retries and fails by its own rules, and each one is configured somewhere different. Expert work here is naming the hop and the layer before touching anything, and preferring a managed edge with a few well-understood settings over machinery a small team has to operate.
+A request crosses a chain of independent systems: resolver, network path, CDN, load balancer, proxy, app. Each one caches, times out, retries and fails by its own rules, and each one is configured somewhere different.
+Expert work here is naming the hop and the layer before touching anything, and preferring a managed edge with a few well-understood settings over machinery a small team has to operate.
 
 1. **Name the stage first.** DNS, TCP, TLS, HTTP and the app fail with different, recognizable signatures (refused is not timeout; 502 is not 504). A fix applied before the stage is identified usually destroys the evidence.
 2. **Measure from where the user is.** A check from the server's own region proves nothing about a phone on a carrier network. Localize by where the fault does not occur.

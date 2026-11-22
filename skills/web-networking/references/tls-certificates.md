@@ -93,7 +93,8 @@ Check: `openssl s_client -connect example.com:443 -tls1_1 </dev/null` must fail 
 openssl s_client -connect example.com:443 -servername example.com -showcerts </dev/null
 ```
 
-Read three things: the certificate chain as sent, `Verify return code`, and the negotiated protocol and cipher. Useful variants: `-tls1_2` / `-tls1_3` to force a version, `-alpn h2` to test ALPN, `-noservername` to see the default certificate, `-connect 203.0.113.10:443 -servername example.com` to test one specific server behind DNS or a load balancer (or `curl --resolve example.com:443:203.0.113.10 -v https://example.com/`).
+Read three things: the certificate chain as sent, `Verify return code`, and the negotiated protocol and cipher.
+Useful variants: `-tls1_2` / `-tls1_3` to force a version, `-alpn h2` to test ALPN, `-noservername` to see the default certificate, `-connect 203.0.113.10:443 -servername example.com` to test one specific server behind DNS or a load balancer (or `curl --resolve example.com:443:203.0.113.10 -v https://example.com/`).
 
 | Output | Cause | Fix |
 |---|---|---|
@@ -149,7 +150,8 @@ Skip until Launch; then it is a five-minute subscription.
 
 ## Mutual TLS between services
 
-mTLS makes both sides present certificates. It fits service-to-service calls across networks that are not trusted, and B2B APIs where a customer demands it. For a small product inside one private network, signed tokens or a private overlay network give most of the benefit with far less machinery; choose mTLS when a requirement names it or a platform (service mesh, managed ingress) provides it nearly free.
+mTLS makes both sides present certificates. It fits service-to-service calls across networks that are not trusted, and B2B APIs where a customer demands it.
+For a small product inside one private network, signed tokens or a private overlay network give most of the benefit with far less machinery; choose mTLS when a requirement names it or a platform (service mesh, managed ingress) provides it nearly free.
 
 If it is built:
 

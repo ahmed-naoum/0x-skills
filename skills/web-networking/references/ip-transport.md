@@ -32,7 +32,8 @@ At 150 ms RTT (intercontinental or a poor mobile link), TCP + TLS 1.3 is 450 ms 
 2. **Reuse connections.** Keep-alive at every hop (see `proxies-load-balancers.md`); a reused connection pays 1 RTT per request. Server-to-server HTTP clients that open a new connection per call pay the full handshake every time: use a pooled agent.
 3. **Remove hostnames.** Every extra origin (`api.`, `static.`, third-party scripts) is a new DNS lookup plus handshake. Same-origin serving through one CDN hostname removes them. `<link rel="preconnect">` hides the cost for origins that must stay.
 4. **Remove redirects.** `http://example.com` → `https://example.com` → `https://www.example.com` is two extra connection setups; see `http.md`.
-5. **Keep the certificate chain small.** A server's first flight is limited by the initial congestion window (commonly 10 segments, about 14 KB) and, in QUIC, by the anti-amplification limit of three times the bytes the client has sent. A chain with redundant intermediates or a large RSA key can spill into another round trip. Send leaf plus required intermediates only, never the root; prefer ECDSA certificates.
+5. **Keep the certificate chain small.** A server's first flight is limited by the initial congestion window (commonly 10 segments, about 14 KB) and, in QUIC, by the anti-amplification limit of three times the bytes the client has sent.
+   A chain with redundant intermediates or a large RSA key can spill into another round trip. Send leaf plus required intermediates only, never the root; prefer ECDSA certificates.
 6. **Enable TLS 1.3 and HTTP/3.** Free where the CDN or proxy offers it. 0-RTT is a separate decision with replay risk: `http.md`.
 
 TCP Fast Open is not a usable optimization on the public internet: middleboxes break it and browsers do not use it.
@@ -101,7 +102,9 @@ Default: serve dual stack at the public edge. A CDN or managed load balancer giv
 
 ## Network changes: QUIC migration and safe retries
 
-When a phone moves from Wi-Fi to cellular its IP changes. Every TCP connection is bound to the old address and is dead, but neither side is told: in-flight requests hang until a timeout. QUIC identifies a connection by connection ID instead of the address tuple, so a client can migrate to the new path without a new handshake. Whether that happens depends on the client implementing it and on the server side supporting it: load balancers must route QUIC by connection ID, and some stacks and CDNs disable migration. Treat migration as a bonus the CDN may provide, never as the mechanism the product relies on.
+When a phone moves from Wi-Fi to cellular its IP changes. Every TCP connection is bound to the old address and is dead, but neither side is told: in-flight requests hang until a timeout.
+QUIC identifies a connection by connection ID instead of the address tuple, so a client can migrate to the new path without a new handshake.
+Whether that happens depends on the client implementing it and on the server side supporting it: load balancers must route QUIC by connection ID, and some stacks and CDNs disable migration. Treat migration as a bonus the CDN may provide, never as the mechanism the product relies on.
 
 What the product relies on is the client:
 
@@ -143,7 +146,8 @@ Both show up as "fine on fiber, terrible on the train". They need different fixe
 
 ## MTU black holes, carrier NAT and interfering proxies
 
-**MTU black hole.** Signature: the TCP handshake and small requests work, anything large hangs. Typically the TLS handshake stalls when the server sends its certificate, or small API calls succeed while uploads and big responses freeze. It appears on paths with a smaller MTU (VPNs, tunnels, PPPoE, some cellular) where a firewall drops the ICMP "fragmentation needed" messages that path MTU discovery depends on.
+**MTU black hole.** Signature: the TCP handshake and small requests work, anything large hangs. Typically the TLS handshake stalls when the server sends its certificate, or small API calls succeed while uploads and big responses freeze.
+It appears on paths with a smaller MTU (VPNs, tunnels, PPPoE, some cellular) where a firewall drops the ICMP "fragmentation needed" messages that path MTU discovery depends on.
 
 ```bash
 ping -M do -s 1472 example.com    # Linux: 1472 + 28 header bytes = 1500; lower -s until it passes
@@ -151,9 +155,13 @@ ping -M do -s 1472 example.com    # Linux: 1472 + 28 header bytes = 1500; lower 
 
 Fixes: allow ICMP type 3 code 4 and ICMPv6 Packet Too Big through every firewall you control; set `net.ipv4.tcp_mtu_probing=1` on the server; clamp MSS on tunnel and VPN gateways (`iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu`).
 
-**Carrier-grade NAT.** Thousands of mobile or ISP subscribers share one public IPv4 address (the shared range is `100.64.0.0/10` on the carrier side). Consequences: an IP-based rate limit or ban hits strangers, so limits on shared ranges must be generous and keyed on session or account where possible; NAT mappings for idle flows expire quickly (UDP in tens of seconds, TCP in minutes), so an idle WebSocket dies silently. Send a ping at a 20 to 30 s interval (rule of thumb) on long-lived connections.
+**Carrier-grade NAT.** Thousands of mobile or ISP subscribers share one public IPv4 address (the shared range is `100.64.0.0/10` on the carrier side).
+Consequences: an IP-based rate limit or ban hits strangers, so limits on shared ranges must be generous and keyed on session or account where possible; NAT mappings for idle flows expire quickly (UDP in tens of seconds, TCP in minutes), so an idle WebSocket dies silently.
+Send a ping at a 20 to 30 s interval (rule of thumb) on long-lived connections.
 
-**Interfering middleboxes.** Corporate TLS-inspecting proxies, antivirus, captive portals and some mobile "optimizers" re-terminate or alter traffic. Signs: the certificate issuer the user sees is not the real CA; WebSocket upgrades or SSE streams fail on one network only; responses are buffered until complete; HTTP/3 is never negotiated. Confirm by asking for the same test on a phone hotspot and for a HAR file. The fixes are on the product side: everything over 443 with TLS, WebSocket with a long-polling or SSE fallback, no dependence on HTTP/3, streams that tolerate buffering.
+**Interfering middleboxes.** Corporate TLS-inspecting proxies, antivirus, captive portals and some mobile "optimizers" re-terminate or alter traffic. Signs: the certificate issuer the user sees is not the real CA;
+WebSocket upgrades or SSE streams fail on one network only; responses are buffered until complete; HTTP/3 is never negotiated. Confirm by asking for the same test on a phone hotspot and for a HAR file.
+The fixes are on the product side: everything over 443 with TLS, WebSocket with a long-polling or SSE fallback, no dependence on HTTP/3, streams that tolerate buffering.
 
 ## Regional outages: BGP and anycast
 

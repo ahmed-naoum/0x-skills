@@ -40,7 +40,9 @@ Directive meanings that are commonly reversed:
 
 **Validators.** Send an `ETag` on everything cacheable so expiry costs a 304 instead of a full transfer; requirements for stable ETags are in `http.md`.
 
-**`Vary`.** Lists the request headers that change the response, and each distinct value becomes a separate cache entry. `Vary: Accept-Encoding` is normal. `Vary: Cookie`, `Vary: User-Agent` or `Vary: Authorization` on a shared-cacheable response creates one entry per user or browser build, which is a 0% hit ratio; `Vary: *` is uncacheable. CDNs differ in how much of `Vary` they honor, so a response that truly differs by a header must be verified on the actual CDN, or keyed explicitly in its cache-key configuration.
+**`Vary`.** Lists the request headers that change the response, and each distinct value becomes a separate cache entry. `Vary: Accept-Encoding` is normal.
+`Vary: Cookie`, `Vary: User-Agent` or `Vary: Authorization` on a shared-cacheable response creates one entry per user or browser build, which is a 0% hit ratio; `Vary: *` is uncacheable.
+CDNs differ in how much of `Vary` they honor, so a response that truly differs by a header must be verified on the actual CDN, or keyed explicitly in its cache-key configuration.
 
 Follow the framework: Next.js sets these headers per route type, and overriding them blindly at the proxy breaks its revalidation model. Change them through the framework's configuration (`0x:react-nextjs`, `rendering-strategies.md`).
 

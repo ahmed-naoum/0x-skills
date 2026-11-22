@@ -89,7 +89,8 @@ Nameserver changes are slower than record changes: the delegation's TTL is set b
 | `MX`, `TXT`, `CAA`, verification records | 3600 s | Rarely change; a longer cache rides through a short DNS-provider outage |
 | `NS` inside the zone | 86400 s | Changing them is a planned migration anyway |
 
-Before a planned change, lower the TTL to 60 to 300 s at least one full **old** TTL in advance, make the change, verify, then raise it again. A 24-hour TTL lowered five minutes before a migration is still a 24-hour TTL in every cache. Low TTLs do not make an outage shorter if the DNS provider itself is down; they make it start sooner, which is the argument for not putting 60 s on everything. With per-query billing, TTL also sets the bill.
+Before a planned change, lower the TTL to 60 to 300 s at least one full **old** TTL in advance, make the change, verify, then raise it again. A 24-hour TTL lowered five minutes before a migration is still a 24-hour TTL in every cache.
+Low TTLs do not make an outage shorter if the DNS provider itself is down; they make it start sooner, which is the argument for not putting 60 s on everything. With per-query billing, TTL also sets the bill.
 
 ## Moving DNS provider or registrar
 
@@ -114,7 +115,8 @@ These are two different moves. Do them separately, DNS first.
 
 ## Dangling records and subdomain takeover
 
-A record that points at a resource that no longer exists hands the subdomain to whoever claims that resource next. Typical cases: a `CNAME` to a deleted PaaS app, storage bucket, static site or CDN distribution whose name can be re-registered by anyone; an `A` record to a released cloud IP; an `NS` delegation of a subdomain to a deleted hosted zone, which is the worst case because it gives full control of everything under that name.
+A record that points at a resource that no longer exists hands the subdomain to whoever claims that resource next.
+Typical cases: a `CNAME` to a deleted PaaS app, storage bucket, static site or CDN distribution whose name can be re-registered by anyone; an `A` record to a released cloud IP; an `NS` delegation of a subdomain to a deleted hosted zone, which is the worst case because it gives full control of everything under that name.
 
 With the subdomain an attacker serves content on a trusted origin: obtains a valid certificate for it, reads cookies scoped to the parent domain, receives OAuth redirects and password-reset links that were allow-listed for it, and phishes with a real URL.
 
@@ -137,7 +139,8 @@ Default: skip before Scale. A CDN or load balancer with several origins fails ov
 
 ## DNSSEC
 
-DNSSEC signs answers so resolvers can detect forgery. For a small product the benefit is modest and the failure mode is total: a mismatch between the `DS` record at the registry and the keys the zone serves returns `SERVFAIL` to every validating resolver, which includes the major public ones. Enable it when a customer or a compliance regime asks, or when the DNS provider makes it one switch with automatic key management.
+DNSSEC signs answers so resolvers can detect forgery. For a small product the benefit is modest and the failure mode is total: a mismatch between the `DS` record at the registry and the keys the zone serves returns `SERVFAIL` to every validating resolver, which includes the major public ones.
+Enable it when a customer or a compliance regime asks, or when the DNS provider makes it one switch with automatic key management.
 
 - **Enable:** turn on signing at the DNS provider → confirm `dig DNSKEY example.com +short` answers from every nameserver → add the `DS` record at the registrar (automatic when registrar and DNS host are the same company).
 - **Disable or migrate:** remove the `DS` at the registrar → wait the `DS` TTL (commonly a day) → only then stop signing or change nameservers. Reversing these two steps is the standard DNSSEC outage.

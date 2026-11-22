@@ -72,7 +72,9 @@ Open the Network panel, enable "Disable cache" and "Preserve log", add the Proto
 
 Patterns worth recognizing: a staircase of requests each starting when the previous ends is a dependency chain (not a network fault; `0x:web-performance`, `loading-delivery.md`); requests marked from disk or memory cache explain "works for me" against a user's fresh load; a different Protocol value for one host shows where HTTP/3 or HTTP/2 is not negotiated.
 
-**HAR files** make a user's session inspectable. Ask for one when the fault cannot be reproduced: the Network panel's export button after reproducing with "Preserve log" on. A HAR can contain cookies, tokens and request bodies. Prefer the browser's sanitized export, tell the user to log out afterward so captured sessions die, and delete the file when done. In the file, each entry's `timings` holds `blocked`, `dns`, `connect`, `ssl`, `send`, `wait`, `receive` in milliseconds; `-1` means the phase did not happen (a reused connection), and `serverIPAddress` shows which address the user actually reached.
+**HAR files** make a user's session inspectable. Ask for one when the fault cannot be reproduced: the Network panel's export button after reproducing with "Preserve log" on. A HAR can contain cookies, tokens and request bodies.
+Prefer the browser's sanitized export, tell the user to log out afterward so captured sessions die, and delete the file when done. In the file, each entry's `timings` holds `blocked`, `dns`, `connect`, `ssl`, `send`, `wait`, `receive` in milliseconds;
+`-1` means the phase did not happen (a reused connection), and `serverIPAddress` shows which address the user actually reached.
 
 ## Client, network or server
 
@@ -192,7 +194,8 @@ sudo tcpdump -ni lo -A 'tcp port 3000'     # plaintext hop between proxy and app
 | RST arriving mid-stream | Either the peer's process died or closed with unread data, an idle timeout at a load balancer or NAT expired and the next packet was rejected, or a middlebox injected it | Who sent it: compare the IP TTL of the RST with other packets from that address; a different TTL means an injecting middlebox |
 | First response after an idle period on a kept-alive connection is slow | Congestion window reset after idle | `net.ipv4.tcp_slow_start_after_idle=0` on servers that send bursts over long-lived connections |
 
-On a live Linux server, `ss -ti dst <client-ip>` shows the kernel's view per connection (congestion window, smoothed RTT, retransmits, whether sending is limited by the receiver window or the send buffer), and `nstat -az | grep -iE 'retrans|timeouts|listen'` shows host-wide counters without a capture. A fresh connection can send only about ten segments (roughly 14 KB) before waiting for acknowledgments, which is why a critical response that fits in that budget arrives one round trip sooner.
+On a live Linux server, `ss -ti dst <client-ip>` shows the kernel's view per connection (congestion window, smoothed RTT, retransmits, whether sending is limited by the receiver window or the send buffer), and `nstat -az | grep -iE 'retrans|timeouts|listen'` shows host-wide counters without a capture.
+A fresh connection can send only about ten segments (roughly 14 KB) before waiting for acknowledgments, which is why a critical response that fits in that budget arrives one round trip sooner.
 
 ## Ask the user
 
