@@ -12,6 +12,9 @@ Do these before deploying anything; a leaked key or a loop can spend thousands i
    day. Nothing stops spending unless it is built: a GCP budget can publish to Pub/Sub and a function can detach billing (which stops every service in
    the project, production included); AWS budget actions can apply a deny policy or stop specific instances. Several PaaS and edge platforms do offer a
    real spend limit that pauses the project; turn it on at Prototype and decide deliberately at Launch whether an outage is better than the bill.
+   One exception on AWS: an account still on the Free plan (offered to accounts opened since mid-2025) is closed by AWS when its credits run out or
+   after six months, a hard stop that takes the resources with it. Move to the paid plan before anything real runs there; joining an organization
+   does so automatically.
 4. **Service quotas as a safety net.** Default quotas bound what a stolen credential can launch. Do not raise them "for later"; keep GPU and large-instance quotas at zero or minimal in accounts that do not use them, and restrict unused regions (`iam-accounts.md`).
 5. **Caps on everything metered** (see "Hard maximums").
 6. **Third-party meters too**: LLM APIs, SMS, email, maps, error tracking and log vendors each have their own budget or usage-limit setting. Set them the same day.
@@ -65,7 +68,7 @@ metered calls per user (LLM tokens, emails, SMS, search)  -> third-party spend, 
 fixed floor: load balancer, NAT, smallest HA database, monitoring, CI
 ```
 
-Shape to expect for a typical CRUD SaaS (order of magnitude only; AI-heavy, media-heavy or realtime products differ by multiples):
+Shape to expect for a typical CRUD SaaS, counting monthly active users (a rule-of-thumb order of magnitude, not a quote; AI-heavy, media-heavy or realtime products differ by multiples):
 
 | Users | Architecture | What dominates | Rough monthly range |
 |---|---|---|---|
@@ -118,7 +121,10 @@ versions, registry retention rules (`docker-images.md`), and a sandbox account t
 
 ## Tags and attribution
 
-- Tag every resource with at least `environment`, `service` and `owner`, set once through the IaC provider's default tags. On AWS, tags must be **activated as cost allocation tags** in billing before they appear in cost reports, and they are not retroactive; do it on day one. Separate accounts per environment give the first split for free.
+- Tag every resource with at least `environment`, `service` and `owner`, set once through the IaC provider's default tags. On AWS, tags must be
+  **activated as cost allocation tags** in billing before they appear in cost reports, and they count from activation onward (a backfill of up to
+  about a year can be requested, and only covers periods when the resource already carried the tag); do it on day one. Separate accounts per
+  environment give the first split for free.
 - Some spend cannot be tagged (data transfer, shared clusters, support). Allocate it proportionally and say so.
 - **Per-customer cost** does not come from tags when tenants share infrastructure. Meter it in the application: requests, compute seconds, stored bytes,
   egress bytes and third-party calls (LLM tokens above all) per tenant, written to the analytics store; then multiply by unit costs derived from the
@@ -136,7 +142,7 @@ versions, registry retention rules (`docker-images.md`), and a sandbox account t
    retrieval. Use the provider's automatic tiering class when access patterns are unknown. Expire what has no reason to exist (`0x:data-stores`
    `data-lifecycle.md` for retention decisions).
 6. **Commitments last**: savings plans, reserved capacity and committed-use discounts trade flexibility for a substantial discount. Buy only after
-   rightsizing, with at least three months of stable usage, covering about 60 to 80 percent of the steady baseline, one-year and no-upfront first,
+   rightsizing, with at least three months of stable usage, covering about 60 to 80 percent of the steady baseline (rule of thumb), one-year and no-upfront first,
    preferring the flexible kind that follows instance family and region changes. A commitment on an oversized or soon-to-be-replaced resource locks in
    the waste. Spot or preemptible capacity suits CI, batch and stateless workers that tolerate interruption, not the database or a single-instance
    service.
@@ -152,7 +158,7 @@ Providers do grant one-time adjustments for genuine accidents and compromises; i
 2. **Open a support case immediately**, in the billing or account category, before the invoice closes if possible. For a compromise, say so explicitly; the provider has a defined process and will list remediation steps that must be completed before any adjustment is considered.
 3. **Write the case as a timeline**: what happened, when it was detected, the affected services and amounts, what was done to stop it, and what has been put in place so it cannot recur (budgets and anomaly alerts, MFA, key removal, caps, guardrails). The prevention list matters; a second request for the same cause is rarely granted.
 4. **Ask plainly for a billing adjustment or credit** for the unintended usage, and ask that collection be paused while the case is open. Respond to every follow-up quickly.
-5. **Do not dispute the charge with the card issuer** while the case is open: chargebacks get accounts suspended, production with them. If the amount threatens the company, ask about a payment plan.
+5. **Do not dispute the charge with the card issuer** while the case is open: a chargeback commonly gets the account suspended, production with it. If the amount threatens the company, ask about a payment plan.
 6. Afterwards: run the full credential and resource audit in `iam-accounts.md`, and add the missing cap.
 
 For platforms billed by usage where an attack (DDoS, scraping, bot signups) drove the bill, the same sequence applies: enable the platform's attack or firewall mode, then contact support with the traffic evidence. Startup credit programs from the major clouds are worth applying for early; design for the bill after credits expire, and note the expiry date in the calendar.

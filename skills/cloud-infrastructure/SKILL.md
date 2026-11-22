@@ -61,7 +61,7 @@ Other defaults: Debian slim base over Alpine for Node and Python; Gateway API ov
 7. From outside the network, the database, cache and admin ports time out (`nc -vz -w 5 <host> 5432`), and no security group allows `0.0.0.0/0` on anything but 80/443 at the load balancer.
 8. The root identity has phishing-resistant MFA and no access keys; humans use SSO; no long-lived access keys were created for services or CI.
 9. New IAM policies list specific actions and resource ARNs; no `Action: "*"`, no `iam:PassRole` on `*`, no trust policy accepting any repository or principal.
-10. The Terraform plan was read: the destroy count is zero or each destroy is explained, and no stateful resource shows `-/+`. A refactor produced an empty plan.
+10. The Terraform plan was read: the destroy count is zero or each destroy is explained, and no stateful resource shows a replacement (`-/+` or `+/-`). A refactor produced an empty plan.
 11. Databases, user-data buckets, DNS zones and keys have deletion protection and backups, and state is remote, locked, versioned and not in git.
 12. A budget with alerts exists on every account, log groups have a retention period, and each metered third-party API has a usage limit.
 13. Functions do not rely on in-memory state or un-awaited work after the response; scheduled and queued handlers are idempotent with a dead-letter path.

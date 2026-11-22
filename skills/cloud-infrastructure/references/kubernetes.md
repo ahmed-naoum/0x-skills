@@ -55,9 +55,10 @@ spec:
             failureThreshold: 3
           lifecycle:
             preStop:
-              exec: { command: ["sleep", "10"] }
+              sleep: { seconds: 10 }
           securityContext:
             runAsNonRoot: true
+            runAsUser: 1000          # needed when the image's USER is a name, not a number
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities: { drop: ["ALL"] }
@@ -69,11 +70,11 @@ Why each non-obvious line is there:
 - **Three probes with different jobs.** Startup gives a slow boot up to `periodSeconds × failureThreshold` (60 s here) before liveness applies.
   Readiness removes the pod from Service endpoints without restarting it; it may check dependencies. Liveness restarts the container; it must check only
   the process itself. A liveness probe that queries the database turns a database blip into a cluster-wide restart storm.
-- **`maxUnavailable: 0`, `maxSurge: 1`** keeps full capacity during rollout. With two replicas, the default 25 percent rounds in ways that can drop to one.
+- **`maxUnavailable: 0`, `maxSurge: 1`** keeps full capacity during rollout. The defaults are 25 percent each, unavailable rounded down and surge rounded up: harmless at two replicas, a quarter short of capacity from four. State both explicitly.
 - **`preStop` sleep plus grace period.** Endpoint removal and SIGTERM happen in parallel; without a pause the pod stops listening while load balancers
   still send to it, producing 502s on every deploy. Sleep 5 to 15 s, then the app drains on SIGTERM; `terminationGracePeriodSeconds` must exceed sleep
-  plus the longest request. The image needs a `sleep` binary for the exec form; recent Kubernetes versions offer a built-in `preStop: { sleep: {
-  seconds: 10 } }` that works in distroless images.
+  plus the longest request. The built-in `sleep` action (stable since Kubernetes 1.32) needs no binary in the image, so it works in distroless
+  images; on an older cluster use `exec` with `command: ["sleep", "10"]`, which needs a `sleep` binary.
 - **Config outside the image.** Non-secret settings in a ConfigMap, secrets in a Secret synced from the cloud's secret manager (External Secrets
   Operator) or encrypted in git (SOPS, Sealed Secrets). Pods do not restart when a ConfigMap or Secret consumed as environment changes: put a checksum
   annotation on the pod template or name the ConfigMap by content hash (Kustomize `configMapGenerator` does this).
@@ -100,7 +101,7 @@ kubectl get events -n app --sort-by=.lastTimestamp | tail -20
 | `Pending`, event `FailedScheduling` | The event text states the reason per node | `Insufficient cpu/memory`: requests exceed any node's free capacity; lower requests or let the node autoscaler add a node (check its max size and cloud quota). `node(s) had untolerated taint` or `didn't match node affinity/selector`: fix selector or toleration. `volume node affinity conflict`: the PersistentVolume is in another zone than any schedulable node. `pod has unbound immediate PersistentVolumeClaims`: no matching StorageClass or provisioning failed; `kubectl describe pvc` |
 | `Pending` with no events | Namespace `ResourceQuota`, or no scheduler capacity on a serverless node mode | `kubectl describe quota -n app` |
 | `ImagePullBackOff` / `ErrImagePull` | Event text | Wrong tag or digest, missing registry credentials (`imagePullSecrets` or node role lacking pull permission), architecture mismatch (`no matching manifest`) |
-| `CreateContainerConfigError` | Event text | Referenced Secret or ConfigMap key does not exist in this namespace |
+| `CreateContainerConfigError` | Event text | Referenced Secret or ConfigMap key does not exist in this namespace. Or `runAsNonRoot` with an image whose `USER` is a name or root (`image has non-numeric user`): set `runAsUser`, or a numeric `USER` in the image |
 | `CrashLoopBackOff` | `Last State` exit code and reason, `logs --previous` | Exit 137 with `OOMKilled`: memory limit too low or a leak. Exit 137 without it: killed by liveness probe or grace period. Exit 1: application error at boot, usually missing configuration or unreachable dependency. Exit 127 or 126: wrong command, or file missing or not executable. `exec format error`: wrong architecture |
 | `Running` but `0/1` ready | `describe` shows `Readiness probe failed` with the HTTP code or timeout | Wrong path or port, app listening on `127.0.0.1` instead of `0.0.0.0`, dependency check failing, probe timeout shorter than the endpoint's latency under load |
 | Ready, but the Service returns nothing | `kubectl get endpointslices -n app -l kubernetes.io/service-name=web` | Empty endpoints: Service selector does not match pod labels, or `targetPort` is wrong. A NetworkPolicy may be dropping traffic |
@@ -148,7 +149,7 @@ Scaling policy and capacity planning beyond the mechanics belong to `0x:site-rel
 ## Traffic in: Gateway API, ingress and certificates
 
 - New clusters: use **Gateway API** (`Gateway` plus `HTTPRoute`) with the cloud's managed implementation or a maintained controller (Envoy Gateway, Cilium, Traefik, NGINX Gateway Fabric). It separates the infrastructure object (Gateway, owned by whoever runs the cluster) from routes (owned by the app) and is where new development goes.
-- Existing clusters on the `Ingress` API: it remains supported; migrate when convenient. Check the status of the specific controller, though: the community `ingress-nginx` controller has been retired by the Kubernetes project, so a cluster running it needs a migration plan to another controller or to Gateway API rather than further investment.
+- Existing clusters on the `Ingress` API: it remains supported; migrate when convenient. Check the status of the specific controller, though: the community `ingress-nginx` controller was retired by the Kubernetes project in March 2026 and gets no further releases or security fixes, so a cluster still running it should move to another controller or to Gateway API now, not when convenient.
 - Expose one Gateway or ingress controller behind one cloud load balancer, and route by host and path. A `Service` of type `LoadBalancer` per app creates one billed load balancer each.
 - Certificates: cert-manager with an ACME `ClusterIssuer` issues and renews automatically for both Ingress and Gateway resources. HTTP-01 works for
   public hostnames; wildcards and private hostnames need DNS-01 with scoped DNS API credentials. Use the staging ACME endpoint while testing to avoid
@@ -165,7 +166,7 @@ Model: a git repository holds the desired state; an in-cluster agent (Argo CD or
 |---|---|---|
 | Plain manifests with Kustomize overlays vs own Helm chart | Kustomize for the team's own services: the diff in a PR is the change | Many near-identical services justify one shared chart |
 | Third-party software | The vendor's Helm chart, version pinned, values file in git | n/a |
-| GitOps agent vs `kubectl apply` or `helm upgrade` from CI | An agent at Scale or with more than one cluster | Launch with one cluster: CI running `helm upgrade --install --atomic --wait` (rolls back automatically on failure) is acceptable and simpler |
+| GitOps agent vs `kubectl apply` or `helm upgrade` from CI | An agent at Scale or with more than one cluster | Launch with one cluster: CI running `helm upgrade --install --rollback-on-failure --wait` (the flag is `--atomic` in Helm 3) rolls back automatically on failure and is acceptable and simpler |
 
 Make changes reviewable: render in CI (`kustomize build` or `helm template`) and show the diff against the cluster (`kubectl diff -f -`, or the agent's diff) in the pull request. Template changes are unreadable without the rendered output. Validate rendered manifests against the target version's schemas (kubeconform) before merge.
 

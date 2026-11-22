@@ -26,7 +26,10 @@ Reduce in this order, measuring after each:
 4. **Pay for warmth only for user-facing paths**: provisioned or minimum instances, or the platform's snapshot or pre-warm feature. This turns a per-request price into an always-on price; rerun the break-even in `platform-choice.md`.
 5. **Change the unit.** If p99 latency on a core path is dominated by cold starts and traffic is steady enough to keep a process busy, an always-on container is the fix, not a warming cron. Scheduled pings keep one instance warm and do nothing for the second concurrent request.
 
-Measure with the platform's init-duration metric and p99 (not average) latency, split by cold versus warm. A rule of thumb for a Node function: a few hundred milliseconds of init is normal, over one second means the bundle or module-scope work needs attention. Isolates start in single-digit milliseconds because they skip the process and runtime boot; that is their main advantage.
+Measure with the platform's init-duration metric and p99 (not average) latency, split by cold versus warm. A rule of thumb for a Node function: a few
+hundred milliseconds of init is normal, over one second means the bundle or module-scope work needs attention. Isolates start in single-digit
+milliseconds because they skip the process and runtime boot; that is their main advantage. On Lambda the init phase is billed as well as waited for,
+so module-scope work costs money on every cold start.
 
 ## Web-standard code that ports
 
@@ -70,7 +73,10 @@ The edge is close to the user; the data is not. The question is how many round t
 
 Arithmetic that settles it: an edge function 150 ms from the database making three sequential queries adds about 900 ms of round trips that an in-region function would not; the user's single 150 ms trip to the region is cheaper. Edge wins only when the response needs zero or one origin trip, or the data is itself replicated near the edge and can be stale.
 
-Defaults: render and run API logic in the database's region (set the function region explicitly; platform defaults are often a US region regardless of where the database lives). Use the edge for the left column, and prefer the CDN's cache over edge compute whenever a cached response would do (`0x:web-networking` `http-caching.md`).
+Defaults: render and run API logic in the database's region (set the function region explicitly; platform defaults are often a US region regardless of
+where the database lives). Use the edge for the left column, and prefer the CDN's cache over edge compute whenever a cached response would do
+(`0x:web-networking` `http-caching.md`). Check which runtime the framework's request interceptor really uses before applying edge limits to it:
+Next.js 16 renamed `middleware.ts` to `proxy.ts` and runs it on the Node.js runtime, and `middleware.ts` on the edge runtime is deprecated.
 
 ## Edge-runtime limits
 

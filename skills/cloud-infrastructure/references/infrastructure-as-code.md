@@ -27,7 +27,7 @@ State is the mapping from code to real resources. It contains secrets in plain t
 
 ```hcl
 terraform {
-  required_version = "~> 1.10"
+  required_version = ">= 1.11"
   backend "s3" {
     bucket       = "acme-tfstate-prod"
     key          = "network/terraform.tfstate"
@@ -41,7 +41,10 @@ terraform {
 }
 ```
 
-- Remote backend with locking, versioning and encryption, readable only by the infrastructure roles. The S3 backend locks natively with `use_lockfile` in current Terraform and OpenTofu releases; the older DynamoDB lock table is legacy. Turn on bucket versioning: it is the undo for a corrupted state. Pin the provider major version to whatever the project's lock file already uses.
+- Remote backend with locking, versioning and encryption, readable only by the infrastructure roles. The S3 backend locks natively with `use_lockfile`
+  (stable from Terraform 1.11 and OpenTofu 1.10); the DynamoDB lock table is deprecated, so do not create one for a new backend. Turn on bucket
+  versioning: it is the undo for a corrupted state. Pin the provider major version to whatever the project's lock file already uses; the `~> 6.0`
+  above is an example, not a reason to upgrade.
 - Commit `.terraform.lock.hcl`. Never commit `*.tfstate`, `*.tfvars` containing secrets, or the `.terraform` directory.
 - Keep secrets out of state where possible: let the database manage its own master password in the secret manager, reference secrets by name, and use ephemeral or write-only arguments where the provider offers them.
 - The state bucket and CI role are a bootstrap problem: create them with a tiny separate configuration (local state, applied once, then committed or migrated) and document it.
@@ -72,7 +75,10 @@ The reviewed artifact is the plan, not the HCL. Workflow:
 
 1. On pull request: `terraform fmt -check`, `terraform validate`, lint and scan (below), then `terraform plan -out=tfplan -lock-timeout=60s` with a **read-only** role; post the plan text to the PR.
 2. Review the plan (next section).
-3. On merge to main: apply **the saved plan** from a job bound to a protected environment, with the write role obtained through OIDC (`iam-accounts.md`). Applying a fresh plan after merge can differ from what was reviewed.
+3. On merge to main: apply **the saved plan** from a job bound to a protected environment, with the write role obtained through OIDC
+   (`iam-accounts.md`). Applying a fresh plan after merge can differ from what was reviewed. A saved plan is refused as stale when the state has
+   changed since it was made: plan and review again. The plan file holds secret values in plain text, so keep it as a short-lived, access-restricted
+   artifact and redact what is posted to the PR.
 4. One apply at a time per state (locking enforces it; serialize the CI job as well).
 
 Hosted runners (HCP Terraform, Spacelift, env0, Atlantis self-hosted) do this out of the box and are worth it when hand-rolled CI becomes a chore; a GitHub Actions workflow is enough for one or two states. Applying from a laptop is acceptable at Prototype only, and never with a locally stored state.
@@ -101,11 +107,25 @@ terraform show -json tfplan \
 
 Causes of unintended destroys, and the fix for each:
 
-- **Renamed a resource or moved it into a module**: Terraform sees a delete and a create. Add a `moved { from = aws_s3_bucket.a  to = aws_s3_bucket.uploads }` block; the plan then shows a move with no change.
+- **Renamed a resource or moved it into a module**: Terraform sees a delete and a create. Add a `moved` block (below); the plan then shows a move with no change.
 - **Switched `count` to `for_each`, or reordered a list**: addresses changed. Use `moved` blocks per instance.
-- **Removed a resource block to "stop managing" it**: that plans a destroy. Use a `removed` block with `lifecycle { destroy = false }`, or `terraform state rm`, to forget without deleting.
+- **Removed a resource block to "stop managing" it**: that plans a destroy. Use a `removed` block (below), reviewed in the PR like any change, to forget without deleting; `terraform state rm` does the same outside review.
 - **Provider major upgrade** changed a default or split a resource. Read the upgrade guide; upgrade in its own PR with an expected no-op plan.
 - **Drift**: someone changed the resource by hand and the plan reverts it. Decide which side is right before applying.
+
+```hcl
+moved {
+  from = aws_s3_bucket.a
+  to   = aws_s3_bucket.uploads
+}
+
+removed {
+  from = aws_s3_bucket.legacy
+  lifecycle {
+    destroy = false
+  }
+}
+```
 
 An empty plan after a refactor is the proof the refactor was safe. Aim for it explicitly.
 
@@ -174,7 +194,7 @@ Run it nightly per state and alert on exit code 2. Use `ignore_changes` only for
 |---|---|---|
 | Syntax, types, references | `terraform validate`, `terraform fmt -check` | Pre-commit and CI |
 | Provider-specific mistakes (invalid instance types, deprecated arguments) | TFLint | CI |
-| Misconfigurations in code | Trivy (`trivy config .`) or Checkov | CI, failing on high and critical |
+| Misconfigurations in code | Trivy (`trivy config .`) or Checkov, version-pinned (`docker-images.md` says why) | CI, failing on high and critical |
 | Misconfigurations in the live account, including what was never codified | The cloud's posture service (Security Hub, Security Command Center, Defender for Cloud) or Prowler | Scheduled, weekly at Launch |
 | Secrets committed in `.tf` or `.tfvars` | The repository's secret scanner | Pre-commit and CI |
 

@@ -17,9 +17,11 @@ Reference Dockerfile for the house stack (Next.js with `output: "standalone"`, p
 ```dockerfile
 # syntax=docker/dockerfile:1
 ARG NODE_VERSION=24
+ARG PNPM_VERSION=10
 FROM node:${NODE_VERSION}-bookworm-slim AS base
+ARG PNPM_VERSION
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH
-RUN corepack enable
+RUN npm install -g pnpm@${PNPM_VERSION}
 
 FROM base AS deps
 WORKDIR /app
@@ -45,9 +47,13 @@ CMD ["node", "server.js"]
 
 Notes on the parts people get wrong:
 
-- Match `NODE_VERSION` to the project's `.nvmrc` or `engines`. Corepack is no longer bundled with the newest Node lines; where `corepack` is missing, install the pinned pnpm with `npm install -g pnpm@<version from packageManager>`.
+- The two `ARG` values are examples. Set `NODE_VERSION` from the project's `.nvmrc` or `engines` (greenfield: the Active LTS line on the Node release
+  schedule) and `PNPM_VERSION` from the `packageManager` field. pnpm is installed with npm because Corepack is not shipped with Node 25 and later,
+  where `corepack enable` fails with "not found"; on Node 24 and earlier it still works. Confirm the Debian tag exists for the chosen Node line, and
+  move to the next Debian stable when the image offers it.
+- On Kubernetes with `runAsNonRoot: true`, a named user is rejected at container start (`image has non-numeric user`): write `USER 1000` (the `node` user's uid) or set `runAsUser` in the pod spec.
 - `.dockerignore` is part of the Dockerfile. Minimum: `node_modules`, `.next`, `.git`, `.env*`, `*.log`, `coverage`, `Dockerfile`, `docker-compose*.yml`. Without it the context upload is slow, `COPY . .` overwrites the installed `node_modules` with the host's, and `.env` lands in a layer.
-- For a non-Next Node service: build in one stage, then in the final stage install production dependencies only (`pnpm install --prod --frozen-lockfile`, or `pnpm deploy --prod` in a workspace) and copy `dist`.
+- For a non-Next Node service: build in one stage, then in the final stage install production dependencies only (`pnpm install --prod --frozen-lockfile`, or `pnpm deploy --prod` in a workspace; from pnpm 10, `deploy` needs `inject-workspace-packages=true` or `--legacy`) and copy `dist`.
 - `CMD ["node", "server.js"]`, not `CMD pnpm start` or `npm start`: the shell form and package-manager wrappers sit at PID 1, swallow SIGTERM, and the container is SIGKILLed after the grace period with requests in flight. If the app spawns children or cannot reap zombies, run with an init (`docker run --init`, Compose `init: true`).
 - Handle SIGTERM in the app: stop accepting, finish in-flight requests, close the pool, exit. Deploy tools wait a fixed grace period (commonly 10 to 30 s) before SIGKILL.
 - Node's heap is not the container's memory: set `--max-old-space-size` to about 75 percent of the container limit in MB, or the kernel OOM-kills (exit 137) before garbage collection gets urgent.
@@ -59,6 +65,7 @@ Check size and contents:
 docker build -t app:dev . && docker image ls app:dev
 docker history --no-trunc app:dev | head -20     # look for secrets and large layers
 docker run --rm --entrypoint id app:dev          # must not be uid=0
+docker inspect --format '{{.Config.User}}' app:dev   # images with no id binary: must be set, and not root or 0
 ```
 
 A Node web image built this way lands in the low hundreds of MB; over 1 GB means dev dependencies, build caches or the whole repo got in.
@@ -101,7 +108,9 @@ Patching is a schedule, not an event:
 
 - Pin the base by version tag at least; by digest (`FROM node:24-bookworm-slim@sha256:...`) for reproducibility, with Renovate or Dependabot opening the PRs that bump it. A digest pin with no bot means never patched.
 - Rebuild and redeploy at least weekly even with no code change, so OS package fixes arrive. A scheduled CI run that builds with `--pull` does it.
-- Scan in CI with Trivy or Grype. Fail on critical and high vulnerabilities that have a fix available; do not fail on unfixable ones, or the gate gets disabled within a month.
+- Scan in CI with Trivy or Grype. Fail on critical and high vulnerabilities that have a fix available; do not fail on unfixable ones, or the gate gets
+  disabled within a month. Pin the scanner too (its binary version, and its CI action by full commit SHA): a scanner runs with registry and repository
+  credentials, and in March 2026 Trivy's release and action tags were hijacked to steal exactly those. See `0x:ci-cd-release` `pipeline-security.md`.
 
 ## Health checks and resource limits
 
@@ -127,11 +136,11 @@ Goal: `docker compose up` gives a new machine the same Postgres, Redis and mail 
 ```yaml
 services:
   db:
-    image: postgres:17
+    image: postgres:18
     environment:
       POSTGRES_PASSWORD: dev
     ports: ["127.0.0.1:5432:5432"]
-    volumes: ["pgdata:/var/lib/postgresql/data"]
+    volumes: ["pgdata:/var/lib/postgresql"]   # images 17 and older: /var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -152,7 +161,10 @@ volumes:
   pgdata:
 ```
 
-- Match the production major version of every backing service (the `postgres:17` above is a placeholder for whatever production runs).
+- Match the production major version of every backing service (the `postgres:18` above is a placeholder for whatever production runs). The official
+  Postgres image moved its data directory in 18: mount the volume at `/var/lib/postgresql` for 18 and later, at `/var/lib/postgresql/data` for 17 and
+  earlier. With the wrong path the container fails to start or writes to an anonymous volume; prove persistence once with `docker compose down &&
+  docker compose up -d` and a row that is still there.
 - `depends_on` without `condition: service_healthy` only orders container start; the app still races the database.
 - Bind published ports to `127.0.0.1`. Docker's port publishing writes its own firewall rules and bypasses `ufw`; `"5432:5432"` on a server with a public IP exposes the database to the internet.
 - Inside the Compose network, services reach each other by service name (`db:5432`), not `localhost`.
@@ -191,10 +203,13 @@ docker buildx build --platform linux/amd64,linux/arm64 -t registry.example.com/a
 
 Zero-downtime on one host needs four things, whichever tool: a reverse proxy that owns ports 80 and 443; the new container started alongside the old;
 traffic switched only after the new one passes its health check; the old one drained on SIGTERM before removal. Kamal's proxy does this by default and
-expects a health endpoint (by default `GET /up` returning 200, configurable). In Coolify, configure a health check on the application; without one, a
-rolling update cannot know when to switch.
+expects a health endpoint (by default `GET /up` returning 200, configurable). In Coolify, a rolling update needs a health check on the application
+(a Dockerfile `HEALTHCHECK` counts; the dashboard's HTTP check runs inside the container and needs `curl` or `wget` there), no fixed container name
+and no port published on the host, and Compose-based deployments are not rolled at all. The deployment log says when a rolling update was skipped.
 
-Sequence for a first Kamal deploy: fresh server with SSH key access and nothing on ports 80/443; DNS A record pointing at it; registry credentials and app secrets supplied through Kamal's secrets file from the environment or a password manager, not committed; `kamal setup` once; `kamal deploy` thereafter; `kamal rollback <version>` to return to a previous image that is still on the host.
+Sequence for a first Kamal deploy: fresh server with SSH key access and nothing on ports 80/443; DNS A record pointing at it; registry credentials and
+app secrets supplied through Kamal's secrets file (`.kamal/secrets`), which holds references to environment variables or a password manager and no
+literal values; `kamal setup` once; `kamal deploy` thereafter; `kamal rollback <version>` to return to a previous image that is still on the host.
 
 What single-server deploys do not give, and what to do about each:
 

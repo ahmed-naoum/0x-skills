@@ -28,7 +28,7 @@ Root (AWS account root user; on GCP the Workspace or Cloud Identity super admin 
 | Member accounts | In an AWS organization, member-account root credentials can be centrally removed so only the management account has a root login to protect. Do this once the organization exists |
 | Break-glass test | Twice a year, sign in with the backup authenticator and confirm the recovery email works. An untested recovery path fails when needed |
 
-On Azure, keep two cloud-only emergency Global Administrator accounts excluded from conditional-access policies, with hardware MFA, monitored for any sign-in. On GCP, keep super admin accounts separate from daily accounts and few (two or three), and do not use them for cloud work.
+On Azure, keep two cloud-only emergency Global Administrator accounts excluded from conditional-access policies, with phishing-resistant MFA (Microsoft requires MFA at the admin portals for every account, emergency ones included), monitored for any sign-in. On GCP, keep super admin accounts separate from daily accounts and few (two or three), and do not use them for cloud work.
 
 ## People: SSO and roles
 
@@ -64,7 +64,7 @@ Each service, job and pipeline gets its own role with only what it needs. Shared
 | Lambda | Execution role, one per function or per tightly related group | A framework's default role shared by every function |
 | EC2 | Instance profile | Everything on the host inherits it; require token-based metadata access |
 | Kubernetes | Workload identity bound to a ServiceAccount | Falling back to the node role, which every pod on the node can use |
-| GCP (Cloud Run, GCE, GKE) | A dedicated service account attached to the resource | Using the default compute service account, which carries a broad Editor role on many projects |
+| GCP (Cloud Run, GCE, GKE) | A dedicated service account attached to the resource | Using the default compute service account, which holds the broad Editor role unless an organization policy disabled the automatic grant (off by default only in newer organizations; check) |
 | GitHub Actions and other CI | OIDC federation: the pipeline exchanges its identity token for a short-lived role session | A trust policy that accepts any repository or branch |
 | A PaaS or external SaaS that needs cloud access | Federation or a cross-account role with an external ID if supported; otherwise an access key for a dedicated least-privilege user, rotated, stored in the platform's secret store | Reusing a personal or admin key |
 
@@ -85,6 +85,12 @@ CI trust policy, scoped to one repository and its production environment:
   }
 }
 ```
+
+Read the real `sub` before writing the condition, because GitHub changed its default format in 2026. Repositories created, renamed or transferred
+since mid-2026, and older ones that opted in (repository Settings, Actions, OIDC), emit immutable IDs: `repo:<org>@<org-id>/<repo>@<repo-id>:...`.
+Older repositories keep the name-only form shown above. A mismatch fails with `Not authorized to perform sts:AssumeRoleWithWebIdentity`. Take the
+exact string from GitHub's OIDC reference or from a decoded token in a throwaway workflow run, and match only the form the repository emits: the
+IDs exist so that a re-registered organization or repository name cannot assume the role, and listing the name-only form as well gives that back.
 
 A `sub` condition of `repo:<org>/*`, or none at all, lets any repository in the organization (or anyone on the platform) assume the role. Use separate roles for plan (read-only) and apply or deploy (write), with the write role bound to a protected branch or environment. Pipeline hardening is in `0x:ci-cd-release` `pipeline-security.md`.
 

@@ -5,19 +5,22 @@ Read this when: deciding or revisiting the hosting model, provider or region for
 ## First: what already exists
 
 Check the repo before recommending anything: `vercel.json`, `fly.toml`, `render.yaml`, `railway.json`, `Dockerfile`, `config/deploy.yml` (Kamal),
-`*.tf`, `serverless.yml`, `wrangler.toml`, Helm charts. A working platform is worth more than a better one. A migration costs one to four weeks of a
-solo founder's attention and produces no customer-visible value, so recommend one only when a named limit is being hit (see "Signals to move"), not on
-taste.
+`*.tf`, `serverless.yml`, `wrangler.toml` or `wrangler.jsonc`, `netlify.toml`, `Procfile`, Helm charts. A working platform is worth more than a
+better one. A migration typically costs a solo founder one to four weeks of attention (rule of thumb) and produces no customer-visible value, so
+recommend one only when a named limit is being hit (see "Signals to move"), not on taste.
 
 ## Hosting model by stage
 
 | Model | Examples | Pick it when | Operating burden | Leaves you when |
 |---|---|---|---|---|
 | Frontend-centric PaaS | Vercel, Netlify, Cloudflare Pages/Workers | Next.js-style app, request/response work, no long-running processes | Near zero | Long jobs, websockets, heavy compute, usage-priced bill grows faster than revenue |
-| Container PaaS | Railway, Render, Fly.io, Heroku | App plus workers plus cron plus managed Postgres in one place | Low | Private networking or compliance needs, per-GB RAM price at larger sizes |
-| Managed containers on a cloud | Google Cloud Run, AWS ECS on Fargate, AWS App Runner, Azure Container Apps | Need the cloud's VPC, IAM, managed data services, or enterprise customers ask where data lives | Medium: IAM, networking and IaC are now yours | Rarely; this scales a long way |
+| Container PaaS | Railway, Render, Fly.io | App plus workers plus cron plus managed Postgres in one place | Low | Private networking or compliance needs, per-GB RAM price at larger sizes |
+| Managed containers on a cloud | Google Cloud Run, AWS ECS on Fargate (Express Mode is its low-configuration entry), Azure Container Apps | Need the cloud's VPC, IAM, managed data services, or enterprise customers ask where data lives | Medium: IAM, networking and IaC are now yours | Rarely; this scales a long way |
 | One or a few VPS | Hetzner, DigitalOcean, OVH with Kamal or Coolify | Cost-sensitive, steady load, comfortable with a server, or needs big RAM/CPU cheaply | Medium: patching, backups, monitoring are yours | Need multi-zone availability or many services |
 | Kubernetes (managed) | EKS, GKE, AKS | Many services, several engineers, at least one person whose job includes the cluster | High, and continuous | n/a |
+
+Check a platform's status before recommending it for a new project. Two changes from 2026: Heroku moved to maintenance-only engineering (keep an
+existing app there; do not start one), and AWS App Runner closed to new customers (AWS points to ECS Express Mode instead).
 
 Default path: **Prototype** on a PaaS. **Launch** on the same PaaS unless a signal below fires. **Scale** on managed containers in one cloud, with
 managed Postgres. Kubernetes is not a stage on this path; it is a choice a team makes when it has roughly ten or more services or needs something only
@@ -90,7 +93,7 @@ Order of decisions:
    counsel if a regulated sector is involved.
 2. **Database region = where most users are.** Everything else follows the database.
 3. **Compute in the same region as the database**, including the PaaS functions region. Platforms default to a US region; check it explicitly.
-4. **Check what else stores data**: logs, error tracker, analytics, email provider, LLM API, backups. A residency promise covers all of them, not only the database.
+4. **Check what else stores data**: logs, error tracker, analytics, email provider, LLM API, backups. A residency promise covers all of them, not only the database. Transfer rules and the sub-processor list itself are in `0x:privacy-compliance`.
 
 Other region rules: choose a large, old region over a new one (more services, more capacity, fewer quota surprises); prices differ by region by a
 noticeable margin, so compare before choosing between two acceptable ones; stay in one region until Scale. Multi-region active-active is a database
@@ -113,11 +116,12 @@ container cost / month = N × hourly_price × 730
 R = requests per month, D = average duration in seconds, M = memory in GB
 ```
 
-Worked example with illustrative list prices (take current ones from the provider's calculator): 10 million requests a month, 200 ms each, 512 MB.
-Compute charge is 10M × 0.2 s × 0.5 GB = 1M GB-seconds; at a price in the region of $0.0000167 per GB-second plus about $0.20 per million requests
-this is roughly $19 a month. Ten million requests a month is under 4 requests per second on average, which one small container handles. So for this
-profile the two cost about the same at 10 million requests and the container wins beyond it; at 100 million requests the function bill is ten times
-larger and the container count has perhaps doubled.
+Worked example with illustrative Lambda-style list prices (take current ones from the provider's calculator): 10 million requests a month, 200 ms
+each, 512 MB. Compute charge is 10M × 0.2 s × 0.5 GB = 1M GB-seconds; at about $0.0000167 per GB-second plus about $0.20 per million requests this
+is roughly $19 a month before any gateway fee. Ten million requests a month is under 4 requests per second on average, which one small container
+handles; two of the smallest instances, for redundancy, cost a similar amount. So for this profile both options cost about the same at 10 million
+requests and the containers win beyond it: at 100 million requests the function bill is ten times larger and the container count has perhaps
+doubled.
 
 Rules of thumb:
 
@@ -144,7 +148,8 @@ Lock-in is a price, not a sin. Estimate the exit in engineer-weeks and decide wh
 
 Before adopting a proprietary service, answer in writing: can the data be exported in bulk in a standard format, and has it been tried once? Is there
 a second implementation of the interface (an S3-compatible store, a Postgres-compatible host)? What is billed on exit (egress per GB is the usual exit
-tax; some providers waive it on request when leaving)? What is the smallest wrapper that keeps the SDK out of business logic?
+tax; the large clouds waive it for departing customers on application and with conditions, so read the current terms)? What is the smallest
+wrapper that keeps the SDK out of business logic?
 
 Do not pay for portability that will not be used: a "cloud-agnostic" abstraction layer over three clouds costs more than the migration it insures against. The exception is data: keep it in formats and engines that exist elsewhere.
 
@@ -154,7 +159,7 @@ Do not pay for portability that will not be used: a "cloud-agnostic" abstraction
 |---|---|---|
 | Hyperscaler | Default at Launch and Scale. Managed data services, IAM, compliance reports, elasticity | Price, egress fees, complexity |
 | Budget cloud or rented dedicated servers (Hetzner, OVH) | Steady compute-, RAM- or bandwidth-heavy workload; price-sensitive product; team can run Postgres or accepts a separate managed DB | Fewer managed services, hardware failure means a rebuild, fewer regions, thinner compliance paperwork |
-| Colocation, owned hardware | Cloud bill in the high six figures a year with a flat, predictable base load, and staff to run it | Capital outlay, lead times, hardware lifecycle, on-call for physical failure |
+| Colocation, owned hardware | Rule of thumb: a cloud bill in the high six figures (USD) a year with a flat, predictable base load, and staff to run it | Capital outlay, lead times, hardware lifecycle, on-call for physical failure |
 
 Rule of thumb: rented dedicated hardware is several times cheaper per core and per GB of RAM than hyperscaler on-demand, and bandwidth is cheaper by a
 larger factor still. That saving is real only if the managed services being given up (database failover, backups, load balancers, zonal redundancy)

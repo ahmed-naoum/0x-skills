@@ -23,6 +23,8 @@ On a PaaS at Prototype, the equivalent is three checks, and no VPC work: the dat
 aws ec2 describe-security-groups \
   --filters Name=ip-permission.cidr,Values=0.0.0.0/0 \
   --query 'SecurityGroups[].[GroupId,GroupName]' --output table
+# Repeat with Name=ip-permission.ipv6-cidr,Values=::/0 and in every region in use, then read each
+# listed group's rules: only 80/443 on the load balancer's group may be open to the world.
 ```
 
 "Private" is necessary and not sufficient: keep TLS and credentials on private connections too. Admin-panel hardening itself is in `0x:web-security`.
@@ -55,7 +57,7 @@ A NAT gateway is the usual first surprise on a small bill: it has an hourly char
 
 | Situation | Choice |
 |---|---|
-| Production, availability matters | One NAT gateway per zone; a single one is a cross-zone dependency and adds cross-zone transfer fees |
+| Production, availability matters | One NAT gateway per zone; a single one is a cross-zone dependency and adds cross-zone transfer fees. AWS's regional NAT gateway mode does the per-zone placement as one resource and is still billed per zone it is active in |
 | Staging, dev, cost-sensitive Launch | One NAT gateway total, or a small NAT instance |
 | Tasks need outbound only and nothing more | Public subnet, public IP on the task, security group with **no inbound rules** except from the load balancer. Simpler and cheaper than NAT; acceptable when a policy does not forbid public IPs. Note that public IPv4 addresses are themselves billed hourly on AWS |
 | Heavy traffic to object storage or the provider's key-value store | Gateway endpoints (free on AWS for S3 and DynamoDB): add them in every VPC |
@@ -69,7 +71,8 @@ Order of preference:
 1. **The cloud's session service: no inbound port, access tied to IAM, sessions logged.** AWS Systems Manager Session Manager, GCP Identity-Aware Proxy TCP forwarding, Azure Bastion.
 
 ```bash
-# Postgres on a private host, through any managed instance or container host in the VPC
+# Postgres on a private host, through any SSM-managed instance in the VPC that can reach it.
+# Needs the Session Manager plugin on the laptop; afterwards the database answers on localhost:5432.
 aws ssm start-session --target <instance-id> \
   --document-name AWS-StartPortForwardingSessionToRemoteHost \
   --parameters '{"host":["<db-endpoint>"],"portNumber":["5432"],"localPortNumber":["5432"]}'
@@ -77,6 +80,8 @@ aws ssm start-session --target <instance-id> \
 # GCP: SSH with no public IP on the VM
 gcloud compute ssh <vm> --tunnel-through-iap
 ```
+
+Keep certificate verification on through a tunnel: with libpq clients, `host=<db-endpoint> hostaddr=127.0.0.1` connects to the local port and still checks the certificate against the real name. Do not lower `sslmode` to make the tunnel work.
 
 2. **A mesh VPN with identity** (Tailscale or similar, WireGuard underneath): one small node in the VPC advertises the subnets; access rules are per user and tied to SSO. Good default for a small team that also needs staging sites and internal tools.
 3. **An identity-aware proxy for web tools** (Cloudflare Access, the cloud's IAP, an OAuth proxy on the load balancer): puts single sign-on in front of an admin panel or dashboard without a VPN client.
