@@ -34,9 +34,10 @@ rebuilt as of any moment in the retention window. Check on the provider:
 - Whether backups outlive the instance. On several providers deleting the database deletes its
   automated backups unless a final snapshot or backup retention is requested.
 
-Self-hosted: use a maintained physical-backup tool (pgBackRest, Barman or WAL-G; confirm the
-project is active) writing to object storage, and alert on `failed_count` in `pg_stat_archiver`. A
-failing archive silently breaks PITR and fills the disk with WAL.
+Self-hosted: use a physical-backup tool (pgBackRest, Barman or WAL-G) writing to object storage,
+after confirming the project is currently maintained: these tools depend on a few sponsors and
+their status has changed before. Alert on `failed_count` in `pg_stat_archiver`. A failing archive
+silently breaks PITR and fills the disk with WAL.
 
 A logical dump is the portable second copy. It restores into any provider and any newer version,
 and a single table can be pulled from it. It is not PITR, and it is slow beyond roughly 100 GB.
@@ -156,8 +157,11 @@ For "a deploy at 14:07 UTC corrupted orders":
    - Replay from outside sources of truth: payment-provider events, inbound webhooks that can be
      re-sent, uploaded files, email logs. Money first (`0x:payments-billing`).
    - Before reopening writes, move every sequence past the highest value the old database issued,
-     or new rows will collide with re-inserted ones:
-     `SELECT setval(pg_get_serial_sequence('orders', 'id'), (SELECT max(id) FROM orders) + 100000);`
+     or new rows will collide with re-inserted ones. Read each `last_value` from `pg_sequences` on
+     the old database and apply it on the restored one:
+     `SELECT setval(pg_get_serial_sequence('orders', 'id'), <last_value on the old database>);`
+   - A restore also brings back rows deleted after the target time. Re-apply the deletions that
+     users requested or the law required, from the request log (`0x:privacy-compliance`).
    - List what cannot be recovered and tell the affected customers.
 6. The restored instance is a new database: new endpoint, no backup history yet, default
    parameters. Re-enable PITR, deletion protection, monitoring, the pooler, replicas, role
@@ -171,8 +175,8 @@ Layers, cheapest first:
 
 - **Provider**: deletion protection on the instance or project; a final snapshot on delete;
   automated backups retained after deletion. In infrastructure code add a destroy guard, for
-  example with Terraform on AWS: `deletion_protection = true`, `skip_final_snapshot = false`, and
-  `lifecycle { prevent_destroy = true }` (`0x:cloud-infrastructure`).
+  example with Terraform on AWS: `deletion_protection = true`, `skip_final_snapshot = false` with a
+  `final_snapshot_identifier`, and `lifecycle { prevent_destroy = true }` (`0x:cloud-infrastructure`).
 - **Grants**: the application role owns nothing, so it cannot `DROP`, `ALTER` or `TRUNCATE`
   (`postgres-operations.md`). Append-only tables lose more:
   `REVOKE UPDATE, DELETE ON ledger_entries, audit_log FROM app_rw;`

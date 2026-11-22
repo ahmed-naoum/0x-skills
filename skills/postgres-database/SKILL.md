@@ -93,12 +93,14 @@ consistent with it. These apply to greenfield choices and when the user asks wha
     idle-in-transaction timeouts, and the pools at maximum instance count fit the connection budget.
 11. Any manual production write was shown to the user with its row count, approved, run inside a
     transaction and has a before-image.
-12. Point-in-time recovery is on, its window was checked, and a timed restore drill is on record.
+12. From Launch: point-in-time recovery is on, its restorable window was read off the provider, and
+    a timed restore drill is on record.
 13. Before a destructive or irreversible change: a verified snapshot, the timestamp noted, the
     restore path written down.
-14. Reads sent to a replica tolerate lag and never decide a write; lag and slot alerts exist.
-15. `pg_stat_statements` and slow-statement logging are on; alerts cover connections, disk and
-    long transactions.
+14. Where a replica exists: reads sent to it tolerate lag and never decide a write, and alerts on
+    lag and on replication slots exist.
+15. From Launch: `pg_stat_statements` and slow-statement logging are on; alerts cover connections,
+    disk and long transactions.
 
 ## Not this skill
 

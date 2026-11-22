@@ -140,7 +140,7 @@ Default: everything reads from the primary. Move reads one call site at a time b
 choosing a second client (`dbRead`), and only reads that are heavy and tolerate staleness: search
 and list pages, dashboards, exports, public pages. Helpers that send every `SELECT` to a replica
 (Drizzle's `withReplicas`, Prisma's read-replicas extension) invert that default; where the
-project uses one, force the primary for these, which always stay there:
+project uses one, force the primary (`db.$primary`, `prisma.$primary()`) for these:
 
 - Reads inside a transaction that writes, and anything that takes locks or claims queue rows.
 - Reads that decide a write: balance and stock checks, uniqueness and idempotency lookups,
@@ -232,13 +232,16 @@ must be about a minute. The same procedure performs a major-version upgrade, sin
 an older version to a newer one.
 
 - The source must permit logical replication (`wal_level = logical`, usually a provider setting
-  that needs a restart) and have a role with the `REPLICATION` attribute. The target needs the
-  same extensions and a direct connection to the source, not a transaction pooler.
+  that needs a restart) and have a role allowed to replicate (the `REPLICATION` attribute, or the
+  provider's own replication role). The target needs the same extensions and a direct connection
+  to the source, not a transaction pooler.
 - Every table needs a primary key (check `pg_index.indisprimary`); without one, updates and
-  deletes on a published table fail on the source.
-- Not carried over by the stream: schema changes, sequence positions, roles and grants,
-  materialized view contents. Freeze migrations until cutover: a schema change on the source stops
-  the subscriber at the first row that does not fit, and its slot then retains WAL.
+  deletes on a published table fail on the source. `REPLICA IDENTITY FULL` is a slow stopgap.
+- Not carried over by the stream: schema changes, sequence positions, roles and grants, large
+  objects, materialized view contents. PostgreSQL 19 can copy sequence positions when the source
+  is also 19 or later, still by an explicit refresh at cutover; the `setval` query below works on
+  every version. Freeze migrations until cutover: a schema change on the source stops the
+  subscriber at the first row that does not fit, and its slot then retains WAL.
 
 1. Target: create roles and extensions, then load the schema, primary keys included:
    `pg_dump --schema-only --no-owner --no-privileges "$SOURCE_URL" | psql "$TARGET_URL"`.

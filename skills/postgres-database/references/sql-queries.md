@@ -97,8 +97,8 @@ LEFT JOIN LATERAL (
 WHERE c.tenant_id = $1;
 ```
 
-Recursive CTE for a tree stored as `parent_id`. Always bound the depth and guard against cycles,
-or one bad row hangs the request:
+Recursive CTE for a tree stored as `parent_id`. Always bound the depth and guard against cycles
+(the `CYCLE` clause, PostgreSQL 14+), or one bad row hangs the request:
 
 ```sql
 WITH RECURSIVE tree AS (
@@ -215,7 +215,8 @@ LIMIT 21;                             -- page size + 1 tells whether another pag
 ## Manual SQL against production
 
 Claude does not run a writing statement against production until the user has seen the exact
-statement and the affected row count and has said yes.
+statement and the affected row count and has said yes. At Prototype, with no real user data, the
+before-image is optional; the approval, `BEGIN` and the row count are not.
 
 1. Write the change as a file in the repository; it is the record of what was done.
 2. Run the predicate as a `SELECT count(*)` and look at a sample. Record the count.
@@ -240,7 +241,8 @@ Start with `BEGIN` before typing anything else; psql autocommits, and an `UPDATE
 was lost in editing is otherwise permanent. Do not leave the transaction open while thinking: its
 row locks block the application and it holds back vacuum. Roll back and return. Schema changes are
 transactional too, so the same wrapper protects a manual `ALTER`. Connect as a read-only role by
-default and switch to a writing role only for the change (`postgres-operations.md`).
+default and switch to a writing role only for the change (`postgres-operations.md`). Create the
+`ops` schema once and grant it to no application role: before-images are copies of customer data.
 
 ## Fixing bad records with a backfill
 

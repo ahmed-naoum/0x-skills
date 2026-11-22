@@ -22,7 +22,9 @@ that on only at Scale, with someone who has done it before.
 Families: the cloud's own service (Amazon RDS and Aurora, Google Cloud SQL, Azure Database for
 PostgreSQL) when the application already runs there or compliance demands it; serverless with
 branching (Neon) for preview-heavy workflows; a backend platform (Supabase) when its auth and storage
-are wanted too; the application platform's own add-on; a specialist (Crunchy Bridge, Aiven) for support.
+are wanted too; the application platform's own add-on; a Postgres specialist (Aiven, Crunchy Bridge)
+for support depth. These vendors are acquired and repackaged often: confirm the product is still
+sold, and on what terms, before recommending one by name.
 
 Default: Prototype uses whatever the application's platform offers in one click. From Launch, a
 paid tier in the application's region with point-in-time recovery, no idle pausing and a pooler;
@@ -44,15 +46,14 @@ into the database.
 import { Pool } from "pg";
 
 const g = globalThis as unknown as { pgPool?: Pool };
-export const pool = (g.pgPool ??=
-  new Pool({
-    connectionString: process.env.DATABASE_URL, // the pooled URL at runtime
-    max: 10,                        // per process; must fit the connection budget
-    connectionTimeoutMillis: 3_000, // fail fast instead of queueing forever
-    idleTimeoutMillis: 30_000,
-    maxLifetimeSeconds: 1_800,      // recycle so connections rebalance after a failover
-    application_name: "web",
-  }));
+export const pool = (g.pgPool ??= new Pool({
+  connectionString: process.env.DATABASE_URL, // the pooled URL at runtime
+  max: 10,                        // per process; must fit the connection budget
+  connectionTimeoutMillis: 3_000, // fail fast instead of queueing forever
+  idleTimeoutMillis: 30_000,
+  maxLifetimeSeconds: 1_800,      // recycle so connections rebalance after a failover
+  application_name: "web",
+}));
 ```
 
 Create the pool once per process. In Next.js development, hot reload re-evaluates modules and
@@ -77,8 +78,8 @@ more than a few hundred clients. Use the provider's pooler when it has one.
   of clients share tens of connections. Session mode multiplexes nothing.
 - Transaction mode breaks session state: session-level `SET` (use `SET LOCAL`), session advisory
   locks, `LISTEN`, temporary tables kept across transactions, SQL-level `PREPARE`. Protocol-level
-  prepared statements work on PgBouncer 1.21 and later when `max_prepared_statements` is above
-  zero; on older or other poolers, disable prepared statements in the driver.
+  prepared statements work on PgBouncer 1.21 and later with `max_prepared_statements` set above zero
+  (its default changed between releases); on older or other poolers, disable them in the driver.
 - Keep two URLs. Pooled for application traffic. Direct for migrations, `pg_dump`, logical
   replication, `LISTEN/NOTIFY` and long maintenance sessions. Some providers' direct hosts are
   IPv6-only; a CI runner without IPv6 then needs the session-mode pooler for migrations.
@@ -109,8 +110,9 @@ Postgres: its sum over every pair goes into the budget above, not `max_client_co
 
 ```sql
 REVOKE ALL ON DATABASE app FROM PUBLIC;
-GRANT CONNECT ON DATABASE app TO app_rw, app_ro;
+GRANT CONNECT ON DATABASE app TO app_migrator, app_rw, app_ro;
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+GRANT USAGE, CREATE ON SCHEMA public TO app_migrator;   -- or make it the schema's owner
 GRANT USAGE ON SCHEMA public TO app_rw, app_ro;
 
 ALTER DEFAULT PRIVILEGES FOR ROLE app_migrator IN SCHEMA public
@@ -165,8 +167,9 @@ WHERE backend_type = 'client backend' AND state <> 'idle' AND pid <> pg_backend_
 ORDER BY xact_start NULLS LAST;
 ```
 
-Turn on `log_min_duration_statement` (500 ms), `log_lock_waits`, and `pg_stat_statements`. Routing
-alerts and building dashboards are in `0x:site-reliability`.
+Prototype: the provider's dashboard is enough. From Launch: alerts on the first five rows, and
+`log_min_duration_statement` (500 ms), `log_lock_waits` and `pg_stat_statements` turned on. The
+other rows at Scale or once replicas exist. Routing alerts and dashboards: `0x:site-reliability`.
 
 ## Killing a runaway query
 
@@ -209,7 +212,8 @@ Updates and deletes leave dead row versions; autovacuum reclaims them and also f
 transaction ids. Never disable it. Two things go wrong.
 
 **It runs too rarely on big tables.** The default trigger is 20 percent dead rows, which on a
-100-million-row table is 20 million. Lower it per table, and do the same for queue-like tables:
+100-million-row table is 20 million. Lower it per table, and do the same for queue-like tables (on a
+partitioned table set it on each partition: the parent accepts no storage parameters):
 
 ```sql
 ALTER TABLE events SET (autovacuum_vacuum_scale_factor = 0.01, autovacuum_analyze_scale_factor = 0.01);
@@ -229,10 +233,11 @@ Long transactions, abandoned replication slots, forgotten prepared transactions 
 and replicas with `hot_standby_feedback` running long queries all hold cleanup back for the whole
 database. Remove the holder; vacuum then catches up by itself.
 
-Bloat is space vacuum freed inside a table but did not return to the disk. Plain `VACUUM` never
-shrinks files. Shrink a table online with `pg_repack` (an extension most providers offer) or a
-built-in online rewrite where the running version documents one, and an index with
-`REINDEX INDEX CONCURRENTLY`. `VACUUM FULL` locks the table exclusively for its whole rewrite.
+Bloat is space vacuum freed inside a table but did not return to the disk; plain `VACUUM` gives
+back only empty pages at the end of the file. Shrink a table online with the `pg_repack` extension
+(most providers offer it) or, from PostgreSQL 19, the built-in `REPACK (CONCURRENTLY)`; it is new,
+so read its documented restrictions and rehearse on a copy. Shrink an index with `REINDEX INDEX
+CONCURRENTLY`. `VACUUM FULL` locks the table exclusively for its whole rewrite.
 
 Wraparound: transaction ids are 32-bit, so every table must be frozen before its oldest id is
 about two billion transactions old. Autovacuum forces a freeze at 200 million. If blockers stop it
@@ -243,8 +248,8 @@ it climbs past 500 million, clear the blockers above and run
 
 ## Tuning
 
-Managed providers set memory sensibly for the instance, and a missing index outweighs every
-setting here. After fixing queries, check these one change at a time, measured with `pg_stat_statements`:
+Managed providers preset memory, and a missing index outweighs every setting here: skip this until
+Scale or a measured problem. Then change one setting at a time, measured with `pg_stat_statements`:
 
 | Setting | Guidance |
 |---|---|
@@ -277,8 +282,8 @@ first or second minor release before adopting it.
 4. Take a snapshot and verify it (`backup-recovery.md`). After writes land on the new version, the
    only way back is that snapshot, with data loss, which is why the rehearsal matters.
 5. Upgrade in the quietest hour. Afterwards run `ANALYZE` (before PostgreSQL 18 the upgrade drops
-   planner statistics and queries are slow until it finishes), update extensions with
-   `ALTER EXTENSION ... UPDATE`, reindex if the release notes call for it, and recreate replicas.
+   planner statistics and queries crawl until it finishes), update extensions with `ALTER EXTENSION
+   ... UPDATE`, reindex if the release notes say so, and recreate replicas the provider left behind.
 6. Watch `pg_stat_statements` for plan regressions for a day.
 
 ## Ask the user

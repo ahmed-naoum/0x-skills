@@ -13,7 +13,9 @@ a new product, or deciding ORM versus raw SQL and UUID versus integer keys.
 3. List the queries the feature runs (filter plus sort) and derive indexes from them
    (`indexes-query-plans.md`). Ship the result as a migration (`migrations.md`).
 
-Code is replaced many times; the schema and its data outlive it. Spend the design time here.
+Keys, constraints, time and money types are the same at Prototype as at Scale, because changing
+them later is a data migration. Audit history and trash windows can wait for Launch;
+denormalization waits for a measured slow query.
 
 ## Baseline table
 
@@ -75,9 +77,10 @@ CREATE TABLE bookings (
 );
 ```
 
-Use half-open ranges `[start, end)` so back-to-back bookings do not collide. PostgreSQL 18 also
-accepts `PRIMARY KEY (room_id, during WITHOUT OVERLAPS)`. A check-then-insert in application code
-cannot replace this: two concurrent requests both pass the check.
+Use half-open ranges `[start, end)` so back-to-back bookings do not collide. From PostgreSQL 18
+`PRIMARY KEY (room_id, during WITHOUT OVERLAPS)` states the same rule (it also needs `btree_gist`).
+A check-then-insert in application code cannot replace this: two concurrent requests both pass
+the check.
 
 A CHECK cannot look at other rows or tables. Rules such as "sum of allocations is at most the
 budget" need a lock on the parent row or a serializable transaction (`transactions-concurrency.md`).
@@ -174,7 +177,7 @@ summed or constrained on most requests; that is a column.
   be migrated. Add `CHECK (jsonb_typeof(attrs) = 'object')`.
 - Promote a hot key to a real column or a stored generated column, which can be indexed, checked
   and made NOT NULL: `sku text GENERATED ALWAYS AS (attrs ->> 'sku') STORED`. Write `STORED`:
-  PostgreSQL 18 defaults to virtual generated columns, which cannot be indexed.
+  from PostgreSQL 18 the default is `VIRTUAL`, and that version cannot index a virtual column.
 - Index by query shape: `USING gin (attrs jsonb_path_ops)` for containment (`attrs @> '{"color":"red"}'`),
   a B-tree expression index `((attrs ->> 'color'))` for equality or range on one key.
 - No foreign keys reach inside JSON, and the planner keeps no statistics on keys, so filters on
@@ -193,9 +196,10 @@ summed or constrained on most requests; that is a column.
 | What was true when it happened | Snapshot columns on the event row (see Money) |
 
 Soft delete has a standing cost: every query must exclude deleted rows (one missed filter leaks
-them), unique constraints must be partial, child rows stay behind, and an erasure request still
-needs a real delete (`0x:data-stores` owns deletion across stores). Enforce the filter in one place,
-such as a view or the data-access layer's base query.
+them), unique constraints must be partial, child rows stay behind, and where privacy law gives
+people a right to deletion, that request still needs a real delete (`0x:privacy-compliance`;
+`0x:data-stores` owns deletion across stores). Enforce the filter in one place, such as a view or
+the data-access layer's base query.
 
 History table: `(id, table_name, row_id, action, actor_id, at, old jsonb, new jsonb)`. Written by
 application code it carries context but can be bypassed; written by a trigger it cannot be

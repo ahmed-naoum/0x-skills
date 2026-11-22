@@ -92,11 +92,12 @@ callback must be safe to run again, which is one more reason it contains no exte
 import { Pool, type PoolClient } from "pg";
 
 const RETRYABLE = new Set(["40001", "40P01"]); // serialization_failure, deadlock_detected
+type Isolation = "READ COMMITTED" | "REPEATABLE READ" | "SERIALIZABLE"; // interpolated: never a free string
 
 export async function withTransaction<T>(
   pool: Pool,
   fn: (tx: PoolClient) => Promise<T>,
-  { isolation = "READ COMMITTED", maxAttempts = 4 } = {},
+  { isolation = "READ COMMITTED" as Isolation, maxAttempts = 4 } = {},
 ): Promise<T> {
   for (let attempt = 1; ; attempt++) {
     const tx = await pool.connect();
@@ -128,9 +129,9 @@ SELECT id, budget_minor FROM projects WHERE id = $1 FOR NO KEY UPDATE;
 
 | Clause | Effect |
 |---|---|
-| `FOR NO KEY UPDATE` | Blocks other writers and lockers of the row. The lock a normal `UPDATE` takes. Default choice |
+| `FOR NO KEY UPDATE` | Blocks other writers and lockers of the row, except foreign-key checks. The lock a normal `UPDATE` takes. Default choice |
 | `FOR UPDATE` | The same, and also blocks inserts of child rows that reference this row, because their foreign-key check needs a key-share lock. Use only when deleting the row or changing its key |
-| `FOR SHARE` / `FOR KEY SHARE` | Blocks writers but lets other sharers in. Rarely needed by hand |
+| `FOR SHARE` / `FOR KEY SHARE` | `FOR SHARE` blocks writers and lets other sharers in; `FOR KEY SHARE` blocks only deletes and key changes. Rarely needed by hand |
 | `NOWAIT` | Fail immediately if the row is locked |
 | `SKIP LOCKED` | Silently skip locked rows. For queues only |
 | `OF table` | In a join, lock rows of that table only |
@@ -167,12 +168,14 @@ Set them per role: they apply to every new session of that role, including throu
 session-level `SET` sent through a transaction-mode pooler lands on whichever server connection
 served that statement and leaks to other clients; use `SET LOCAL` inside a transaction for
 one-off overrides (`SET LOCAL statement_timeout = '5min'` in a report). The numbers are starting
-points: set them above the slowest legitimate statement of that role and tighten over time.
+points: set them above the slowest legitimate statement of that role and tighten over time. Set
+them in the migration that creates the roles, at the latest before Launch.
 
 ## Queues with SKIP LOCKED, single-run work with advisory locks
 
-Prefer a maintained Postgres-backed queue library (pg-boss, Graphile Worker); retries, backoff and
-dead-letter policy are in `0x:backend-architecture`. Underneath, they all claim work like this:
+Prefer a maintained Postgres-backed queue library (pg-boss and Graphile Worker are the usual Node.js
+choices; check for recent releases before adding one); retries, backoff and dead-letter policy are
+in `0x:backend-architecture`. Underneath, they all claim work like this:
 
 ```sql
 UPDATE jobs

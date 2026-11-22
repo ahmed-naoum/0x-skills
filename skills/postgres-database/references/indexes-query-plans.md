@@ -18,6 +18,10 @@ to add, change or drop.
 
 `EXPLAIN ANALYZE` executes the statement. Wrap writes in `BEGIN; EXPLAIN (ANALYZE) ...; ROLLBACK;`.
 
+By stage: at Prototype index foreign keys and the filter behind each list page, nothing more. From
+Launch keep `pg_stat_statements` on and use this method when something is slow. At Scale review the
+top statements and the unused-index list on a schedule (monthly is a workable start).
+
 ## Reading a plan
 
 ```text
@@ -55,7 +59,7 @@ above 5 to 10 percent). Otherwise:
 |---|---|
 | No index on the filter columns | Add one that matches filter and sort (next section) |
 | Function or cast on the column: `lower(email) = $1`, `created_at::date = $1` | Expression index on the same expression, or rewrite as a range on the bare column |
-| Parameter type differs from the column (numeric against integer, text against uuid) | Cast the parameter, not the column: `WHERE id = $1::bigint` |
+| Parameter type forces a cast of the column (a `numeric` parameter against an integer column, `id::text = $1` from an ORM) | Cast the parameter, not the column: `WHERE id = $1::bigint` |
 | `LIKE '%term%'` or `ILIKE` | Trigram index: `USING gin (name gin_trgm_ops)` with the `pg_trgm` extension |
 | `LIKE 'prefix%'` under a non-C collation | `text_pattern_ops` index, or a trigram index |
 | Composite index exists, but the query does not filter on its first column | Reorder or add an index led by a column the query does filter on |
@@ -65,8 +69,9 @@ above 5 to 10 percent). Otherwise:
 
 ## Matching an index to filter and sort
 
-Column order in a B-tree: equality columns, then the sort column(s), then at most one range
-column. For
+Column order in a B-tree: equality columns first, then the sort column(s) of an `ORDER BY ... LIMIT`
+query, or else the one range column. A range column placed before the sort columns breaks the
+index order and forces a sort. For
 
 ```sql
 SELECT id, total_minor FROM orders
@@ -110,7 +115,7 @@ Vector indexes (HNSW) and full-text search design are in `0x:data-stores`.
 
 ## Finding the costliest queries
 
-Enable `pg_stat_statements` (available on every managed provider; `CREATE EXTENSION
+Enable `pg_stat_statements` (managed providers preload it or offer a switch; then `CREATE EXTENSION
 pg_stat_statements`). It aggregates statements with constants replaced by `$n`.
 
 ```sql
@@ -166,8 +171,8 @@ HAVING count(*) > 1;
 Before dropping: confirm the statistics cover at least a full business cycle including month-end
 jobs (`SELECT stats_reset FROM pg_stat_database WHERE datname = current_database()`), check the
 same counters on every replica (they are per server), and look for prefix duplicates by hand
-(`(a)` next to `(a, b)`). Save `pg_get_indexdef()` output so the index can be recreated, then
-`DROP INDEX CONCURRENTLY`.
+(`(a)` next to `(a, b)`). Of a duplicate pair keep the one that backs a constraint. Save
+`pg_get_indexdef()` output so the index can be recreated, then `DROP INDEX CONCURRENTLY`.
 
 ## Covering indexes and index-only scans
 
