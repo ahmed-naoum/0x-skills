@@ -144,7 +144,8 @@ How to find usages: search for `retries:` in files importing `@acme/sdk`.
 - One section per breaking change, each with why, before, after, and how to find affected code. "Behavior changes that will not fail at compile time" is the most important section, because nothing else will tell the consumer.
 - Provide a codemod when the change is mechanical and widespread; it converts a deterrent into a command.
 - State what happens to someone who does nothing: an error at install, at build, at runtime, or silently different results.
-- For a paid product, removing functionality or changing pricing-relevant behavior can be constrained twice: by notice and change clauses in the customer contract or terms of service, and by consumer-protection law, which in some jurisdictions requires advance notice or a right to cancel when a subscription changes materially. The rules differ by country and by whether the customers are businesses or consumers. Read the contracts before setting the date, and get legal advice before taking something away from paying customers (`0x:privacy-compliance` covers terms and consumer rules).
+- For a paid product, removing functionality or changing pricing-relevant behavior can be constrained twice: by notice and change clauses in the customer contract or terms of service, and by consumer-protection law, which in some jurisdictions requires advance notice or a right to cancel when a subscription changes materially.
+- Those rules differ by country and by whether the customers are businesses or consumers. Read the contracts before setting the date, and get legal advice before taking something away from paying customers (`0x:privacy-compliance` covers terms and consumer rules).
 
 ## Supported-versions policy
 

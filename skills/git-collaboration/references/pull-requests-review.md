@@ -141,7 +141,9 @@ git add -N .                   # register new files so add -p offers them
 git add -p                     # stage one coherent piece at a time, commit, repeat
 ```
 
-Both recipes take the big branch's content relative to `origin/main`. If the big branch is behind `main`, they silently carry reverts of everything `main` gained since, which is why the first line comes first. `git checkout <branch> -- path` also leaves in place files the big branch deleted; remove those by hand. The original branch stays untouched as the reference: when the last part is done, `git diff big-branch` on the final part should be empty.
+Both recipes take the big branch's content relative to `origin/main`. If the big branch is behind `main`, they silently carry reverts of everything `main` gained since, which is why the first line comes first.
+
+`git checkout <branch> -- path` also leaves in place files the big branch deleted; remove those by hand. The original branch stays untouched as the reference: when the last part is done, `git diff big-branch` on the final part should be empty.
 
 Each part must build and pass on its own; run the checks per part, not only at the end. If parts depend on each other, stack them (`branching-workflow.md`) and say in each description where it sits: "2 of 4, depends on #231". A part that cannot be made independently correct is a sign the seam is wrong.
 

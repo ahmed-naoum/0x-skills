@@ -81,7 +81,8 @@ Procedure:
 3. To see what led to the conflict: `git log --merge -p -- path` (merge only) shows the commits from both sides touching the file.
 4. Take a whole side when that is correct: `git checkout --theirs path` or `--ours path`. To start a file over: `git checkout --merge path` restores the conflict markers.
 5. `git add` each resolved file. Finish with `git merge --continue` or `git rebase --continue`. During a rebase do not run `git commit` for the resolution; `--continue` commits it.
-6. Verify before `--continue` and again before pushing: `git diff --cached --check` reports leftover conflict markers and whitespace errors in what is staged (plain `git diff --check` prints nothing once the files are added, and git commits markers without complaint), then typecheck and run the tests. Git reports textual conflicts only; two changes that merge cleanly can still break each other (a renamed function on one side, a new caller on the other).
+6. Verify before `--continue` and again before pushing: `git diff --cached --check` reports leftover conflict markers and whitespace errors in what is staged (plain `git diff --check` prints nothing once the files are added, and git commits markers without complaint).
+7. Then typecheck and run the tests. Git reports textual conflicts only; two changes that merge cleanly can still break each other (a renamed function on one side, a new caller on the other).
 
 Special cases:
 
@@ -137,7 +138,9 @@ The goal is the reason for the code, which lives in the commit message and the p
 - `-L :name:path` locates the function with a per-language heuristic that misses many indented methods and arrow functions. When it reports no match, use a line range: `git log -L 40,60:path`.
 - `-S` (pickaxe) finds commits where the number of occurrences of the string changed; `-G` finds commits whose diff lines match a regex. Use `-S` for "where was this introduced or removed", `-G` for "where was this edited".
 - Blame usually lands on a formatting or refactoring commit first. Step past it with `git blame <hash>^ -- path`, or permanently by listing bulk-reformat commits in `.git-blame-ignore-revs` and setting `git config blame.ignoreRevsFile .git-blame-ignore-revs`. GitHub's blame view honors a file with that name at the repository root.
-- `git bisect run` needs a command that exits 0 for good and 1 to 127 for bad, where 125 means "cannot test this commit, skip it"; any other code aborts the bisect. Make the script exit 125 when the build itself fails, or a broken commit is blamed for the bug. It finds the commit in about log2(n) steps, and it only works well when most commits build, which is one argument for small commits that each pass.
+- `git bisect run` needs a command that exits 0 for good and 1 to 127 for bad, where 125 means "cannot test this commit, skip it"; any other code aborts the bisect.
+- Make the bisect script exit 125 when the build itself fails, or a commit that merely does not build is blamed for the bug.
+- It finds the commit in about log2(n) steps, and it only works well when most commits build, which is one argument for small commits that each pass.
 - End with `git bisect reset`.
 
 ## Cleaning local history before sharing
@@ -190,7 +193,8 @@ Removing a large file already in history is a history rewrite of the whole repos
      | sort -k3 -n | tail -20
    ```
 2. Merge or close open pull requests and tell every collaborator; all commit hashes after the first affected commit change.
-3. Work in a fresh clone with `git filter-repo` (the maintained replacement for `filter-branch`; a separate install, not bundled with git): `git filter-repo --strip-blobs-bigger-than 10M`, or `git filter-repo --path path/to/file --invert-paths`. To move existing binaries into LFS instead, use `git lfs migrate import --include="*.psd" --everything`. Keep an untouched mirror clone (`git clone --mirror`) as the backup until the result is verified.
+3. Work in a fresh clone with `git filter-repo` (the maintained replacement for `filter-branch`; a separate install, not bundled with git): `git filter-repo --strip-blobs-bigger-than 10M`, or `git filter-repo --path path/to/file --invert-paths`.
+   To move existing binaries into LFS instead, use `git lfs migrate import --include="*.psd" --everything`. Keep an untouched mirror clone (`git clone --mirror`) as the backup until the result is verified.
 4. Force-push all branches and tags: `git push origin --force --all`, then `git push origin --force --tags`. `filter-repo` removes the `origin` remote on purpose; add it back first. Branch rules that block force pushes have to be lifted for this push; restore them immediately after.
 5. Everyone re-clones. An old clone that pushes again reintroduces the old objects.
 6. The host may keep the old objects reachable through pull request refs and caches until it garbage-collects; when the content must be gone, ask the host's support to purge them. Forks keep their copies regardless.
