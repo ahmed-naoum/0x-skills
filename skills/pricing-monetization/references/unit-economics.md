@@ -4,6 +4,10 @@ Read this when: checking whether the business works per customer, plan or channe
 CAC, payback, LTV, gross margin and cost to serve per plan including AI inference, whether a
 segment or channel is worth pursuing, or which customers and plans lose money.
 
+By stage: at Prototype, log cost per account and know the break-even count; skip the rest. At
+Launch, keep the one-sheet model with a blended column and margin per plan. At Scale, add a column
+per channel and segment, and decide on marginal CAC.
+
 ## Definitions that get used wrong
 
 Work monthly unless stated, and on gross margin, never on revenue alone.
@@ -18,19 +22,19 @@ Work monthly unless stated, and on gross margin, never on revenue alone.
 | Payback, months | CAC ÷ contribution per account | Dividing by revenue instead of contribution |
 | Logo churn | Accounts lost ÷ accounts at period start | Counting downgrades as retained |
 | Revenue churn | Revenue lost to churn and downgrades ÷ revenue at period start | Netting expansion into it without saying so |
-| LTV | Contribution per account ÷ monthly revenue churn, capped | No cap: low early churn implies decades of revenue |
+| LTV | Contribution per account ÷ monthly gross revenue churn (expansion excluded), capped | No cap: low early churn implies decades of revenue; netting expansion can push churn to zero or below and LTV to infinity |
 | LTV:CAC | LTV ÷ CAC | Treating it as precise; it inherits every error above |
 
 Conventions:
 
 - **Cap lifetime at 3 to 5 years in LTV**, whatever churn implies. Young cohorts and tiny churn
   rates produce absurd lifetimes.
-- **Below about 50 customers, churn is noise.** Use a range (worst, expected, best) and look at
+- **Below about 50 customers, churn is noise** (rule of thumb). Use a range (worst, expected, best) and look at
   cohorts, not one rate.
 - **Lag CAC.** Spend in one month produces customers later; match spend to conversions using the
   typical time from first touch to first payment.
-- **Cash payback and margin payback differ.** An annual prepayment recovers CAC in cash on day one
-  while margin payback is unchanged. Track both: cash for runway, margin for whether the channel
+- **Cash payback and margin payback differ.** An annual prepayment larger than CAC recovers it in
+  cash on day one while margin payback is unchanged. Track both: cash for runway, margin for whether the channel
   works.
 
 ## Break-even

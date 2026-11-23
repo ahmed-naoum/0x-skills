@@ -40,8 +40,9 @@ Negotiating a specific deal → `0x:sales-support`.
 
 ## Annual plans
 
-- **Offer annual on every paid self-serve plan from Launch.** Annual customers can only churn at
-  renewal, pay a year of cash upfront, and pay one processing fee instead of twelve.
+- **Offer annual on every paid self-serve plan from Launch.** Annual customers mostly leave only
+  at renewal (subject to your refund terms and consumer cancellation rights), pay a year of cash
+  upfront, and incur one fixed per-charge fee instead of twelve.
 - **Incentive: about two months free.** Larger annual discounts make the monthly price look like a
   penalty and give away revenue from customers who would have paid annually anyway.
 - **Default toggle position**: annual for B2B (buyers budget per year), monthly for consumer
@@ -79,9 +80,10 @@ The most common pricing mistake is never raising them: a product that improved f
 the same price has given the improvement away.
 
 **Break-even churn.** With a price rise of x, revenue holds if at most x ÷ (1 + x) of affected
-customers leave. A 20 percent increase breaks even on revenue at about 17 percent of them lost;
-because departing customers also stop costing money, the gross-profit break-even is higher.
-Judge the measured churn against this number, not against zero.
+customers leave. A 20 percent increase breaks even on revenue at about 17 percent of them lost.
+Because departing customers also stop costing money, gross profit holds up to x ÷ (GM + x) lost:
+about 21 percent at 75 percent gross margin. Judge the measured churn against these numbers, not
+against zero.
 
 Sequence:
 
@@ -109,10 +111,14 @@ Changing prices on live subscriptions → `0x:payments-billing`.
 
 ## Announcing a change
 
-- **Notice**: at least 30 days for monthly customers, longer for large accounts; annual customers
-  get notice well before their renewal. Laws and some platform rules set minimum notice or
-  require explicit consent for consumer subscription increases, and app stores have their own
-  rules; check `0x:privacy-compliance` before announcing.
+- **Notice**: 30 days for monthly customers by default, longer for large business accounts;
+  annual customers get notice well before their renewal. Consumer rules differ by jurisdiction,
+  and some set a window rather than a minimum: California's automatic-renewal law requires the
+  fee-change notice between 7 and 30 days before the change, so an earlier announcement needs a
+  second notice inside that window. Many consumer-law regimes also require the terms to reserve
+  the right to change prices and to let the customer cancel. App stores require subscribers to
+  opt in to increases above their thresholds or where local law demands consent. Check
+  `0x:privacy-compliance` before announcing.
 - **Email from a named founder, plus an in-app notice.** State what changes, from when, why
   (concrete improvements and costs), what this customer will pay in their currency and period,
   their options (lock in annual, change plan, cancel), and who to reply to.

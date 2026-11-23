@@ -93,7 +93,7 @@ customers:
 - **Check margin at the plan's limits, not on average.** A plan whose average user is profitable
   but whose capped user is not drifts unprofitable as power users choose it.
 - **Low prices break on fixed fees.** A processor's fixed fee per charge is a large share of a $5
-  monthly payment. Below roughly $10 a month, push annual billing or raise the price.
+  monthly payment. Rule of thumb: below roughly $10 a month, push annual billing or raise the price.
 
 ## Researching willingness to pay
 
@@ -133,9 +133,9 @@ Stated willingness to pay is a hypothesis; a payment is the test.
 |---|---|---|
 | Pre-sale or deposit | Prototype | Ask design partners to pay, or put down a deposit, at the intended price before launch |
 | Sequential quotes | Launch, sales-led | Quote a higher price to the next N qualified prospects; compare close rate and deal size with the previous N |
-| Time-based change | Launch, self-serve | Change the public price for new customers for a fixed period; compare revenue per visitor with the period before, by traffic source |
+| Time-based change | Launch, self-serve | Change the public price for new customers for a fixed period; compare revenue per visitor with the period before, by traffic source; avoid launch weeks, holidays and seasonal peaks, which swamp the effect |
 | New-segment launch | Launch or Scale | Open a new region, segment or plan at a higher price |
-| Concurrent A/B on the public price | Scale only, with care | Different visitors see different prices; risks screenshots, fairness complaints and consumer-law issues in some jurisdictions |
+| Concurrent A/B on the public price | Scale only, with care | Different visitors see different prices; risks screenshots and fairness complaints. Prices personalized from personal data or profiling carry disclosure duties in the EU (Consumer Rights Directive) and New York, with more rules pending; check `0x:privacy-compliance` first |
 
 - **Judge by revenue per visitor or per qualified lead**, not conversion rate. A 30 percent higher
   price with 15 percent lower conversion is a win.
@@ -166,12 +166,23 @@ negotiation (`discounts-price-changes.md`).
 - **Use a few bands, not per-country prices**: full price, a moderate discount band, a deeper
   discount band. Fewer bands mean fewer prices to maintain and less arbitrage.
 - **Bind the regional price to the payment method's country** (card issuing country or billing
-  address), not the visitor's IP; a VPN defeats IP-based pricing in a minute.
+  address), not the visitor's IP; a VPN defeats IP-based pricing in a minute. Showing the band by
+  IP on the pricing page is fine if checkout re-checks it against the card.
+- **The EU is one band.** For electronically supplied services such as SaaS (services whose main
+  feature is copyrighted content, such as e-books, music or games, are carved out), the EU
+  Geo-blocking Regulation bars treating customers (consumers, and businesses buying for their own
+  use) differently by residence or by where in the EU their card was issued. Different prices per
+  country storefront are allowed only if anyone in the EU may buy at them, which defeats
+  purchasing-power bands inside the EU. Keep one EU price and apply bands to countries outside it,
+  or get legal advice first. The UK is not covered by this regulation.
 - **Charge in local currency in the large markets** (commonly USD, EUR, GBP, plus any market that
   is a large share of revenue) at **rounded local price points** (€49, £45), not converted
   amounts like €45.37. Revisit when exchange rates drift a lot, not on every move.
-- **Show tax as the market expects.** Consumer prices in the EU and UK are normally shown
-  including VAT; US and business prices are usually shown before tax. Display rules →
+- **Show tax as the market expects.** Prices shown to consumers in the EU, the UK and several
+  other markets (Australia, for example) must include VAT or GST; US prices and prices for business
+  buyers are usually shown before tax. One tax-inclusive price across the EU means net revenue
+  varies with each country's VAT rate (standard rates differ by about ten points); either absorb
+  that, or fix the net price and let the inclusive price vary by country. Display rules →
   `0x:privacy-compliance`; tax collection and registration → `0x:payments-billing`.
 - **A merchant of record or the provider's localized-pricing feature** can handle currency
   presentation and conversion; check current features and fees before building it.

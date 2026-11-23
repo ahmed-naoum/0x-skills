@@ -138,7 +138,8 @@ Typical contents, roughly in the order buyers ask for them:
 
 Its job: each visitor finds their plan in seconds and trusts the number.
 
-1. **A headline that frames value**, not the word "Pricing".
+1. **A headline that frames value**, not the bare word "Pricing"; keep "Pricing" in the page
+   title and URL so searchers find the page.
 2. **Monthly / annual toggle** with the saving stated in money or months. When the headline price
    is the monthly equivalent of an annual price, say "billed annually" and show the annual total.
 3. **Plan cards**: name, one line on who it is for, price with its unit ("per editor per month"),

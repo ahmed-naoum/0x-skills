@@ -98,7 +98,8 @@ Decision rules:
   common rule of thumb. Budget the free plan's cost against that rate; free-user cost is
   acquisition spend (`unit-economics.md`).
 - **Compare entry options on paying customers per 100 visitors**, not on trial-to-paid rate.
-  Card-required trials always win on conversion rate and often lose on paying customers.
+  Card-required trials usually win on trial-to-paid rate and can still lose on paying customers,
+  because far fewer people start them.
 - **AI products: every free user costs real money.** Cap free usage hard, require verified
   sign-in, and expect multiple accounts per person.
 
@@ -150,8 +151,8 @@ the median. Price on the measured distribution, never on the average.
 allowance per period = plan price × (1 − target gross margin − other cost share) ÷ cost per unit
 ```
 
-   Example: a $20 plan, 70 percent target gross margin, other cost of revenue 10 percent of price
-   leaves $4 for inference; at $0.02 per action that is 200 actions a month. Recompute whenever
+   Example: a $20 plan, 60 percent target gross margin, other cost of revenue 10 percent of price
+   leaves $6 for inference; at $0.02 per action that is 300 actions a month. Recompute whenever
    model prices, the model choice or prompt size change.
 4. **Never sell "unlimited" AI without a fair-use limit enforced in code.** Unlimited attracts the
    heaviest users and scripted abuse (adverse selection). Past the fair-use level, slow down or
@@ -179,7 +180,8 @@ If a lifetime deal is sold anyway:
 - Sell a named plan with a defined feature set, not "all future features", and define "lifetime"
   as the life of the product in the terms.
 - Expect a heavier support load per buyer than subscribers, and deal-seeking buyers who rarely
-  move to recurring plans. Deal marketplaces keep a large share of the price; compare net cash
+  move to recurring plans. Deal marketplaces keep a large share of the price (check their current
+  revenue share); compare net cash
   per buyer against several years of their cost to serve before agreeing.
 - Lifetime buyers keep their terms forever. They constrain every later pricing change and are
   the loudest voices when one happens.

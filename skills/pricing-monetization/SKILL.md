@@ -57,8 +57,8 @@ from the data they produce. The defaults below are for new decisions.
 | Gross margin target | About 75 percent; about 60 percent for inference-heavy products | |
 | Annual plan | Offered from Launch at about two months free | |
 | Discounts | Only for a trade, capped, with an end date | |
-| Price increase | New customers first; existing customers time-limited grandfathering, at least 30 days notice | Contract or lifetime terms fix the price |
-| Regional pricing | None for B2B; a few bands bound to card country for consumer and developer products | |
+| Price increase | New customers first; existing customers time-limited grandfathering, 30 days notice inside any legal notice window | Contract or lifetime terms fix the price |
+| Regional pricing | None for B2B; a few bands checked against card country for consumer and developer products; one band for the whole EU | |
 | Enterprise price | "Contact us" with a starting figure or minimum annual commitment | Stable package → publish it |
 | Lifetime deal | No | Cash is urgent, marginal cost near zero, quantity capped |
 
