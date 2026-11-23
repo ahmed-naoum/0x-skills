@@ -73,15 +73,15 @@ decisions that are expensive to undo.
 
 | Decision | Why it is hard to reverse | Get right now |
 |---|---|---|
-| Core entities and ID format | IDs end up in URLs, APIs, exports, integrations and customer spreadsheets | Opaque public IDs (time-ordered UUIDs or prefixed random IDs), never sequential integers in URLs |
+| Core entities and ID format | IDs end up in URLs, APIs, exports, integrations and customer spreadsheets | Opaque public IDs (time-ordered UUIDs or prefixed random IDs); sequential integers in URLs leak volume and invite enumeration |
 | Tenancy model | Changing isolation means migrating every customer's data | Account or tenant key on every tenant-owned row from the first table (`0x:backend-architecture`) |
 | Primary database engine | Data, queries and operational knowledge all depend on it | PostgreSQL |
 | User identity | Some auth providers will not export password hashes; sessions and user IDs leak everywhere | Own `users` table with own IDs; the provider's ID is a column, not the key |
 | Payment provider | Card vault and subscription state live with the provider | Provider IDs mirrored; billing logic behind one module |
 | Public API and webhook contracts | Customer code depends on them | Versioned from the first external consumer (`0x:api-design`) |
 | Domain, URL structure, sending domain | Links, SEO and email reputation attach to them | Own domain; a subdomain for transactional email |
-| Data region and residency | Moving data across regions can need customer consent and downtime | Pick the region of the first serious market and record why |
-| License of your own code, if published | Relicensing later burns community goodwill | Decide before the first public commit |
+| Data region and residency | Moving data across regions can need contractual notice to customers, a privacy review and downtime | Pick the region of the first serious market and record why |
+| License of your own code, if published | Relicensing later burns goodwill and needs rights from every outside contributor | Decide before the first public commit; accept contributions only under terms (a CLA or equivalent) that allow relicensing |
 
 Two-way doors to decide in minutes: CSS approach, component library, test runner, queue library
 behind one interface, analytics tool, logging vendor when telemetry goes through OpenTelemetry,
@@ -182,8 +182,8 @@ known, ranked debt register reads as maturity; a problem the reviewer finds firs
 
 | Area | What they look for | Red flag |
 |---|---|---|
-| IP ownership | Every founder, employee and contractor signed an IP assignment | Contractor code with no assignment |
-| Open-source licenses | Inventory, no strong copyleft in distributed or on-premises code | AGPL or GPL code inside a shipped product, unreviewed |
+| IP ownership | Every founder, employee and contractor signed an IP assignment valid in their country, with confirmatory assignments for work done before signing | Contractor or pre-incorporation code with no assignment |
+| Open-source licenses | Inventory; no GPL code in distributed or on-premises builds and no modified AGPL code serving users over a network, unless reviewed | Copyleft obligations nobody has checked |
 | Security | MFA everywhere, secrets outside the repo and its history, dependency scanning, access reviews, pen test if selling to enterprises | Shared admin logins, secrets in git history |
 | Architecture | A current diagram, decision records, a scaling story | Nobody can explain why the system is shaped this way |
 | Quality and delivery | CI on every change, tests on critical paths, frequent deploys, rollback | Manual deploys from a laptop |
@@ -195,7 +195,8 @@ Checks to run weeks before:
 
 ```bash
 pnpm licenses list --prod                      # license inventory of shipped dependencies
-git shortlog -sn --no-merges -- src/billing    # who actually knows each critical area
+git shortlog -sn --no-merges HEAD -- src/billing  # who knows each critical area (HEAD is required
+                                                  # when stdin is not a terminal, as in agents)
 ```
 
 Run a secrets scanner over the full git history (`0x:web-security` covers which and how), and

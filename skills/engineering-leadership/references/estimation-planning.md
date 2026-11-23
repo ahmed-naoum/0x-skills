@@ -52,7 +52,7 @@ added separately: most slips are scope growth, not slow work.
 
 ```text
 Remaining: 24 items. Finished in the last four weeks: 5, 7, 4, 6.
-Scope frozen:   24 / 7 = 3.4 weeks at best, 24 / 4 = 6 weeks at worst  ->  "4 to 6 weeks"
+Scope frozen:   24 / 7 = 3.4 weeks at best, 24 / 4 = 6 weeks at worst  ->  "3.5 to 6 weeks"
 Scope growing:  6 items added in four weeks = 1.5 per week
                 net progress 2.5 to 5.5 per week  ->  "4.5 to 10 weeks unless scope is frozen"
 ```
@@ -116,15 +116,19 @@ Add each cut to the backlog and each shortcut to the debt register (`technical-d
 
 ## Measuring delivery: the four keys
 
-The DORA research program's four measures describe delivery performance at team level. Speed
-and stability improve together, because small, frequent changes are easier to verify and undo.
+The DORA research program's four keys describe delivery performance at team level. Speed and
+stability improve together, because small, frequent changes are easier to verify and undo. DORA
+renamed the recovery measure "failed deployment recovery time" in 2023 and has since added a
+fifth, deployment rework rate (unplanned deploys made to fix problems users hit, as a share of
+all deploys). Its latest reports moved away from elite-to-low tiers, so the targets below are
+rules of thumb, not DORA benchmarks.
 
 | Measure | Definition | Small-team source | Rule-of-thumb target for a web product |
 |---|---|---|---|
 | Deployment frequency | Production deploys per day or week | Successful deploy runs on the main branch | Daily or more |
-| Lead time for changes | Change started to running in production | Pull request opened to merged, plus merge to deploy | Under a day |
+| Lead time for changes | Change committed to running successfully in production | Pull request opened to merged (a close proxy), plus merge to deploy | Under a day |
 | Change failure rate | Share of deploys causing an incident, rollback or hotfix | Deploys tagged rollback or hotfix | Under about 15% |
-| Recovery time | Time to restore service after a failed deploy | Incident log | Under an hour |
+| Failed deployment recovery time | Time to restore service after a deploy that failed | Incident log | Under an hour |
 
 ```bash
 # Successful runs of the deploy workflow on main, among the last 100

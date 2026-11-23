@@ -124,8 +124,9 @@ Rules:
 - Data residency, compliance or air-gapped customers can force self-hosting earlier.
 - Check the license and the governance, not just the code. Several widely used projects
   (Elasticsearch, Redis, Terraform) moved to source-available licenses and were forked
-  (OpenSearch, Valkey, OpenTofu). Prefer projects governed by a foundation, or have a fork as
-  the exit, when the license matters to the business.
+  (OpenSearch, Valkey, OpenTofu); Elasticsearch and Redis later added an AGPL option, which
+  carries its own obligations. A license can change at any release, so prefer projects governed
+  by a foundation, or have a fork as the exit, when the license matters to the business.
 
 ## Credits, contracts and renewals
 
@@ -144,6 +145,9 @@ Rules:
 - **Renewal routine**: auto-renewal notice windows are often 30 to 90 days, so put the notice
   date, not the renewal date, in the calendar. Ninety days before, audit usage (unused seats,
   wrong tier), get one competing quote, and decide.
+- **Legal review**: have a lawyer read any multi-year commitment, uncapped liability or
+  indemnity, and any contract above the founders' spend threshold. Governing law, how far
+  liability can be capped and auto-renewal rules differ by country and, in the US, by state.
 
 Keep a vendor register in the repo: vendor, owner, monthly cost, renewal date, notice deadline,
 data held, and exit path. It doubles as due diligence material.
@@ -165,7 +169,7 @@ finish with a third of the time left; the last third goes to stragglers and surp
 6. **Cut over in cohorts**: internal accounts, a small share, then everyone, keeping the old
    path for rollback until verification passes.
 7. **Decommission**: remove the SDK, revoke and rotate keys, clean DNS, keep a final archive,
-   and cancel after the notice period.
+   and give notice before the contract's deadline so it does not auto-renew.
 
 | Domain | Trap | Response |
 |---|---|---|
@@ -176,7 +180,7 @@ finish with a third of the time left; the last third goes to stragglers and surp
 | Object storage | Egress fees, silent partial copies | Budget egress; verify object counts and checksums |
 | Webhooks | Partners still call the old endpoint | Accept both during transition; log callers of the old one |
 
-If the deadline cannot be met, ask the vendor for an extension (often granted when asked
+If the deadline cannot be met, ask the vendor for an extension (sometimes granted when asked
 early), and migrate only what the business cannot run without. Cutover mechanics are in
 `0x:ci-cd-release`; database moves in `0x:postgres-database`.
 

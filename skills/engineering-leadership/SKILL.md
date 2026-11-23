@@ -33,8 +33,9 @@ business can trade off.
 - **Debt is borrowed on purpose and repaid by interest.** Each shortcut has an observable
   repayment trigger; debt in cold code costs nothing, debt in hot code or in safety is urgent.
 - **The company owns everything.** Repositories, accounts and IP assignments from day one,
-  because contractor-held accounts and missing assignments are the commonest due diligence red
-  flags and the hardest to fix later.
+  because contractor-held accounts and missing assignments are common due diligence red flags
+  and hard to fix later. Employment and IP law differ by country: name the jurisdiction and
+  send contracts to a local lawyer.
 
 Follow the project first: existing stack, decision records and norms win over the defaults
 below, which are for new decisions and for "what should I choose?".
@@ -66,7 +67,7 @@ below, which are for new decisions and for "what should I choose?".
 | Debt | Deliberate, marked in code, register of about 20 items, monthly review | |
 | Self-hosted offer | No; a dedicated stack in your own cloud first | A deal pays several times the yearly upkeep |
 | First hire | Senior full-stack generalist | Product core is a specialty |
-| Contractors | Paid one-to-two-week trial; company owns repos, accounts and IP | |
+| Contractors | Paid one-to-two-week trial; company owns repos, accounts and IP; assignment and classification checked under the law of the contractor's country | Continuous core work → an employee, through a local entity or an employer of record |
 | Delivery measures | None at Prototype; four keys monthly from Launch; team level only | |
 
 By stage:
@@ -100,11 +101,14 @@ By stage:
     shippable increments and abort criteria.
 11. A retired feature's code, jobs, flags, infrastructure, vendor subscriptions, keys and data
     (per retention rules) are gone, not only its UI.
-12. The company owns every repository and account, and every contributor's IP assignment is on
-    file.
+12. The company owns every repository and account, and every founder, employee and contractor
+    has a signed IP assignment valid where they work (a "work made for hire" clause alone is
+    not one), plus a confirmatory assignment for work done before signing.
 13. A new engineer can merge and deploy a trivial change on day one by following the README.
 14. A risk explained to a stakeholder states likelihood, business impact, options with their
     costs including doing nothing, and a recommendation.
+15. Any advice on contractors, offers, equity, on-call terms or probation names the country
+    (and US state) whose law applies and says which step needs a local employment lawyer.
 
 ## Not this skill
 

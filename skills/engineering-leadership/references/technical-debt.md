@@ -141,7 +141,9 @@ API versions and dead feature flags.
 
 1. Measure usage over at least one full billing cycle; some features are used monthly or
    yearly (exports, annual reports).
-2. Check commitments: contracts, the pricing page, public docs, API consumers.
+2. Check commitments: contracts, the pricing page, public docs, API consumers. Removing
+   something customers pay for mid-term can breach the contract and, for consumers in the EU,
+   the rules on changing a digital service during a subscription; read the terms first.
 3. Decide with the numbers and record the decision.
 4. Announce a timeline to affected users with an export or an alternative. Rule of thumb: 30
    to 90 days for paid features, longer for APIs (`0x:api-design` covers API sunsets).
@@ -164,7 +166,7 @@ Each step is reasonable; together they make every change touch everything.
 | Signal | How to see it |
 |---|---|
 | Imports reaching into another module's internals | A dependency rule failing in CI |
-| Circular dependencies | `npx madge --circular --extensions ts,tsx src/` |
+| Circular dependencies | `npx madge --circular --extensions ts,tsx --ts-config tsconfig.json src/` |
 | One file changed in most pull requests | The hotspot command above |
 | Small changes touching many files | Files per pull request rising over time |
 | Two models of one concept (two `User` or `Plan` types) | Search for duplicate type names |
@@ -180,6 +182,7 @@ Correct with small, continuous investments rather than a big restructuring:
 ```js
 // .dependency-cruiser.cjs  - run with: npx depcruise src --config .dependency-cruiser.cjs
 module.exports = {
+  options: { tsConfig: { fileName: "tsconfig.json" }, doNotFollow: { path: "node_modules" } },
   forbidden: [
     { name: "no-circular", severity: "error", from: {}, to: { circular: true } },
     {
