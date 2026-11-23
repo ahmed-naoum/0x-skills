@@ -30,13 +30,15 @@ Four places hold state. Every command is a move between them; name which ones a 
 | `git cherry-pick X` | forward one commit | — | — | Copy of X's diff with a new hash |
 | `git clean -fd` | no | no | deletes untracked files | Not recoverable; run `git clean -nd` first |
 
+A dash means the index and working tree are brought along to match the new tip; those commands stop or refuse when that would overwrite uncommitted edits.
+
 Rules that follow from the model:
 
 - `git pull` is `fetch` plus `merge` (or `rebase` with `pull.rebase true`). When unsure, `git fetch` and inspect `git log --oneline --graph HEAD origin/main` before integrating.
 - `origin/main` is a local snapshot of the remote from the last fetch, not the remote. Compare against it only after fetching.
 - A detached `HEAD` is a commit checked out with no branch. Commits made there are reachable only through the reflog; `git switch -c name` before leaving.
 - Rewriting (amend, rebase, reset) is free on commits that exist only locally. On pushed commits it requires a force push, which is acceptable on a personal feature branch and not on `main` or any branch someone else has pulled.
-- Force push with `git push --force-with-lease`, never bare `--force`: the lease refuses the push if the remote moved since the last fetch, so someone else's commits are not silently discarded. Background fetches (editors, tools) can defeat the lease by updating the snapshot; adding `--force-if-includes` closes that gap.
+- Force push with `git push --force-with-lease`, never bare `--force`: the lease refuses the push if the remote moved since the last fetch, so someone else's commits are not silently discarded. Background fetches (editors, tools) can defeat the lease by updating the snapshot; adding `--force-if-includes` to the same command closes that gap (it does nothing without the lease).
 
 ## Recovery
 
@@ -46,12 +48,13 @@ First move in any "I lost it" situation: stop running commands, then look at `gi
 |---|---|
 | Bad `reset --hard`, bad rebase, amended over a commit | `git reflog`, find the entry before the mistake, `git reset --hard HEAD@{n}` (or `git branch rescue <hash>`) |
 | Just finished a rebase or merge and want it undone | `git reset --hard ORIG_HEAD` (valid until the next command that sets it) |
-| Deleted a branch | `git reflog` (the `HEAD` reflog still has its commits), then `git branch name <hash>` |
+| Deleted a branch | The delete message printed the tip (`was abc1234`); otherwise `git reflog` (the `HEAD` reflog has the commits if the branch was ever checked out in this clone), then `git branch name <hash>` |
+| Need one file as it was in an older commit | `git restore --source=<hash> -- path` (overwrites the working copy of that path; commit or copy current edits first) |
 | Committed to the wrong branch, not pushed | `git switch right-branch && git cherry-pick <hash>`, then on the wrong branch `git reset --hard HEAD~1` |
-| Committed on `main` instead of a feature branch | `git branch feature` then `git reset --hard origin/main` (the commits stay on `feature`) |
+| Committed on `main` instead of a feature branch | Commit or stash uncommitted edits first (`--hard` discards them), then `git branch feature`, `git reset --hard origin/main`, `git switch feature` (the commits stay on `feature`) |
 | Bad commit already on shared `main` | `git revert <hash>` and push; do not reset a shared branch |
 | Bad merge commit on `main` | `git revert -m 1 <merge-hash>`; to bring the branch back later, revert the revert first, otherwise git considers those changes already merged |
-| Dropped or cleared a stash | `git fsck --no-reflogs --unreachable` and look for commit objects; inspect with `git show <hash>`, restore with `git stash apply <hash>` |
+| Dropped or cleared a stash | `git fsck --no-reflogs --unreachable` and keep the `unreachable commit` lines; `git show <hash>` each one, the stash is the commit whose subject starts `WIP on` or `On <branch>:`; restore with `git stash apply <hash>`. Do this before the next garbage collection |
 | Staged a file (`git add`) then overwrote it, never committed | `git fsck --lost-found` lists dangling blobs; `git show <blob>` to read them |
 | Mid-operation and lost | `git merge --abort`, `git rebase --abort`, `git cherry-pick --abort` return to the pre-operation state |
 | Pushed a force push over a teammate's work | The teammate's clone or their reflog still has it; the host's activity view for the branch often shows the previous tip as well |
@@ -78,7 +81,7 @@ Procedure:
 3. To see what led to the conflict: `git log --merge -p -- path` (merge only) shows the commits from both sides touching the file.
 4. Take a whole side when that is correct: `git checkout --theirs path` or `--ours path`. To start a file over: `git checkout --merge path` restores the conflict markers.
 5. `git add` each resolved file. Finish with `git merge --continue` or `git rebase --continue`. During a rebase do not run `git commit` for the resolution; `--continue` commits it.
-6. Verify before pushing: `git diff --check` (leftover markers and whitespace errors), then typecheck and run the tests. Git reports textual conflicts only; two changes that merge cleanly can still break each other (a renamed function on one side, a new caller on the other).
+6. Verify before `--continue` and again before pushing: `git diff --cached --check` reports leftover conflict markers and whitespace errors in what is staged (plain `git diff --check` prints nothing once the files are added, and git commits markers without complaint), then typecheck and run the tests. Git reports textual conflicts only; two changes that merge cleanly can still break each other (a renamed function on one side, a new caller on the other).
 
 Special cases:
 
@@ -94,7 +97,7 @@ Special cases:
 
 - Ignoring does nothing to a file already tracked. Stop tracking with `git rm --cached path` (keeps the file on disk), then commit.
 - A file cannot be re-included with `!` if its parent directory is excluded. Ignore the contents instead: `dir/*` followed by `!dir/keep.txt`.
-- A leading `/` anchors to the directory of the `.gitignore`; without a slash the pattern matches at any depth. `build` ignores every `build` directory in the tree, which breaks a source folder with that name.
+- A pattern with a slash at the start or in the middle is anchored to the directory of the `.gitignore` (`/build`, `apps/web/dist`); a pattern with no slash, or only a trailing one, matches at any depth. `build` ignores every `build` directory in the tree, which breaks a source folder with that name; write `/build`.
 - Debug with `git check-ignore -v path`: it prints the file, line and pattern responsible.
 - Project-wide rules go in the committed `.gitignore`. Personal editor and OS files (`.DS_Store`, `.idea/`) belong in the global excludes file (`core.excludesFile`) or `.git/info/exclude`, so the project file stays about the project.
 
@@ -111,7 +114,7 @@ pnpm-lock.yaml -diff linguist-generated=true
 ```
 
 - `text=auto eol=lf` normalizes line endings in the repository and on checkout, which ends whole-file diffs between Windows and other machines. After adding it to an existing repository, run `git add --renormalize .` and commit that alone.
-- `-diff` keeps lockfile noise out of `git diff` and `git log -p`; `linguist-generated` collapses the file in GitHub diffs.
+- `-diff` keeps lockfile noise out of `git diff` and `git log -p` (git prints "Binary files differ"; pass `--text` when the lockfile change itself must be read, as in a dependency review); `linguist-generated` collapses the file in GitHub diffs.
 - `export-ignore` keeps paths out of `git archive` output.
 - Attributes are also where LFS tracking lives (below), so review changes to this file like code.
 
@@ -123,17 +126,18 @@ The goal is the reason for the code, which lives in the commit message and the p
 |---|---|
 | Who last touched these lines, ignoring whitespace and moves | `git blame -w -C -C -L 40,60 path` |
 | When did this string appear or disappear | `git log -S'retryLimit' --oneline -- src/` |
-| When did lines matching a pattern change at all | `git log -G'retryLimit\s*=' -p -- src/` |
+| When did lines matching a pattern change at all | `git log -G'retryLimit *=' -p -- src/` |
 | The full history of one function | `git log -L :functionName:path/file.ts` |
 | History across renames | `git log --follow -p -- path` |
 | When was a file deleted | `git log --diff-filter=D --oneline -- path` |
 | What merged into main, one line per pull request | `git log --first-parent --oneline main` |
 | Which commit introduced a bug | `git bisect start <bad> <good>` then `git bisect run <test command>` |
-| Which pull request carried a commit | `gh pr list --state merged --search <hash>` |
+| Which pull request carried a commit | Under squash merge the subject ends in `(#123)`. Otherwise `gh api repos/{owner}/{repo}/commits/<hash>/pulls --jq '.[].html_url'` (`gh` fills in the placeholders), or `gh pr list --state merged --search <hash>` |
 
+- `-L :name:path` locates the function with a per-language heuristic that misses many indented methods and arrow functions. When it reports no match, use a line range: `git log -L 40,60:path`.
 - `-S` (pickaxe) finds commits where the number of occurrences of the string changed; `-G` finds commits whose diff lines match a regex. Use `-S` for "where was this introduced or removed", `-G` for "where was this edited".
 - Blame usually lands on a formatting or refactoring commit first. Step past it with `git blame <hash>^ -- path`, or permanently by listing bulk-reformat commits in `.git-blame-ignore-revs` and setting `git config blame.ignoreRevsFile .git-blame-ignore-revs`. GitHub's blame view honors a file with that name at the repository root.
-- `git bisect run` needs a command that exits 0 for good and non-zero for bad (125 means skip this commit). It finds the commit in about log2(n) steps, and it only works well when most commits build, which is one argument for small commits that each pass.
+- `git bisect run` needs a command that exits 0 for good and 1 to 127 for bad, where 125 means "cannot test this commit, skip it"; any other code aborts the bisect. Make the script exit 125 when the build itself fails, or a broken commit is blamed for the bug. It finds the commit in about log2(n) steps, and it only works well when most commits build, which is one argument for small commits that each pass.
 - End with `git bisect reset`.
 
 ## Cleaning local history before sharing
@@ -166,7 +170,7 @@ Worktrees share one object store and one set of refs, so a commit made in one is
 
 ## Large files and LFS
 
-Git stores every version of every file forever, and binaries do not delta-compress well. A repository that grows past a few hundred megabytes slows every clone and CI run. Hosts also reject single files over a hard size limit (GitHub's is 100 MB, with a warning well below that).
+Git stores every version of every file forever, and binaries do not delta-compress well. A repository that grows past a few hundred megabytes slows every clone and CI run. Hosts also reject single files over a hard size limit (GitHub blocks pushes containing a file over 100 MB and warns from 50 MB; check the host's current limits).
 
 Decision rule: build output, dependencies, database dumps and user uploads never belong in git (object storage or a release artifact instead). Source binaries that change with the code (design files, large fixtures, video) go in LFS when they exceed roughly a megabyte and change over time. Small static images and fonts can stay in plain git.
 
@@ -186,10 +190,10 @@ Removing a large file already in history is a history rewrite of the whole repos
      | sort -k3 -n | tail -20
    ```
 2. Merge or close open pull requests and tell every collaborator; all commit hashes after the first affected commit change.
-3. Work in a fresh clone with `git filter-repo` (the maintained replacement for `filter-branch`): `git filter-repo --strip-blobs-bigger-than 10M`, or `git filter-repo --path path/to/file --invert-paths`. To move existing binaries into LFS instead, use `git lfs migrate import --include="*.psd" --everything`.
-4. Force-push all branches and tags. `filter-repo` removes the `origin` remote on purpose; add it back first.
+3. Work in a fresh clone with `git filter-repo` (the maintained replacement for `filter-branch`; a separate install, not bundled with git): `git filter-repo --strip-blobs-bigger-than 10M`, or `git filter-repo --path path/to/file --invert-paths`. To move existing binaries into LFS instead, use `git lfs migrate import --include="*.psd" --everything`. Keep an untouched mirror clone (`git clone --mirror`) as the backup until the result is verified.
+4. Force-push all branches and tags: `git push origin --force --all`, then `git push origin --force --tags`. `filter-repo` removes the `origin` remote on purpose; add it back first. Branch rules that block force pushes have to be lifted for this push; restore them immediately after.
 5. Everyone re-clones. An old clone that pushes again reintroduces the old objects.
-6. The host may keep the old objects reachable through pull request refs and caches until it garbage-collects; forks keep their copies regardless.
+6. The host may keep the old objects reachable through pull request refs and caches until it garbage-collects; when the content must be gone, ask the host's support to purge them. Forks keep their copies regardless.
 
 If the file was only committed locally and not pushed, none of this is needed: drop it with an interactive rebase or amend.
 

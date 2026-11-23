@@ -13,7 +13,7 @@ Why this is the default for a small team: integration pain grows faster than lin
 | Prototype, solo | Committing straight to `main` is acceptable. Push at least daily; the remote is the backup |
 | Launch, solo | Branch plus pull request for every change, self-merged once checks pass. The pull request is where CI, the preview deploy and automated review run, and it is the unit of rollback |
 | Launch, 2+ people | Same, with one approval required on `main` |
-| Scale | Add a merge queue when `main` breaks from changes that passed individually, and code owners for sensitive paths |
+| Scale | Add a merge queue when `main` breaks from changes that passed individually, and code owners for sensitive paths. GitHub limits its merge queue by plan and repository type (private repositories need the top organization tier at the time of writing; check current availability); where it is not offered, require branches to be up to date before merging |
 
 Rules that make trunk-based work:
 
@@ -103,8 +103,9 @@ git push --force-with-lease
 ```
 
 - After the base of a stack is squash-merged, a plain `git rebase origin/main` on the next branch replays the base's original commits against their own squashed copy and conflicts. `--onto` with the old base as the cut point avoids that.
-- Retarget the next pull request to `main` after the base merges. GitHub does this automatically when the base branch is deleted on merge.
-- Keep stacks shallow: two or three levels. Deeper stacks make every review comment at the bottom a rebase of everything above. Dedicated stacking tools exist; adopt one only if stacking is a daily habit.
+- The `--onto` form needs the old base tip, which is the local `part-1` as it was before the squash. If that branch is gone, put its last hash (from `git reflog` or the merged pull request's page) in place of the name.
+- Retarget the next pull request to `main` after the base merges. GitHub does this automatically when the base branch is deleted as part of merging its pull request. Deleting a base branch that was not merged closes the pull requests targeting it, so retarget those by hand first.
+- Keep stacks shallow: two or three levels. Deeper stacks make every review comment at the bottom a rebase of everything above. Hosts and third-party tools offer stacked pull request support that automates the retargeting and rebasing; check what the host provides, and adopt a tool only if stacking is a daily habit.
 - `rerere.enabled true` pays off here: the same conflict recurs across repeated rebases and gets resolved automatically the second time.
 
 Daily habit for any branch older than a day: `git fetch && git rebase origin/main`, run the tests, push. Conflicts found daily are a few lines; found after two weeks they are an afternoon.
@@ -126,8 +127,10 @@ BREAKING CHANGE: <what breaks and how to migrate>
 | `feat` | New user-visible capability | minor |
 | `fix` | Bug fix | patch |
 | `feat!` / `fix!` or a `BREAKING CHANGE:` footer | Incompatible change | major |
-| `docs`, `refactor`, `test`, `chore`, `ci`, `build`, `perf` | No release by default (tool-dependent) | none |
+| `perf` | Performance improvement with no behavior change | patch in some tools, none in others |
+| `docs`, `refactor`, `test`, `chore`, `ci`, `build` | No user-visible change | none by default |
 
+- Only `feat`, `fix` and the breaking marker are defined by the convention. Which other types cut a release, and whether a breaking change below `1.0.0` bumps the major or the minor, are each tool's configuration; read it before relying on a type.
 - With squash merge only the pull request title lands on `main`, so lint the title, not each commit. A check on the pull request title in CI is enough; a local commit hook on every WIP commit is friction with no effect on `main`.
 - With merge or rebase policy every commit lands, so lint commits (commitlint in CI, optionally a `commit-msg` hook).
 - The type is a claim about user impact. `fix` for a refactor triggers a release with an empty changelog entry; `chore` for a behavior change hides it from the changelog. Review the title like code.
@@ -142,7 +145,7 @@ Create a release branch only when an older version must keep receiving fixes whi
 - Name by line, not by patch: `release/2.x` or `release/1.4`. Tags (`v1.4.3`) mark the individual releases on it.
 - Fix on `main` first, then backport: `git cherry-pick -x <hash>` onto the release branch (`-x` records the original hash in the message). Fixing on the release branch first is how a bug gets fixed in 1.4.3 and reappears in 2.0.
 - Exception: the bug exists only in the old line because `main` rewrote that code. Fix on the release branch and note in the pull request why no forward port is needed.
-- Never merge a release branch back into `main` wholesale, and never merge `main` into a release branch; both drag unrelated changes across. Individual cherry-picks only.
+- Do not merge a release branch back into `main` wholesale or merge `main` into a release branch; both drag unrelated changes across. Individual cherry-picks only.
 - Protect release branches like `main` and run the same CI on them.
 - Backport only security fixes and serious regressions. Each extra supported line roughly doubles the cost of every such fix; publish which lines are supported and until when (`versioning-releases.md`).
 
@@ -164,10 +167,10 @@ git config --global tag.gpgsign true
 - Add the public key to the host account as a signing key. On GitHub this is a separate entry from the authentication key, even when it is the same key.
 - The committer email must match a verified email on the account, or the commit shows as unverified despite a valid signature.
 - Local verification (`git log --show-signature`) of SSH signatures needs an allowed-signers file configured with `gpg.ssh.allowedSignersFile`; without it git reports the signature as unverifiable, which is not a sign of tampering.
-- Enforcement is a branch rule ("require signed commits") on `main` and release branches. Before turning it on, confirm every path that writes to the branch can sign: merges performed in the host's web interface are signed by the host, while commits pushed by CI jobs or bots using plain git are unsigned unless a key is configured for them. Test the rule on one branch first.
-- The rule interacts with the merge method: check that the chosen method (squash in the web interface is the safe case) still produces signed commits under the rule before requiring it.
+- Enforcement is a branch rule ("require signed commits") on `main` and release branches. Before turning it on, confirm every writer can sign: commits the host creates in its web interface are signed by the host, while commits pushed with plain git by CI jobs, bots or coding agents are unsigned unless a key is configured for them. Test the rule on one branch first.
+- On GitHub the rule interacts with the merge method. A squash or merge commit created in the web interface is signed by GitHub, but unsigned commits on the pull request's own branch can still block the merge, so everyone and everything that pushes to pull request branches needs signing as well. Rebase-merge in the web interface rewrites commits that GitHub cannot sign with the author's key, so do not combine it with this rule. Hosts have changed these details; confirm against the current documentation before requiring signatures.
 - Signing proves which key made the commit, not that the code was reviewed. Required review and code owners (`pull-requests-review.md`) cover that; provenance of build artifacts is in `0x:ci-cd-release`.
-- A lost or leaked signing key: remove it from the account and add a new one. Removing a key makes the commits it signed show as unverified on GitHub, so keep it listed if it was merely retired, and remove it only if it was compromised.
+- A lost or leaked signing key: add a new key, and remove or revoke the old one at once if it may be compromised. Whether commits the old key signed keep their badge depends on the host and has changed over time (GitHub's documentation describes a verification record stored when a commit is first verified, which persists after the key is rotated or revoked; other hosts re-evaluate against the current key list). Check the host's documentation before removing a key that was only retired. The badge is the host's display; the signature inside the commit is unaffected.
 
 ## Ask the user
 

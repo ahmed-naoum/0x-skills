@@ -43,6 +43,8 @@ gh pr ready
 gh pr merge --squash --auto --delete-branch   # merges itself once required checks pass
 ```
 
+`--auto` needs auto-merge allowed in the repository settings, and it waits only for requirements the branch rules define. With no required checks on `main` there is nothing to wait for, and the pull request can merge while CI is still running. Set the required checks first (`0x:ci-cd-release`).
+
 ## Self-review, also when solo
 
 Read the full diff in the host's pull request view before asking anyone, human or automated. The different rendering from the editor is the point: it is the first time the change is seen as a reader sees it.
@@ -60,7 +62,7 @@ Check:
 
 Working solo, the pull request still earns its place from Launch on: it is where CI gates the merge, where a preview environment appears, where an automated review runs, and it leaves one revertable commit with a written reason.
 
-The substitute for a second human is time and a checklist: for risky changes (money, auth, data deletion, migrations), leave the pull request overnight and re-read it cold before merging. For code written by an agent, the author is the reviewer; see `0x:ai-coding-agents`.
+The substitute for a second human is time and a checklist: for risky changes (money, auth, data deletion, migrations), leave the pull request overnight and re-read it cold before merging. For code written by an agent, the person who asked for it is accountable as its reviewer; see `0x:ai-coding-agents`.
 
 ## Reviewing: the order of attention
 
@@ -128,14 +130,18 @@ Other seams: by layer (data access, service, route, UI), by entity when the same
 Techniques when the work already exists as one big branch:
 
 ```bash
+git fetch && git switch big-branch && git rebase origin/main   # or merge: it must contain current main
 git switch -c part-1 origin/main
 git checkout big-branch -- src/lib/billing/       # take whole paths from the big branch
 git commit -m "Extract invoice calculation"
 # or rebuild commits from the full diff:
 git switch -c rebuild big-branch
-git reset origin/main          # all changes become unstaged edits
+git reset origin/main          # all changes become unstaged edits; new files become untracked
+git add -N .                   # register new files so add -p offers them
 git add -p                     # stage one coherent piece at a time, commit, repeat
 ```
+
+Both recipes take the big branch's content relative to `origin/main`. If the big branch is behind `main`, they silently carry reverts of everything `main` gained since, which is why the first line comes first. `git checkout <branch> -- path` also leaves in place files the big branch deleted; remove those by hand. The original branch stays untouched as the reference: when the last part is done, `git diff big-branch` on the final part should be empty.
 
 Each part must build and pass on its own; run the checks per part, not only at the end. If parts depend on each other, stack them (`branching-workflow.md`) and say in each description where it sits: "2 of 4, depends on #231". A part that cannot be made independently correct is a sign the seam is wrong.
 
@@ -152,8 +158,8 @@ Write these down once in `CONTRIBUTING.md` or the repository docs, at Launch whe
 | Size | Soft limit of about 400 changed lines; larger needs a reason in the description |
 | Severity labels | The table above |
 | Emergency path | A production fix may merge with review after the fact, within one working day, recorded in the pull request |
-| Solo self-merge | Allowed when checks pass; risky categories get the cold re-read |
-| Ownership | Every path has an owner in CODEOWNERS; the owner settles disputes for that path |
+| Solo self-merge | Allowed when checks pass; risky categories get the cold re-read. Do not turn on required approvals while solo: hosts do not count an author's approval of their own pull request, so the rule locks out the only committer or teaches them to bypass it |
+| Ownership | Once CODEOWNERS exists, every path has an owner; the owner settles disputes for that path |
 
 Review latency is the number to watch. Slow reviews cause large pull requests (people batch to avoid the wait), which cause slower reviews.
 
@@ -173,9 +179,9 @@ CODEOWNERS routes review requests automatically and, combined with the branch ru
 - The last matching pattern wins, not the most specific and not the union. Put the catch-all first and specific paths after it.
 - GitHub reads the file from `.github/`, the repository root or `docs/`, on the base branch of the pull request.
 - Owners must have write access to the repository; an owner without it is ignored. An invalid line is skipped rather than failing loudly, so check the file after editing (GitHub flags errors when viewing it).
-- Prefer teams to individuals: a person on vacation otherwise blocks merges. With a team as owner, any one member's approval satisfies the rule.
+- Prefer teams to individuals: a person on vacation otherwise blocks merges. With a team as owner, any one member's approval satisfies the rule. Teams exist only in organizations (a personal-account repository lists usernames), and the team must be visible and be granted write access itself, not only through its members.
 - Own the CODEOWNERS file and the CI configuration themselves (`/.github/`), or anyone can remove their own review requirement.
-- Without the branch rule, CODEOWNERS only requests review. Enforcement lives in branch protection or rulesets (`0x:ci-cd-release`).
+- Without the branch rule, CODEOWNERS only requests review. Enforcement lives in branch protection or rulesets (`0x:ci-cd-release`). On GitHub those rules, and with them required code-owner review, are a paid-plan feature for private repositories; check the plan before designing a process that depends on them.
 - Skip CODEOWNERS until there are at least three people or a path with real specialist risk. For two people it adds nothing over "the other person reviews".
 
 Pull request template: `.github/pull_request_template.md`, containing the description headings above and at most three or four checkboxes that are true decisions (migration safe to run before deploy; flagged or safe to release; docs or changelog updated). A twenty-item checklist gets ticked without reading. Anything a machine can verify belongs in CI, not in the template.

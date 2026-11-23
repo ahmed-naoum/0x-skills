@@ -52,13 +52,13 @@ Follow what the repository already does (merge method, message format, release t
 | Signed commits | SSH signing enabled locally; not enforced | Enforce by branch rule with several committers or a compliance requirement |
 | Git configuration | `pull.rebase true`, `rebase.autoStash true`, `fetch.prune true`, `merge.conflictStyle zdiff3`, `rerere.enabled true` | — |
 
-Stage notes: at Prototype skip commit linting, CODEOWNERS, release automation and changelogs. At Launch, protect `main`, require checks, use pull requests, tie every deploy to a commit, and start a user-facing changelog. At Scale, add code owners, a merge queue, import-boundary enforcement and affected-only CI.
+Stage notes: at Prototype skip commit linting, CODEOWNERS, release automation and changelogs. At Launch, protect `main`, require checks, use pull requests, tie every deploy to a commit, and start a user-facing changelog. At Scale, add code owners, a merge queue where the host plan offers one, import-boundary enforcement and affected-only CI.
 
 ## Before you call it done
 
 1. Before any destructive command (`reset --hard`, `clean`, `restore`, force push, history rewrite), `git status` was read and anything uncommitted was committed or deliberately discarded; a backup branch exists when the state was unclear.
 2. No rewritten history was pushed to `main`, a release branch or a branch someone else has pulled; force pushes used `--force-with-lease`.
-3. After a conflict resolution: `git diff --check` is clean, no conflict markers remain, lockfiles and generated files were regenerated rather than hand-merged, and typecheck and tests pass.
+3. After a conflict resolution: `git diff --cached --check` was clean before the resolution was committed (plain `git diff --check` sees nothing once files are staged), lockfiles and generated files were regenerated rather than hand-merged, and typecheck and tests pass.
 4. `git status` shows no stray files before committing: no `.env`, secrets, build output, large binaries or unintended lockfile changes; `.gitignore` covers what should never be tracked.
 5. Each commit, or the squashed pull request, has one purpose; mechanical changes (formatting, renames, dependency bumps) are separate from behavioral ones.
 6. The pull request title states the change in the repository's convention, and the description covers what, why, how to test, and risk and rollout.

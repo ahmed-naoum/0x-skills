@@ -33,6 +33,7 @@ gh release create v1.4.0 --generate-notes
 ```
 
 - Use annotated tags for releases. Lightweight tags are bare pointers with no metadata, and `git describe` ignores them by default.
+- `gh release create` creates the tag itself, at the tip of the default branch, when the named tag does not exist on the remote. Add `--verify-tag` so a typo or an unpushed tag fails instead of releasing whatever is on `main`.
 - A published tag never moves. Consumers, caches and registries have already resolved it; re-pointing it means two different things share one name. If a release is bad, publish the next patch. Protect release tag patterns with the host's tag rules so they cannot be deleted or force-updated.
 - Tag the commit that was actually built and tested, on `main` or the release branch, after CI passed for that commit.
 - Prefix consistently (`v1.4.0`). In a monorepo with several published packages, tags carry the package name (`@acme/sdk@1.4.0`).
@@ -59,7 +60,7 @@ What counts as breaking, beyond the obvious removals and renames:
 Rules that are easy to get wrong:
 
 - `0.y.z` means "anything may change", and package managers treat it differently: a caret range on `^0.2.3` allows `0.2.x` only, so on 0.x the minor position acts as the breaking position. Ship `1.0.0` as soon as real users depend on the package; staying on 0.x for years removes the signal semver exists to give.
-- Pre-releases sort before the release: `1.0.0-rc.1 < 1.0.0`. Publish them under a non-default npm dist-tag (`npm publish --tag next`) or everyone installing `latest` receives the release candidate.
+- Pre-releases sort before the release: `1.0.0-rc.1 < 1.0.0`. Publish them under a non-default npm dist-tag (`npm publish --tag next`): without it the release candidate becomes `latest` for everyone, and recent npm versions refuse to publish a prerelease that has no explicit tag.
 - Deprecate in a minor, remove in the next major. The deprecation ships with a runtime warning (once per process, not per call), a `@deprecated` annotation that editors display, and the replacement named in both.
 - Batch breaking changes. Each major costs every consumer an upgrade project; several small majors a year train consumers to stop upgrading.
 - A published version is immutable. Do not unpublish or republish; mark a bad version with `npm deprecate` and release a fix.
@@ -105,7 +106,8 @@ Traps:
 
 - Under squash merge the pull request title is the only commit message the tool sees. Enforce the format on titles in CI (`branching-workflow.md`), and review the type: `feat` versus `fix` versus `feat!` decides the version number.
 - A commit pushed or a tag created by a workflow using the default `GITHUB_TOKEN` does not trigger other workflows. The symptom is a release pull request with no CI run, or a tag that never starts the publish workflow. Use a GitHub App token (or a fine-scoped personal token) for the step that must trigger further runs, or publish in the same workflow.
-- Tools compute the next version from the last tag reachable from the branch. A missing or mis-prefixed tag makes them propose `1.0.0` again or re-list the whole history; CI must fetch tags and full history for the release job.
+- Tools compute the next version from the last release they can find: the last tag reachable from the branch, or a tag plus a version manifest file the tool keeps in the repository. A missing or mis-prefixed tag makes them propose `1.0.0` again or re-list the whole history; CI must fetch tags and full history for the release job.
+- Which commit types cut a release differs per tool and is configurable (`feat` and `fix` do everywhere; `perf`, `deps`, `docs` and `revert` vary), as does the bump a breaking change gets below `1.0.0`. Read the tool's defaults before assuming a merge will or will not publish.
 - Generated changelogs are drafts. Edit the release notes for anything user-facing; a line reading "fix: handle null" helps nobody.
 - Publishing credentials, protected release environments and provenance belong to the pipeline (`0x:ci-cd-release`).
 
@@ -142,7 +144,7 @@ How to find usages: search for `retries:` in files importing `@acme/sdk`.
 - One section per breaking change, each with why, before, after, and how to find affected code. "Behavior changes that will not fail at compile time" is the most important section, because nothing else will tell the consumer.
 - Provide a codemod when the change is mechanical and widespread; it converts a deterrent into a command.
 - State what happens to someone who does nothing: an error at install, at build, at runtime, or silently different results.
-- For a paid product, changes that remove functionality or alter pricing-relevant behavior may be subject to notice terms in the customer contract or terms of service; check them before setting the date (`0x:privacy-compliance` for the policy side).
+- For a paid product, removing functionality or changing pricing-relevant behavior can be constrained twice: by notice and change clauses in the customer contract or terms of service, and by consumer-protection law, which in some jurisdictions requires advance notice or a right to cancel when a subscription changes materially. The rules differ by country and by whether the customers are businesses or consumers. Read the contracts before setting the date, and get legal advice before taking something away from paying customers (`0x:privacy-compliance` covers terms and consumer rules).
 
 ## Supported-versions policy
 

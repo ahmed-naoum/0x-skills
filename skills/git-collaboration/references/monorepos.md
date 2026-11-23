@@ -55,24 +55,27 @@ Turborepo adds a task graph and a cache on top of the workspace:
 
 ```json
 {
-  "$schema": "https://turborepo.com/schema.json",
+  "$schema": "./node_modules/turbo/schema.json",
   "tasks": {
     "build": { "dependsOn": ["^build"], "outputs": [".next/**", "!.next/cache/**", "dist/**"] },
     "typecheck": { "dependsOn": ["^build"] },
     "test": { "dependsOn": ["^build"] },
-    "lint": {},
+    "transit": { "dependsOn": ["^transit"] },
+    "lint": { "dependsOn": ["transit"] },
     "dev": { "cache": false, "persistent": true }
   }
 }
 ```
 
+- The schema shipped inside the installed `turbo` package always matches its version. The hosted schema URL has moved between domains across releases; copy it from the current documentation if a URL is preferred.
 - `^build` means "build my dependencies first". Without the caret it means the same package's own task.
-- A task's cache key is a hash of its inputs: the package's files, its dependencies' hashes, the task configuration and the environment variables declared for it. A cache hit replays the logs and restores the declared `outputs`.
+- A task's cache key is a hash of its inputs: the package's source-controlled files, its `package.json` and the lockfile entries that affect it, the task configuration, the environment variables declared for it, and the hashes of the tasks it depends on. A cache hit replays the logs and restores the declared `outputs`.
+- A change in an internal package reaches a consumer's cache key only through `dependsOn`. A task declared as `{}` keeps its cache hit when `@acme/ui` changes, which is wrong for typecheck and type-aware lint. `^build` fixes it but serializes the work; the `transit` task above matches no script, does nothing, and exists only to chain the hashes so `lint` stays parallel and still sees dependency changes.
 - The two cache bugs that matter are both configuration omissions. An environment variable that affects the output but is not declared (`env` on the task, `globalEnv` for all) yields a cache hit carrying the value from another environment, such as a staging API URL baked into a production bundle.
 - An output directory missing from `outputs` yields a "successful" cached build that restores nothing. After changing `turbo.json`, verify with a clean checkout: run twice, confirm the second run is a full cache hit and the artifacts exist.
 - Never cache `dev` or any task with side effects (deploys, migrations): `"cache": false`.
 - Remote caching shares the cache between CI and laptops and is the main reason to adopt Turborepo. Locally: `turbo login` and `turbo link`. In CI: set `TURBO_TOKEN` and `TURBO_TEAM` as secrets.
-- The cache holds build output, so treat the token as a secret, and do not give write access to untrusted contributors' builds (fork pull requests), since a poisoned artifact would be restored into trusted builds. Enable artifact signing if the cache is shared beyond the team.
+- The cache holds build output, so treat the token as a secret, and do not give write access to untrusted contributors' builds (fork pull requests), since a poisoned artifact would be restored into trusted builds. Enable artifact signing if the cache is shared beyond the team (`remoteCache.signature` in `turbo.json` plus a secret signing key supplied through the environment; unsigned or tampered artifacts are then treated as cache misses).
 - Skip Turborepo while the workspace has one app and two packages and CI takes a couple of minutes; `pnpm -r run build` in dependency order is enough. Add it when CI time or repeated rebuilding hurts. Nx is the comparable alternative with more structure and code generation; keep whichever the project already has.
 
 ## Internal packages and boundaries
@@ -141,6 +144,7 @@ pnpm changeset publish    # publishes packages whose version is not yet on the r
 ```
 
 - The changeset file is written in the pull request by the person who knows whether the change is breaking, and reviewed with the code. That beats inferring it from commit messages when one commit touches several packages.
+- `changeset publish` creates the tags locally. Push them (`git push --follow-tags`) unless the release action does it.
 - In CI, the usual flow is a bot-maintained "version packages" pull request that accumulates changesets; merging it publishes. Publishing credentials and provenance are covered in `0x:ci-cd-release`.
 - Independent versions (each package has its own number) are the default and suit unrelated packages. Fixed or linked versions (a group shares one number) suit a family that users install together and expect to match.
 - pnpm rewrites `workspace:*` to the real version range in the published manifest. Publishing with a tool that does not understand the workspace protocol ships a broken `package.json`; publish through pnpm or Changesets.
@@ -152,7 +156,7 @@ Semver rules and changelog writing are in `versioning-releases.md`.
 
 ## Splitting and merging repositories with history
 
-Use `git filter-repo` in a fresh clone for both directions; it rewrites history, so never run it in a working clone with unpushed work.
+Use `git filter-repo` (installed separately from git) in a fresh clone for both directions; it rewrites history, so never run it in a working clone with unpushed work.
 
 Merging repository B into monorepo A under `apps/b`:
 
