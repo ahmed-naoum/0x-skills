@@ -25,7 +25,7 @@ choices win; this table is for greenfield work and for "what should I use?".
 | Cache | HTTP and CDN caching, then Redis | |
 | Hosting | A PaaS | Runtime, region, networking or cost limits → containers on a cloud; Kubernetes only with people to run it |
 | CI/CD | GitHub Actions | |
-| Infrastructure as code | Terraform or OpenTofu once there is cloud infrastructure outside the PaaS | PaaS only → its config file in the repo is enough |
+| Infrastructure as code | Terraform or OpenTofu; at Prototype on a PaaS, its config file in the repo plus a list of manual settings | From Launch → DNS, IAM, databases and buckets are codified wherever they live (`0x:cloud-infrastructure`) |
 | Tests | Vitest, Playwright | |
 | Telemetry | Error tracker plus OpenTelemetry to a hosted backend, JSON logs | |
 | Product analytics | PostHog-style single tool | |

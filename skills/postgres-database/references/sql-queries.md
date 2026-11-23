@@ -214,9 +214,12 @@ LIMIT 21;                             -- page size + 1 tells whether another pag
 
 ## Manual SQL against production
 
-Claude does not run a writing statement against production until the user has seen the exact
-statement and the affected row count and has said yes. At Prototype, with no real user data, the
-before-image is optional; the approval, `BEGIN` and the row count are not.
+Claude writes the change and its count and before-image queries as a file in the repository; a
+person (or a reviewed pipeline job) runs it against production. Claude holds no production
+credentials (`0x:ai-coding-agents`, `permissions-governance.md`), so it never executes this itself
+and never pulls production rows into the conversation; the steps are for whoever runs it. At
+Prototype, with no real user data, the before-image is optional; the review, `BEGIN` and the row
+count are not.
 
 1. Write the change as a file in the repository; it is the record of what was done.
 2. Run the predicate as a `SELECT count(*)` and look at a sample. Record the count.
@@ -265,8 +268,8 @@ keyed on them will re-run.
 
 ## Ask the user
 
-- **May this statement run against production now?** Show the statement, the count and a sample.
-  Default without an answer: do not run it.
+- **Who runs this fix against production, and have they seen the statement, the count and a
+  sample?** Default without an answer: it is not run; Claude never runs it.
 - **Should customers affected by the bad data be told, or the correction be silent?** It changes
   whether notifications and `updated_at` fire. Default: silent fix, list of affected accounts kept.
 - **Do list screens need exact totals and page numbers?** Exact counts on large tables are slow and

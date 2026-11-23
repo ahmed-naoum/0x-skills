@@ -31,7 +31,7 @@ jobs:
     timeout-minutes: 15
     services:
       postgres:
-        image: postgres:17          # same major version as production
+        image: postgres:18          # same major version as production
         env: { POSTGRES_PASSWORD: postgres }
         ports: ['5432:5432']
         options: >-

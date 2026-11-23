@@ -91,8 +91,9 @@ or the author in a deliberately fresh session, following it literally on staging
 harmless production target while the author watches silently and notes every hesitation,
 question and missing permission.
 
-- Solo: hand it to the backup person, or give it to a coding agent with read-only instructions
-  and ask it to list every step it could not execute as written.
+- Solo: hand it to the backup person, or give it to a coding agent to follow on staging only, with
+  no production credentials (`0x:ai-coding-agents`), and ask it to list every step it could not
+  execute as written.
 - Test access as part of the run. The usual failure is not a wrong step but a missing login,
   expired token or absent MFA device.
 - Record the test date on the runbook. Untested for six months, or older than the last large

@@ -143,8 +143,11 @@ schedule:
 - Passwords, session cookies, API keys, `Authorization` headers, JWTs, OAuth codes, password
   reset and magic links, signed URLs, webhook signing secrets.
 - Card numbers, CVV, bank details. A card number in logs pulls the log pipeline into PCI scope.
-- Request and response bodies wholesale. Email, name, address, phone and IP address count as
-  personal data under most privacy laws; log the internal ID and look the person up when needed.
+- Request and response bodies wholesale. Email, name, address and phone count as personal data
+  under most privacy laws; log the internal ID and look the person up when needed. IP address is
+  personal data too: leave it off ordinary application and trace lines, and keep it only on
+  authentication, audit and edge access-log lines, where security needs it, under the retention
+  in `0x:web-security` (`logging-breach-response.md`).
 
 How to enforce it, in order of strength:
 

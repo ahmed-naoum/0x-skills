@@ -37,7 +37,7 @@ transaction as the state change; a worker sends it.
 
 ```sql
 create table email_outbox (
-  id uuid primary key default gen_random_uuid(),
+  id uuid primary key default uuidv7(),      -- PostgreSQL 18+; otherwise generate in the app
   idempotency_key text not null unique,      -- e.g. 'receipt:inv_123'
   template text not null,
   template_version int not null,

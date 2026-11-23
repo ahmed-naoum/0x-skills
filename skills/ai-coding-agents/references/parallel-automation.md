@@ -141,16 +141,16 @@ jobs:
       issues: write
       id-token: write
     steps:
-      - uses: actions/checkout@v6
-      - uses: anthropics/claude-code-action@v1
+      - uses: actions/checkout@<full-commit-sha>               # v6.x.y
+      - uses: anthropics/claude-code-action@<full-commit-sha>  # v1.x.y
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: "--max-turns 20"
 ```
 
 `id-token: write` lets the action fetch the GitHub OIDC token it uses to obtain its app
-token; drop it only if the action's README says your auth setup does not need it. Check the
-README for the current major versions of both actions before copying. For a schedule, use a
+token; drop it only if the action's README says your auth setup does not need it. Pin each
+action to the commit SHA of its current release (`0x:ci-cd-release`, `pipeline-security.md`). For a schedule, use a
 separate workflow with `on: schedule` (plus `workflow_dispatch` for manual runs) and pass the
 task in the action's `prompt` input; the `if:` on comment text above would skip scheduled runs.
 

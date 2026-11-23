@@ -217,7 +217,8 @@ exceeds its client's timeout, and the work done is thrown away. Reject early and
 - Cap in-flight requests per instance and answer `503` with `Retry-After` beyond the cap. A
   health signal such as event-loop delay or heap use can drive the same decision (for Fastify,
   `@fastify/under-pressure`).
-- Keep the pool acquire timeout short, a second or two. A saturated database then produces fast
+- Keep the pool acquire timeout short: about 3 s (the `0x:postgres-database` default), lower when
+  shedding load. A saturated database then produces fast
   errors instead of a pile of waiting requests.
 - Drop work whose caller has gone: check the abort signal before starting expensive steps.
 - Shed by priority. Health checks, sign-in, checkout and payment webhooks stay; bulk API

@@ -229,7 +229,7 @@ process.on('SIGINT', () => void shutdown());
 |---|---|---|
 | Handler never runs; container dies after the full grace period | `CMD npm start`, `pnpm start` or shell-form `CMD`: the wrapper is PID 1 and does not forward the signal | Exec form `CMD ["node", "server.js"]`; add an init (`--init`, tini) if the process spawns children |
 | A few 502s on every deploy | Process exits while the balancer still routes to it | Steps 1-2; check the balancer's deregistration delay |
-| Sporadic 502s with no deploy | Node closes idle keep-alive sockets before the balancer does. The default is 5 s through Node 24 and newer majors are reported to raise it: print `server.keepAliveTimeout` on the pinned runtime | Set `server.keepAliveTimeout` explicitly above the balancer idle timeout, and `server.headersTimeout` above that |
+| Sporadic 502s with no deploy | Node closes idle keep-alive sockets before the balancer does. The default was 5 s for years and was raised to 65 s in 2026; the first line that ships it varies: print `server.keepAliveTimeout` on the pinned runtime | Set `server.keepAliveTimeout` explicitly above the balancer idle timeout, and `server.headersTimeout` above that |
 | Shutdown hangs until SIGKILL | WebSocket or SSE connections never end on their own | Send a close frame or end the stream; clients reconnect elsewhere |
 | Jobs run twice after deploys | Job longer than the grace period is killed, then retried | Make it resumable and idempotent, or raise the grace period for the worker service |
 

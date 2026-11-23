@@ -280,7 +280,8 @@ is checked and the user can correct it, or a review-and-confirm step precedes th
 
 - **How long may a session last, and is an "extend" prompt acceptable to your security
   requirements?** It trades account risk against lockouts for slow users. Default: sliding
-  session with a warning dialog and unlimited extensions while the user is present.
+  idle timeout with a warning dialog and one-action extensions while the user is present, up to
+  the absolute lifetime set in `0x:auth-identity`; work is preserved across re-authentication.
 - **Which sign-in methods will exist besides a password?** One memory-free method is needed for
   3.3.8 by alternative. Default: magic link or passkey alongside password, paste never blocked.
 - **Is a CAPTCHA required, and where?** It is the element most likely to lock users out. Default:

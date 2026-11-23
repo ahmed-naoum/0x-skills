@@ -108,6 +108,7 @@ Content-Security-Policy:
 - Inline event handlers (`onclick="..."`) and `javascript:` URLs stop working; a nonce cannot authorize them. Move them to `addEventListener`.
 - Styles: a nonce covers `<style>` elements, not `style` attributes in server-rendered HTML; those need `style-src-attr 'unsafe-inline'`. `'unsafe-inline'` for styles is a tolerable compromise when a UI library requires it. In `script-src` it voids the policy, and `'unsafe-eval'` is for development only.
 - `connect-src`, `img-src` and `form-action` limit where injected code can send data. Tighten them to the real destinations, and add `frame-src` for embedded providers such as payments or video.
+- Pages that must control which third-party scripts run (payment pages under PCI DSS 6.4.3, pages with marketing tags where piggybacking must be blocked): omit `'strict-dynamic'`, keep the nonce for first-party scripts and list the exact vendor origins in `script-src`; restrict `connect-src`, `img-src` and `frame-src` to those vendors. Keep tag managers off those pages.
 
 Cost: a nonce requires rendering the HTML per request, so pages under a nonce policy cannot be statically generated or cached as HTML at the CDN. Decide per route group. Dynamic, authenticated app pages get the nonce policy. Static marketing pages get a hash-based or host-based policy without a nonce, with the same `object-src`, `base-uri` and `frame-ancestors`.
 

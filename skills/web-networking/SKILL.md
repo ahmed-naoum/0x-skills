@@ -52,13 +52,13 @@ Follow what the project and its host already use; these apply to greenfield choi
 
 Fixed choices at every stage:
 
-- Self-managed proxy: Caddy on a new single server; nginx where it is already in use.
+- Self-managed proxy: Caddy on a new single server; nginx where it is already in use; the deploy tool's own proxy where it brings one (Kamal, Coolify).
 - Canonical host chosen once, the other 301-redirected in a single hop; HTTP to HTTPS in the same hop, except on an HSTS-preloaded apex, which must first redirect to HTTPS on itself.
 - Compression at one layer: Brotli or zstd with gzip fallback, text only.
 - IPv6 at the CDN edge; `AAAA` at the origin only when the whole path is verified.
 - 0-RTT off; HTTP/2 push and domain sharding removed.
 - App bound to loopback or a private interface; real client IP from a configured trusted-hop count, never `trust proxy = true`.
-- Request timeout budget: client 35 s > proxy 30 s > app 25 s > database statement 20 s > outbound call 10 s; longer work becomes a job.
+- Request timeout budget: client 35 s > proxy 30 s > app 25 s > database statement 10 s > outbound call 1-5 s on the request path; pool acquire about 3 s; longer work becomes a job (inner values from `0x:postgres-database` and `0x:backend-architecture`).
 - App keep-alive idle timeout longer than the load balancer's idle timeout.
 
 ## Before you call it done

@@ -80,7 +80,7 @@ most line width, and never review style by hand again.
 
 | Choice | Take it when |
 |---|---|
-| Biome (one binary: formatter and linter) | Greenfield, or lint time is hurting. Fast, one config file, almost nothing to maintain. Its type-aware rules (`noFloatingPromises`, `noMisusedPromises`) run on Biome's own type inference, not the TypeScript compiler, and have shipped as nursery rules that miss cases; check the current rule docs, and if they are not stable, add ESLint with only the type-aware rules in CI from Launch. Check framework plugin coverage too |
+| Biome (one binary: formatter and linter) | Greenfield, or lint time is hurting. Fast, one config file, almost nothing to maintain. Its type-aware rules (`noFloatingPromises`, `noMisusedPromises`) run on Biome's own type inference, not the TypeScript compiler, and have shipped as nursery rules that miss cases; check the current rule docs, and if they are not stable, add ESLint with only the type-aware rules in CI from Launch. Check framework plugin coverage too. Not on its own for React with the React Compiler: the compiler's lint rules exist only in `eslint-plugin-react-hooks` (`0x:react-nextjs`, `data-state.md`), so use one of the rows below |
 | ESLint flat config with typescript-eslint, plus Prettier for formatting | The project needs the full type-aware rule set, framework or accessibility plugins, or custom rules. Slower, larger ecosystem |
 | Biome for formatting and fast lint, ESLint for type-aware and plugin rules only | A large codebase that wants both; costs two configs |
 

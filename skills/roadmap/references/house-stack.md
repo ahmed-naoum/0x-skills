@@ -36,7 +36,7 @@ the same interface, never as a big-bang rewrite (`0x:code-quality` `references/r
 | Area | Default | Why this default | Flips when, and to what | Detail |
 |---|---|---|---|---|
 | Language | TypeScript, strict mode, end to end | One language and one type system from database row to button; Claude is strongest where types catch its mistakes | A capability needs another runtime (heavy ML, a library only in Python): a second language as a separate service for that capability only, at Scale | `0x:backend-architecture` `references/runtime-language.md` |
-| Runtime, packages | Node.js current LTS, pnpm | Longest support window, widest library and host support; pnpm is fast and strict about undeclared dependencies | The project uses npm, Yarn or Bun: keep it. Edge runtimes only for redirects, token checks and cache shaping | `0x:react-nextjs` `references/build-tooling.md` |
+| Runtime, packages | Node.js current LTS, pnpm | Longest support window, widest library and host support; pnpm is fast and strict about undeclared dependencies | The project uses npm, Yarn or Bun: keep it. Edge runtimes only for redirects, token checks and cache shaping | `0x:backend-architecture` `references/runtime-language.md`; pnpm: `0x:react-nextjs` `references/build-tooling.md` |
 | Web framework | Next.js App Router with React, server components by default | Server rendering, routing, data and mutations in one deployable; the largest ecosystem | Content site with little interactivity: Astro. App wholly behind login with explicit loaders: React Router. Existing server-rendered backend with modest interactivity: HTML over the wire | `0x:react-nextjs` `references/rendering-strategies.md` |
 | Styling | Tailwind CSS with accessible headless primitives (Radix-style) | Styles stay next to markup; primitives bring focus, keyboard and ARIA behavior that is hard to get right | The project has a component library with its own primitives: keep it | `0x:ui-ux-design` `references/design-systems.md` |
 | Validation | A schema at every trust boundary (Zod) | One schema validates the request, types the handler and generates API docs | The project uses another schema library: keep it; the rule stays | `0x:web-security` `references/vulnerability-classes.md` |
@@ -70,7 +70,7 @@ These follow from the table and recur across skills; the owner holds the reasoni
 | Retrieval for AI | Whole documents in a cached prompt if they fit, else `pgvector` plus full-text search | `0x:ai-features` `references/retrieval.md` |
 | Realtime | Polling, then server-sent events down and POST up | `0x:backend-architecture` `references/realtime.md` |
 | Feature flags | A constant or environment variable, then a Postgres table or the analytics suite's flags | `0x:ci-cd-release` `references/feature-flags.md` |
-| Lint and format | Biome on greenfield, or ESLint flat config plus Prettier | `0x:code-quality` `references/static-analysis-types.md` |
+| Lint and format | React and Next.js: ESLint flat config with `eslint-plugin-react-hooks`, formatted by Biome or Prettier; other greenfield TypeScript: Biome | `0x:code-quality` `references/static-analysis-types.md` |
 | Content | MDX in the repository; a CMS when a non-developer must publish | `0x:react-nextjs` `references/rendering-strategies.md` |
 | Self-managed proxy | Caddy on a new server; nginx where already in use | `0x:web-networking` `references/proxies-load-balancers.md` |
 

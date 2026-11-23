@@ -29,7 +29,9 @@ Remove at least one leg in every environment an agent runs in.
 | Production | Nothing. Agents never get production access | |
 
 Production changes go through CI/CD from merged code. Data fixes go through a reviewed script
-run by a human or a pipeline, with a dry-run count first.
+run by a human or a pipeline, with a dry-run count first. One exception that is not production
+access: a read-only, project-scoped error-tracker token, when the tracker scrubs personal data and
+secrets at ingestion. Nothing that reads the production database, logs or customer content.
 
 The common leak is the shell, not the repository. An agent inherits the environment of the
 terminal that started it: exported `AWS_*` or `DATABASE_URL` variables, and every logged-in

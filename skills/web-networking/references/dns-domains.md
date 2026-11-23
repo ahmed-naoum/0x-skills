@@ -10,7 +10,7 @@ Whoever controls the registrar account controls the website, the email, every pa
 |---|---|---|
 | Ownership | Account belongs to the company with a founder as contact; never a contractor's, agency's or ex-employee's personal account | Disputes over a domain held by someone else take months |
 | Account email | A mailbox on a different domain than the one being registered | If the domain lapses or DNS breaks, mail to it stops and recovery emails cannot arrive |
-| MFA | Hardware key or TOTP; no SMS fallback; recovery codes stored offline | Registrar account takeover is a full company takeover |
+| MFA | Passkey or hardware security key, two registered (TOTP only if the registrar supports nothing phishing-resistant, and then move registrars when practical); no SMS fallback; recovery codes stored offline (`0x:web-security`, `accounts-admin-hardening.md`) | Registrar account takeover is a full company takeover |
 | Transfer lock | Registrar lock on (`clientTransferProhibited` in WHOIS/RDAP status) | Blocks an unauthorized transfer out |
 | Auto-renew | On, with a card that does not expire soon and a backup payment method; renew the primary domain for several years | Most domain losses are an expired card, not an attack |
 | Expiry alert | Independent of the registrar's emails (see `tls-certificates.md`) | Registrar notices go to spam or to a departed person |

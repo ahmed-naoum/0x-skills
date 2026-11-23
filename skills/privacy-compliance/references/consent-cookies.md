@@ -184,7 +184,7 @@ Leaks to look for in the request payloads, even after consent:
 | Pixels with "automatic advanced matching" or autocapture reading form fields | Turn the feature off; never run ad pixels on authenticated, checkout or account pages |
 | Session replay capturing inputs, messages or on-screen personal data | Mask all inputs and text by default; allowlist what is recorded |
 | Health, finance or other sensitive context revealed by the page URL to an ad network | No ad or social tags on such pages at all; this has drawn regulator action and class suits in the US |
-| Tags injected by other tags (piggybacking) | Content Security Policy allowlist; see `0x:web-security` |
+| Tags injected by other tags (piggybacking) | A CSP without `'strict-dynamic'` that lists the approved tag origins, with `connect-src` and `img-src` limited to them (`0x:web-security`, `browser-security.md`); a nonce policy with `'strict-dynamic'` does not block injected tags |
 | Third-party fonts, maps, captcha, video loaded on every page | Self-host or click-to-load |
 
 ## Marketing email permission

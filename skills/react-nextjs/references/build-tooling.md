@@ -128,8 +128,9 @@ Storing and rotating secrets: `0x:web-security`. Config per environment: `0x:ci-
 - **Images**: import local images so the bundler emits a hashed file and knows the dimensions.
   With `next/image`, set `sizes` whenever the image is not a fixed pixel width; allow remote
   hosts explicitly in `images.remotePatterns`; mark the one above-the-fold hero with
-  `fetchPriority="high"` or `loading="eager"`, and add `preload` (named `priority` before 16)
-  only when it must be fetched before the parser reaches it. In Vite an import returns the URL, and
+  `fetchPriority="high"` and `loading="eager"`, or instead `preload` (named `priority` before 16)
+  when it must start from the `<head>`; never combine `preload` with the other two
+  (`0x:web-performance`, `core-web-vitals.md`). In Vite an import returns the URL, and
   resizing needs an image CDN or a build plugin. Format and loading strategy: `0x:web-performance`.
 - **SVG**: three options with different costs. As a file (`<img>` or CSS): cacheable, not
   styleable. As a React component through SVGR: styleable with `currentColor`, but every icon is
@@ -213,7 +214,9 @@ Measure before changing anything: time a cold start, a hot update, and a product
 
 - **Node**: one version in `.nvmrc` or `.node-version`, read by `actions/setup-node`
   (`node-version-file`) and matched by the Docker base image tag, plus an `engines.node` range in
-  `package.json`. Use the current LTS line and avoid odd-numbered releases.
+  `package.json`. Use a line that is in LTS (greenfield: Active LTS); the odd/even rule ends with
+  Node 27, so read the dates from the Node.js release schedule (`0x:backend-architecture`,
+  `runtime-language.md`).
 - **Package manager**: the `packageManager` field with an exact version. pnpm reads it and
   switches itself to that version, and `pnpm/action-setup` reads it in CI. Do not rely on
   Corepack: Node stopped bundling it in version 25.

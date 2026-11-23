@@ -55,7 +55,7 @@ truth and how every other store is rebuilt from it.
 | Stores | Postgres + object storage | Add Redis only for a concrete need | Search engine, warehouse, event log as measured needs appear, all managed |
 | Cache | None; fix the query | HTTP/CDN first, then cache-aside in Redis with TTL + delete-on-write | Stale-while-revalidate on hot keys; per-key-family metrics |
 | Redis instances | — | One for cache (`allkeys-lru`); a Redis-backed queue, if the project has one, gets its own (`noeviction`) | Same, sized from measured memory |
-| Rate limits | In-process or none | Redis sliding window via a maintained library | Fail-open or fail-closed decided per limit |
+| Rate limits | In-process or none | An atomic Postgres counter; Redis (maintained library) where it already runs or once the limiter shows in database load (`0x:api-design`) | Fail-open or fail-closed decided per limit |
 | Search | `ILIKE` with a trigram index | Postgres full-text + trigram | Hosted engine when typo tolerance, facets or ranking are measured needs |
 | Vectors | pgvector, exact scan | pgvector with HNSW, tenant filter in SQL | Dedicated store only when pgvector's memory or recall fails |
 | Index sync | — | Job enqueued in the write transaction + reconciliation sweep | Change data capture through a managed service |

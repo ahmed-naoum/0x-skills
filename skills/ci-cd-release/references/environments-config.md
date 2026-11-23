@@ -58,7 +58,7 @@ import { z } from 'zod';
 const schema = z
   .object({
     APP_ENV: z.enum(['development', 'test', 'preview', 'staging', 'production']),
-    DATABASE_URL: z.string().url(),
+    DATABASE_URL: z.url(),   // Zod 4; Zod 3: z.string().url()
     SESSION_SECRET: z.string().min(32),
     STRIPE_SECRET_KEY: z.string().startsWith('sk_'),
     EMAIL_ENABLED: z.enum(['true', 'false']).transform((v) => v === 'true'),

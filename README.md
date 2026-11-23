@@ -41,7 +41,7 @@ The skills appear as `0x:<name>` and load by themselves when a task falls in the
 
 ## Skills
 
-31 of 32 are finished so far; the rest are being written and reviewed, the most used first. `roadmap`, the map of the set, is built too.
+All 32 are built and reviewed. `roadmap`, the map of the set, is built too.
 
 | Skill | What it covers | Reference files | Competencies | Status |
 |---|---|---|---|---|
@@ -75,7 +75,7 @@ The skills appear as `0x:<name>` and load by themselves when a task falls in the
 | [`growth-marketing`](skills/growth-marketing/SKILL.md) | Get the product found and tried: positioning and messaging, landing pages and conversion, launches, content, lifecycle email, paid acquisition, referral and product-led loops, and community and partnerships. | 8 | 55 | built and reviewed |
 | [`pricing-monetization`](skills/pricing-monetization/SKILL.md) | Decide how the product makes money: revenue model and value metric, price setting, plans and packaging, discounts and price changes, and the unit economics that show whether it works. | 5 | 32 | built and reviewed |
 | [`sales-support`](skills/sales-support/SKILL.md) | Win customers and keep them: prospecting and outreach, discovery calls and demos, proposals and contracts, procurement and security questionnaires, onboarding, support operations, customer success and churn, and reviews. | 8 | 62 | built and reviewed |
-| [`company-building`](skills/company-building/SKILL.md) | Build the company around the product: strategy and moats, incorporation and founder legal basics, hiring, managing people, operating cadence and culture, and the founder's own effectiveness. | 6 | 50 | draft, review pending |
+| [`company-building`](skills/company-building/SKILL.md) | Build the company around the product: strategy and moats, incorporation and founder legal basics, hiring, managing people, operating cadence and culture, and the founder's own effectiveness. | 6 | 50 | built and reviewed |
 | [`startup-finance`](skills/startup-finance/SKILL.md) | Run the company's money: bookkeeping and tax, cash and runway forecasting, funding strategy, the fundraising process, equity and the cap table, and exit and due diligence. | 6 | 46 | built and reviewed |
 
 ## How a skill is shaped

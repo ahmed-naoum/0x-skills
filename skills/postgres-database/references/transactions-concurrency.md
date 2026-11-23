@@ -152,7 +152,7 @@ every other request queues. Timeouts turn that outage into a handful of failed r
 
 | Setting | Web role | Notes |
 |---|---|---|
-| `statement_timeout` | 5 to 15 s, just under the HTTP request timeout | Cancels with `57014`. Workers and reporting roles get longer values; migrations set their own |
+| `statement_timeout` | 5 to 15 s, below the app's request timeout | Cancels with `57014`. Workers and reporting roles get longer values; migrations set their own |
 | `lock_timeout` | 2 to 5 s | Bounds waiting for a lock; fails with `55P03` |
 | `idle_in_transaction_session_timeout` | 30 to 60 s | Kills sessions that opened a transaction and stopped; these hold locks and block vacuum |
 | `transaction_timeout` | 30 to 60 s | PostgreSQL 17+. Caps the whole transaction |

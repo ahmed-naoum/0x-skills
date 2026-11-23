@@ -83,9 +83,9 @@ more than a few hundred clients. Use the provider's pooler when it has one.
 - Keep two URLs. Pooled for application traffic. Direct for migrations, `pg_dump`, logical
   replication, `LISTEN/NOTIFY` and long maintenance sessions. Some providers' direct hosts are
   IPv6-only; a CI runner without IPv6 then needs the session-mode pooler for migrations.
-- In a function, set the client pool to 1 to 3 connections against the pooled URL, and cap function
-  concurrency (`0x:cloud-infrastructure`). Edge runtimes without TCP need the provider's HTTP or
-  WebSocket driver.
+- In a function, set the client pool to 1 where an instance serves one request at a time, up to
+  about 5 where it serves many concurrently, against the pooled URL, and cap function concurrency
+  (`0x:cloud-infrastructure`). Edge runtimes without TCP need the provider's HTTP or WebSocket driver.
 
 ```ini
 [pgbouncer]

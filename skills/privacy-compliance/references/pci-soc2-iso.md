@@ -69,7 +69,8 @@ Practical implementation on the page that embeds or links to payment:
 2. Inventory: a table of each remaining script with source, purpose, owner and how it is
    authorized (code review for first-party, an allowlist entry for third-party).
 3. Authorize and constrain: a Content Security Policy on those routes with an explicit
-   `script-src` allowlist (nonces or hashes for inline scripts, no wildcards) and `frame-src`
+   `script-src` allowlist without `'strict-dynamic'`, which would let any authorized script load
+   unlisted ones (nonces or hashes for inline scripts, no wildcards), and `frame-src`
    limited to the payment provider; Subresource Integrity for third-party scripts with stable
    contents. The provider's own loader script usually cannot be pinned with SRI because it
    changes; it is authorized by allowlisting its origin, per the provider's guidance.

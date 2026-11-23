@@ -83,7 +83,7 @@ Rules:
 
 ```sql
 create table notifications (
-  id uuid primary key default gen_random_uuid(),
+  id uuid primary key default uuidv7(),      -- PostgreSQL 18+; otherwise generate in the app
   user_id uuid not null references users(id) on delete cascade,
   type text not null,
   group_key text,                -- e.g. 'thread:123' for collapsing

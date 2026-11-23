@@ -113,7 +113,7 @@ Layer 5, Trust.
 | Passkey or hardware-key MFA on email, registrar, repository, cloud, payments and password manager; a second way in; the admin panel and internal tools behind an identity-aware proxy, no inbound port open | `0x:web-security` `references/accounts-admin-hardening.md` |
 | No secret in the repository, image or client bundle; push protection where the plan includes it, gitleaks or TruffleHog in pre-commit and CI regardless | `0x:web-security` `references/secrets.md` |
 | Baseline security headers on every response; CSP rolled out report-only first | `0x:web-security` `references/browser-security.md` |
-| Lockfile committed, frozen installs, dependency alerts on | `0x:web-security` `references/supply-chain.md` |
+| Lockfile committed, frozen installs, dependency alerts on; a 7-day release cooldown in the update bot and the package manager; dependency install scripts off except an allow-list | `0x:web-security` `references/supply-chain.md` |
 | Audit table for auth, permission, money and admin events; a one-page incident plan; `security.txt` published | `0x:web-security` `references/logging-breach-response.md`, `references/security-testing.md` |
 | A test shows another tenant gets 404 on every endpoint | `0x:auth-identity` `references/authorization.md` |
 | Session cookie `HttpOnly`, `Secure`, `SameSite`; logout and password change revoke server-side; MFA required for owners and admins | `0x:auth-identity` `references/sessions-tokens.md`, `references/passwords-mfa-passkeys.md` |

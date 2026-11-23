@@ -276,7 +276,8 @@ or retry everything in a tight loop.
 | 400, 401, 403, 404, 422 | No | Fix the request or credential |
 
 Backoff with full jitter: `delay = random(0, min(cap, base * 2^attempt))`, with a base near
-0.5 s, a cap near 30 s, and 3 to 5 attempts for interactive calls (more for background workers).
+0.5 s; two or three attempts for interactive calls, all within the caller's deadline; a cap near
+30 s and more attempts for background workers.
 Jitter is not optional: without it, every client that failed together retries together and
 recreates the spike that caused the failure. `Retry-After` from the server overrides the computed
 delay when it is longer. A retry must reuse the original idempotency key; generating a new key

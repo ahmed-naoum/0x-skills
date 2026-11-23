@@ -65,7 +65,7 @@ During a live incident, go straight to the sequence at the top of
 | Paging | None | Symptoms only; night pages for SEV1 only | Rotation with primary and secondary |
 | Target | None | 99.5% measured on the main journey; no published SLA | 99.9% per key journey; SLA looser than the SLO, credits only |
 | Incidents | Fix when noticed | Hosted status page, message templates, three severity levels, timeline kept | Lead and communicator roles, postmortem for every SEV1 |
-| Capacity | One instance | Two instances, stateless app, managed database with standby and pooler; peak under half of measured capacity | Multi-zone, autoscaling with minimum 2 and a hard maximum, quarterly forecast |
+| Capacity | One instance | Two instances, stateless app, managed database with pooler (standby once an hour of downtime costs more than a month of it); peak under half of measured capacity | Multi-zone, autoscaling with minimum 2 and a hard maximum, quarterly forecast |
 | Recovery | Code in git | PITR and off-account backups of data, secrets, config and uploads; restore tested quarterly; two ways into each critical account | Written RPO and RTO, yearly full rebuild, game days; multi-region only if a contract requires it |
 
 Tool defaults when nothing is in place: pino for logs, Sentry-style error tracking,

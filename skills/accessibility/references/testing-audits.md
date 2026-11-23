@@ -9,7 +9,7 @@ or producing a VPAT or conformance report for a buyer.
 
 | Layer | Finds | Cannot find | Cost |
 |---|---|---|---|
-| Lint (`eslint-plugin-jsx-a11y`) | Missing alt, label-less inputs, invalid ARIA, click handlers on non-interactive elements, at author time | Anything about rendered output | Seconds |
+| Lint (`eslint-plugin-jsx-a11y`, or Biome's a11y rules) | Missing alt, label-less inputs, invalid ARIA, click handlers on non-interactive elements, at author time | Anything about rendered output | Seconds |
 | axe on rendered pages | Missing names, contrast of plain text, duplicate ids, invalid role structure, missing `lang`, some target sizes | Whether a name is correct, focus order, keyboard operability, focus management, announcement quality, reflow, whether alt text is meaningful | Minutes in CI |
 | Keyboard, zoom and forced-colors pass | Operability, focus loss, traps, clipping, color-only cues | How it sounds | About 15 minutes per feature |
 | Screen-reader pass | Wrong or missing announcements, confusing order, silent updates | Problems of users with other disabilities | 20 to 40 minutes per flow |

@@ -31,7 +31,7 @@ cannot be queried.
 
 ```sql
 CREATE TABLE files (
-  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id            uuid PRIMARY KEY DEFAULT uuidv7(),   -- PostgreSQL 18+; otherwise generate in the app (0x:postgres-database)
   tenant_id     uuid NOT NULL REFERENCES tenants(id),
   uploaded_by   uuid REFERENCES users(id),
   bucket        text NOT NULL,

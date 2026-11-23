@@ -3,6 +3,7 @@
 Read this when: configuring nginx, Caddy, an ingress or a cloud load balancer in front of the app, routing several backends, deploying without dropped requests, proxying WebSockets or streams, or chasing 502, 503 and 504 errors.
 
 On a PaaS the platform is the proxy: there is nothing to configure except the health check path, the app's graceful shutdown and its timeouts, and those three sections still apply. On a single self-managed server, default to Caddy (automatic HTTPS, safe defaults); keep nginx when the project already uses it.
+If the deploy tool brings its own proxy (Kamal's kamal-proxy, Coolify's built-in one), use that and do not put Caddy in front of it (`0x:cloud-infrastructure`, `docker-images.md`).
 
 ## Health checks
 
@@ -157,15 +158,17 @@ Two kinds of timeout, with opposite ordering rules.
 | CDN waiting for origin | Fixed or plan-dependent; find the number | Provider setting |
 | Load balancer / nginx read timeout | 30 s | `proxy_read_timeout` |
 | App request handler | 25 s | Framework or middleware timeout |
-| Database statement | 20 s | `statement_timeout` |
-| Outbound call to a third party | 10 s | Client timeout on every call |
-| Connection pool acquire | 5 s | Pool setting |
+| Database statement | 10 s | `statement_timeout` |
+| Outbound call to a third party | 1-5 s on the request path (jobs: 10-30 s) | Client timeout on every call |
+| Connection pool acquire | 3 s | Pool setting |
+
+The inner three values are owned by `0x:postgres-database` (`transactions-concurrency.md`) and `0x:backend-architecture` (`integrations-resilience.md`).
 
 Work that cannot fit moves to a background job with a 202 and polling (`0x:backend-architecture`, `background-jobs.md`); raising every timeout to accommodate one slow export leaves the whole system unable to shed load.
 
 **Idle (keep-alive) timeouts grow toward the inside.** The side that receives connections must keep idle ones open longer than the side that reuses them, so the reuser is always the one to close. Otherwise the upstream closes a connection at the instant the proxy sends a request on it, and the proxy reports a 502.
 
-- The classic case: a load balancer or nginx upstream pool with a 60 s idle timeout in front of Node.js, whose `server.keepAliveTimeout` defaulted to 5 s for years (through Node 24; the default was raised to 65 s in 2026).
+- The classic case: a load balancer or nginx upstream pool with a 60 s idle timeout in front of Node.js, whose `server.keepAliveTimeout` defaulted to 5 s for years (Node raised it to 65 s in 2026; which release line first ships that varies, so print it on the pinned runtime).
   Do not depend on the default: log `server.keepAliveTimeout` at startup and set it above the idle timeout in front, for example `server.keepAliveTimeout = 65_000; server.headersTimeout = 66_000;` behind a 60 s proxy (`next start --keepAliveTimeout 65000` for Next.js).
 - Apply the same rule to every pair: CDN → load balancer → proxy → app.
 

@@ -16,16 +16,16 @@ Reference Dockerfile for the house stack (Next.js with `output: "standalone"`, p
 
 ```dockerfile
 # syntax=docker/dockerfile:1
-ARG NODE_VERSION=24
-ARG PNPM_VERSION=10
-FROM node:${NODE_VERSION}-bookworm-slim AS base
+ARG NODE_VERSION=26
+ARG PNPM_VERSION=11
+FROM node:${NODE_VERSION}-trixie-slim AS base
 ARG PNPM_VERSION
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH
 RUN npm install -g pnpm@${PNPM_VERSION}
 
 FROM base AS deps
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 FROM base AS build
@@ -34,7 +34,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm build
 
-FROM node:${NODE_VERSION}-bookworm-slim AS run
+FROM node:${NODE_VERSION}-trixie-slim AS run
 WORKDIR /app
 ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0
 COPY --from=build --chown=node:node /app/.next/standalone ./
@@ -51,6 +51,7 @@ Notes on the parts people get wrong:
   schedule) and `PNPM_VERSION` from the `packageManager` field. pnpm is installed with npm because Corepack is not shipped with Node 25 and later,
   where `corepack enable` fails with "not found"; on Node 24 and earlier it still works. Confirm the Debian tag exists for the chosen Node line, and
   move to the next Debian stable when the image offers it.
+- Copy `pnpm-workspace.yaml` (and `.npmrc` when the project has one) with the lockfile: it holds pnpm's build allow-list, overrides and release-age settings, so an install without it skips native builds or fails (`0x:web-security`, `supply-chain.md`).
 - On Kubernetes with `runAsNonRoot: true`, a named user is rejected at container start (`image has non-numeric user`): write `USER 1000` (the `node` user's uid) or set `runAsUser` in the pod spec.
 - `.dockerignore` is part of the Dockerfile. Minimum: `node_modules`, `.next`, `.git`, `.env*`, `*.log`, `coverage`, `Dockerfile`, `docker-compose*.yml`. Without it the context upload is slow, `COPY . .` overwrites the installed `node_modules` with the host's, and `.env` lands in a layer.
 - For a non-Next Node service: build in one stage, then in the final stage install production dependencies only (`pnpm install --prod --frozen-lockfile`, or `pnpm deploy --prod` in a workspace; from pnpm 10, `deploy` needs `inject-workspace-packages=true` or `--legacy`) and copy `dist`.
@@ -99,14 +100,14 @@ Targets (rule of thumb): a cached rebuild after a source-only change under two m
 
 | Base | Use when | Trap |
 |---|---|---|
-| Debian slim (`-bookworm-slim` and successors) | Default. glibc, a shell for debugging, native modules work | More packages than strictly needed, so more CVE noise |
+| Debian slim (`-trixie-slim` and successors) | Default. glibc, a shell for debugging, native modules work | More packages than strictly needed, so more CVE noise |
 | Distroless (`gcr.io/distroless/...`, use a `nonroot` tag) or Chainguard-style minimal images | Launch onward when scan noise or attack surface matters | No shell, no package manager: debugging needs an ephemeral debug container; health checks cannot use `curl` |
 | Alpine | Static binaries (Go, Rust) or when size dominates | musl libc: prebuilt native Node modules may be missing or slower, some DNS and locale behavior differs. Not the default for Node or Python |
 | `scratch` | Fully static Go or Rust binary | Must add CA certificates and time zone data, and set a numeric `USER` |
 
 Patching is a schedule, not an event:
 
-- Pin the base by version tag at least; by digest (`FROM node:24-bookworm-slim@sha256:...`) for reproducibility, with Renovate or Dependabot opening the PRs that bump it. A digest pin with no bot means never patched.
+- Pin the base by version tag at least; by digest (`FROM node:26-trixie-slim@sha256:...`) for reproducibility, with Renovate or Dependabot opening the PRs that bump it. A digest pin with no bot means never patched.
 - Rebuild and redeploy at least weekly even with no code change, so OS package fixes arrive. A scheduled CI run that builds with `--pull` does it.
 - Scan in CI with Trivy or Grype. Fail on critical and high vulnerabilities that have a fix available; do not fail on unfixable ones, or the gate gets
   disabled within a month. Pin the scanner too (its binary version, and its CI action by full commit SHA): a scanner runs with registry and repository

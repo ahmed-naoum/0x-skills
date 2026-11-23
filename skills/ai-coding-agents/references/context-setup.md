@@ -104,8 +104,10 @@ script), so it gets exercised constantly and stays working.
 ```
 
 Requirements: idempotent (running it twice is harmless), local services in Docker Compose, a
-committed `.env.example` whose values work locally (test-mode keys only, never live ones), a
-seed script that creates a usable account, and test commands that accept a path.
+committed `.env.example` with working values for local services such as the Compose database and
+placeholders for provider keys, which developers pull (test-mode only) from the secret store
+(`0x:web-security`, `secrets.md`), a seed script that creates a usable account, and test
+commands that accept a path.
 
 | Symptom | Cause | Fix |
 |---|---|---|
@@ -237,11 +239,12 @@ hook scripts executable (`chmod +x`), require `jq` in the setup script, and keep
 agent to edit `.env` and confirming the refusal appears.
 
 MCP servers worth adding for a typical web product: a browser automation server (Playwright)
-so the agent can see the UI it builds; a docs server for fast-moving libraries; read access to
-the error tracker; read-only access to a development database. Each server's tool definitions
+so the agent can see the UI it builds; a docs server for fast-moving libraries; read-only
+error-tracker access under the exception in `permissions-governance.md`; read-only access to a
+development database. Each server's tool definitions
 take context in every session, it runs with whatever credentials it is given, and a
 third-party server is a dependency with your tokens: prefer vendor-official ones, pin versions,
-and never give one production write access. Share project servers through a committed
+and never give one production credentials. Share project servers through a committed
 `.mcp.json` (`claude mcp add --scope project ...`); keep personal ones in user scope.
 
 ## Reusable commands and skills

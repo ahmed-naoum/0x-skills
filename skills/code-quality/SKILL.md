@@ -70,7 +70,7 @@ Follow the project's existing runner, linter and conventions before any of these
 | Browser tests | Production build, role and label locators, saved auth state, no fixed sleeps, trace on first retry, retries in CI only |
 | Flaky tests | Pass-on-retry counts as flaky; quarantine the same day, fix or delete in about two weeks |
 | Types | `strict` plus `noUncheckedIndexedAccess`; `tsc --noEmit` as the first CI job |
-| Lint and format | Biome on greenfield, or ESLint flat config plus Prettier; either way the type-aware rules (floating promises, unsafe `any`) run in CI from Launch; tool defaults; zero warnings |
+| Lint and format | React or Next.js: ESLint flat config with typescript-eslint, `eslint-plugin-react-hooks` recommended and an a11y plugin, formatted by Biome or Prettier; other greenfield TypeScript: Biome; either way the type-aware rules (floating promises, unsafe `any`) run in CI from Launch; tool defaults; zero warnings |
 | Hooks | Format and lint staged files in under about 3 seconds; type check and tests on pre-push or CI only |
 | Bug fixes | Reproduce, bisect when theories run out, failing regression test first, fix the cause |
 | Refactoring | Only code the current task touches; structural commits separate; incremental replacement over rewrite |

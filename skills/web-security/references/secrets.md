@@ -157,7 +157,7 @@ For field encryption: authenticated encryption with the row's identity as associ
 |---|---|---|
 | Unguessable token: session ID, reset link, invite, API key | 32 bytes from the CSPRNG: `randomBytes(32).toString("base64url")` | `Math.random()`, timestamps, sequential or time-ordered IDs, a hash of user data |
 | Store a token the product issued | SHA-256 of the token, looked up by hash; show the plaintext once | Plaintext; a slow password hash (pointless for high-entropy input, and it prevents indexed lookup) |
-| Store a user's password | Argon2id, scrypt or bcrypt through the auth library | Any fast hash; encryption |
+| Store a user's password | Argon2id through the auth library (scrypt where the runtime lacks Argon2; bcrypt only for hashes that already exist); parameters in `0x:auth-identity` (`passwords-mfa-passkeys.md`) | Any fast hash; encryption |
 | Integrity or deduplication of non-secret data | SHA-256 | MD5 or SHA-1 where an attacker chooses the input |
 | Prove a message came from a holder of a shared secret: webhooks, signed URLs, unsubscribe links | HMAC-SHA-256 over the raw bytes plus a timestamp; constant-time comparison | `sha256(secret + message)`; `===` on signatures; signing re-serialized JSON |
 | Keep data confidential under a key the product holds | Authenticated encryption: AES-256-GCM, or XChaCha20-Poly1305 through libsodium | AES-CBC or CTR without a MAC, ECB, anything unauthenticated |

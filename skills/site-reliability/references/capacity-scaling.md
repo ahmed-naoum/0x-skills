@@ -203,9 +203,10 @@ than region failures.
   includes a standby; the entry-level plans usually have neither.
 
 Cost: on the large clouds a standby about doubles the database price, plus cross-zone traffic;
-other providers price it differently, so check. Take the
-database standby once revenue depends on the product (Launch); a backup-only database means an
-outage of restore duration, typically hours.
+other providers price it differently, so check. Add the
+standby when an hour of downtime costs more than a month of the standby (`0x:postgres-database`,
+`replication-scaling.md`); until then a backup-only database means an outage of restore duration,
+typically hours.
 
 ## Preparing for a known spike
 

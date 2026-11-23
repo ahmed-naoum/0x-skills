@@ -30,9 +30,10 @@ no backup trusted until it has been restored.
   instead of the whole pool.
 - **A backup exists once a restore from it has been performed and timed.** Replicas copy a mistake
   within milliseconds and are not backups.
-- **Production data changes are reviewed, counted, transactional and reversible.** Never run a
-  writing statement against production until the user has seen the exact statement and the
-  affected row count and has said yes: after commit the only undo is a before-image or a restore.
+- **Production data changes are reviewed, counted, transactional and reversible, and a person or
+  a pipeline runs them, never the agent.** Show the exact statement and the expected row count,
+  and have it run inside a transaction with a before-image: after commit the only undo is a
+  before-image or a restore.
 - **Scale in order.** Query, index, pooler, bigger instance, cache, replica, partition, shard.
   Each later step costs more to operate than all the earlier ones together.
 
@@ -91,8 +92,8 @@ consistent with it. These apply to greenfield choices and when the user asks wha
    `references/migrations.md`).
 10. The application connects as a non-owner role that carries statement, lock and
     idle-in-transaction timeouts, and the pools at maximum instance count fit the connection budget.
-11. Any manual production write was shown to the user with its row count, approved, run inside a
-    transaction and has a before-image.
+11. Any manual production write was shown to the user with its row count, approved, run by a
+    person or pipeline (not the agent) inside a transaction, and has a before-image.
 12. From Launch: point-in-time recovery is on, its restorable window was read off the provider, and
     a timed restore drill is on record.
 13. Before a destructive or irreversible change: a verified snapshot, the timestamp noted, the

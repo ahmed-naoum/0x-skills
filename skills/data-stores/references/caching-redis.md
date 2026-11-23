@@ -175,13 +175,9 @@ untouched, so the window ends 60 seconds after its first request. Counters whose
 usage, quota consumed) are written to Postgres; Redis may hold a fast approximate copy for
 display or pre-checks, reconciled from the database.
 
-**Rate limits.**
-
-| Algorithm | Behavior | Use |
-|---|---|---|
-| Fixed window | Allows up to twice the limit across a window boundary | Coarse abuse limits |
-| Sliding window counter | Weighted blend of current and previous window; smooth, two keys | Default for API limits |
-| Token bucket | Steady rate plus a bounded burst; needs a script for atomicity | Public APIs with burst allowance |
+**Rate limits.** The algorithm is chosen in `0x:api-design` (`idempotency-rate-limits.md`): token
+bucket for API traffic, sliding window counter for N-per-minute limits. In Redis the
+check-and-update is one atomic script, on a `noeviction` instance.
 
 Use a maintained library rather than hand-written scripts. Decide the failure mode explicitly:
 when Redis is unreachable, general API limits fail open (availability wins), while limits that
