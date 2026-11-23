@@ -24,7 +24,7 @@ against illness and burnout.
 
 | Business | Common basis | Notes |
 |---|---|---|
-| Owner-operated, profitable, one or two people | Multiple of seller's discretionary earnings (SDE) | SDE = net profit + owner's salary and benefits + one-time and discretionary costs + depreciation, amortization and interest |
+| Owner-operated, profitable, one or two people | Multiple of seller's discretionary earnings (SDE) | SDE = pre-tax profit + one owner's salary and benefits + one-time and discretionary costs + depreciation, amortization and interest |
 | Larger, with a team that runs it | Multiple of EBITDA, after a market-rate salary for the manager | Every add-back must survive the buyer's review |
 | Growing SaaS sold to a strategic or venture-backed buyer | Multiple of ARR | Growth and net retention drive the multiple more than profit |
 
@@ -48,13 +48,14 @@ support with capped hours.
 
 ## The standing data room
 
-Keep it current every quarter, so diligence for an investor or acquirer takes days, not months.
-Number the folders and keep an index.
+Start the folder skeleton at Launch and keep it current every quarter from the first priced
+round or first serious approach, so diligence takes days, not months. Number the folders and
+keep an index.
 
 | Folder | Contents |
 |---|---|
 | 1 Corporate | Charter, bylaws, all board and stockholder consents, good-standing certificates, subsidiaries |
-| 2 Equity | Cap table reconciled to the ledger; SAFEs, notes, option plan, grants, 409A reports, 83(b) copies, repurchases |
+| 2 Equity | Cap table reconciled to the ledger; SAFEs, notes, option plan, grants, 409A or EMI valuations, 83(b) or section 431 election copies, repurchases |
 | 3 Financials | Monthly statements, tax returns, the model, deferred revenue schedule, debt |
 | 4 Revenue and customers | MRR bridge, cohort retention, top customer contracts, concentration, churn reasons |
 | 5 Contracts | Vendors, partners, leases; change-of-control and assignment clauses flagged |
@@ -65,7 +66,7 @@ Number the folders and keep an index.
 | 10 Tax | Returns, sales tax and VAT registrations and filings, R&D claims |
 
 The gaps that most often kill or reprice deals: a missing IP assignment from a founder or an
-early contractor; unfiled 83(b) elections; option grants without board approval or below fair
+early contractor; unfiled 83(b) elections (US) or missing section 431 elections (UK); option grants without board approval or below fair
 market value; sales tax never collected where there was an obligation; contractors who are
 employees in substance; customer contracts that need consent to assign; open-source license
 conflicts (`0x:privacy-compliance`). Fix them before a buyer finds them, while they are cheap.
@@ -95,7 +96,8 @@ Compare personal outcomes, not headline numbers.
 
 1. **Proceeds to the founder** = price − debt − transaction fees − liquidation preferences ahead
    of common (waterfall in `fundraising-process.md`) − escrow and earn-out at a discount −
-   taxes (asset or stock sale; qualified small business stock or local equivalents). This
+   taxes (asset or stock sale; US qualified small business stock, UK Business Asset Disposal
+   Relief, or the local equivalent, confirmed by a tax adviser). This
    number, not the headline, is the offer.
 2. **Keeping it**: expected profit or distributions over the next several years, plus the value
    of selling later, weighed against the risks (competition, platform dependence, burnout).
@@ -137,7 +139,7 @@ Compare personal outcomes, not headline numbers.
 | Term | What it means | Position |
 |---|---|---|
 | Price and form | Cash, buyer stock, or a mix | Cash at close is worth most; private buyer stock is illiquid and valued at the buyer's word |
-| Structure | Asset purchase, stock purchase or merger | Buyers prefer assets (liabilities stay behind, better tax basis); for a C corporation an asset sale can be taxed twice. Model both with a tax adviser |
+| Structure | Asset purchase, stock purchase or merger | Buyers prefer assets (liabilities stay behind, better tax basis). For a US C corporation an asset sale can be taxed twice (the company on the gain, then holders on the distribution); UK individual sellers of shares may qualify for Business Asset Disposal Relief (18% from April 2026 on gains up to a lifetime limit, announced to fall from 1 million to 500,000 GBP from April 2027). Model both with a tax adviser in each seller's country |
 | Working capital adjustment | The price moves if working capital at closing differs from a target | Agree target and method in the letter of intent |
 | Escrow or holdback | Part of the price held back to cover claims | Negotiate amount and release date; representations and warranties insurance can shrink it |
 | Earn-out | Further payment if targets are met after closing | Value it heavily discounted; earn-outs cause most post-closing disputes. Require objective metrics, buyer obligations to support the business, and acceleration if the founder is let go |
@@ -191,22 +193,25 @@ can become personally liable in many jurisdictions.
    list where privacy terms allow) through a small-acquisition marketplace.
 4. Employees: final pay on time under local law, accrued vacation where required, benefits
    continuation notices, notice or WARN-type obligations where they apply.
-5. Creditors: notify and pay in legal priority (secured creditors, then employee wages and
-   taxes, before general unsecured). Unpaid payroll withholding can become the directors' debt.
+5. Creditors: notify and pay in the priority local law sets (typically secured creditors, then
+   employee wages and certain taxes, before general unsecured). Unpaid payroll withholding can
+   become the directors' debt.
 6. Taxes: final payroll filings and year-end forms, a final income tax return marked final,
    final sales tax and VAT returns, registrations canceled.
 7. Distribute what remains by the liquidation waterfall: debts first, then preferred and SAFE
-   holders (a post-money SAFE returns its purchase amount ahead of common in a dissolution),
+   holders (the standard US post-money SAFE returns its purchase amount in a dissolution, after
+   debts, alongside preferred and ahead of common; other instruments follow their own terms),
    then common.
-8. File the dissolution. Delaware requires franchise taxes and annual reports to be current;
-   withdraw registrations in other states. Close bank accounts after the last payments clear.
+8. File the dissolution. Delaware accepts a certificate of dissolution only once franchise taxes
+   and annual reports are current; withdraw registrations in other states. UK: form DS01 or the
+   liquidator's filings. Close bank accounts after the last payments clear.
 9. Keep corporate, tax and employment records for the periods the accountant gives (years, not
    months), and keep tail coverage on directors' insurance where it exists.
 
 | Jurisdiction | Solvent | Insolvent |
 |---|---|---|
 | US (Delaware) | Dissolution under state law with notice to creditors | Assignment for the benefit of creditors under state law, or bankruptcy; insolvency counsel |
-| UK | Strike-off application when there are no debts and no recent trading, or a members' voluntary liquidation with a declaration of solvency | Creditors' voluntary liquidation through a licensed insolvency practitioner |
+| UK | Strike-off (DS01) when the company has not traded for three months and creditors are paid (they are notified and can object); distributions above 25,000 GBP before a strike-off are taxed as income, so larger solvent closures use a members' voluntary liquidation with a declaration of solvency | Creditors' voluntary liquidation through a licensed insolvency practitioner |
 | EU | National liquidation procedure with a liquidator and creditor notice | National insolvency filing duties with short deadlines; local counsel |
 
 ## Ask the user

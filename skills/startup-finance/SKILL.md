@@ -17,8 +17,9 @@ stacked SAFE, a participating preference, a personal guarantee) before they are 
   floor, not cash divided by burn; the books are accrual so revenue, margin and value are real.
 - **Close the books every month.** Numbers more than a month old steer nothing, and catch-up
   bookkeeping during a raise or a sale stalls the deal.
-- **Some deadlines cannot be repaired.** The US 83(b) window, R&D credit elections and
-  pre-notifications, repurchase rights when a founder leaves: calendar them the day they start.
+- **Some deadlines cannot be repaired.** The US 83(b) window (30 days), the UK section 431
+  election (14 days), R&D credit elections and claim notifications, repurchase rights when a
+  founder leaves: calendar them the day they start.
 - **Choose the path before taking money.** Venture money mostly closes the bootstrapped path;
   raise only when the venture outcome is wanted and money buys a specific milestone.
 - **Model dilution before signing anything.** Stacked SAFEs, pool top-ups and preferences cost
@@ -57,10 +58,10 @@ and documents. The defaults below are for new decisions.
 | Runway | Forecast to a cash floor of two to three months of gross burn | Under six months left → weekly 13-week forecast |
 | MRR | Normalized recurring, net of discounts; one-time fees, usage and tax excluded; counted until cancellation | Committed usage minimums are included |
 | Funding | Bootstrap with customer funding until venture-scale evidence exists | Founder wants the venture path and money buys a specific milestone |
-| Instrument | Standard post-money SAFE at pre-seed and seed (US) | Larger round or a lead wanting governance → priced round on model documents; UK angels → advance subscription agreement |
+| Instrument | US: standard post-money SAFE at pre-seed and seed | Larger round or a lead wanting governance → priced round on model documents; UK angels relying on SEIS/EIS → advance subscription agreement; elsewhere → the local standard (convertible loan, BSA AIR) |
 | Round size | 18 to 24 months of runway to the next round's milestones | |
-| Founder equity | Equal split; four-year vesting, one-year cliff, credit for time served; double-trigger acceleration; 83(b) within 30 days (US) | Clear, durable differences in contribution |
-| Employee equity | Options at a current 409A value; four-year vesting, one-year cliff; pool sized from the hiring plan | |
+| Founder equity | Equal split; four-year vesting, one-year cliff, credit for time served; double-trigger acceleration; the tax election on vesting stock (US 83(b) within 30 days; UK section 431 within 14 days; elsewhere ask a local accountant at issuance) | Clear, durable differences in contribution |
+| Employee equity | Options at a defensible current value (US: 409A appraisal; UK: EMI options, value usually agreed with HMRC); four-year vesting, one-year cliff; pool sized from the hiring plan | Other countries: the local scheme or a phantom plan, set up with local counsel |
 | Exit | A process with several buyers; cash at close over earn-outs | |
 
 By stage:
@@ -71,7 +72,7 @@ By stage:
 - **Launch**: monthly close on accrual, MRR bridge, cash forecast, monthly finance pack,
   investor updates if funded, second bank, concentration tracking, a standing data room started.
 - **Scale**: 18-month model with scenarios reviewed monthly, fractional or full-time CFO, audit
-  readiness, a treasury policy, QoE-ready financials, regular 409A refreshes.
+  readiness, a treasury policy, QoE-ready financials, regular option valuations (409A in the US).
 
 ## Before you call it done
 
@@ -88,12 +89,16 @@ By stage:
    top-ups included, before signing.
 9. Term sheet terms were compared with the standard-terms table and every deviation was listed
    for the founder.
-10. Every holder of restricted stock (US) has a filed 83(b) with proof of mailing.
-11. Every option grant has board approval, a strike at or above a current 409A value, and a
+10. Every US holder of vesting stock has a filed 83(b) with proof of mailing or online
+    confirmation (or a recorded decision not to file); non-US holders have the local election
+    (UK section 431) or written advice on file.
+11. Every option grant has board approval, a strike at or above a current valuation (US 409A,
+    UK HMRC-agreed EMI value, or the local rule), any required notification filed, and a
     matching cap-table entry.
 12. IP assignments are signed by every founder, employee and contractor.
 13. Advice touching tax, securities or employment law names the jurisdiction it assumes and the
-    point where a professional must decide.
+    point where a professional must decide; no US-only mechanism (83(b), 409A, QSBS, Delaware,
+    the SAFE, Form D) was offered to a company or person outside the US as if it applied there.
 
 ## Not this skill
 

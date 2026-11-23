@@ -36,7 +36,7 @@ The arithmetic founders skip:
 |---|---|---|---|
 | Customers (bootstrapping) | Anything customers pay for early | Slower growth | Annual prepayments, paid pilots and pre-sales are customer funding; lifetime deals buy cash now and support costs forever |
 | Friends and family | A small first amount before evidence | Equity or a SAFE; relationships | Only money they can lose entirely; same documents as any investor; securities rules still apply |
-| Angels | Pre-seed and seed, often around a lead | Equity, usually SAFEs | A few useful angels beat many small checks: each is a cap-table line and a signature at future votes |
+| Angels | Pre-seed and seed, often around a lead | Equity, usually through SAFEs in the US, advance subscription agreements in the UK, convertible loans in much of Europe | A few useful angels beat many small checks: each is a cap-table line and a signature at future votes |
 | Accelerators | First institutional money plus a network | A fixed stake for a standard check | Read the current standard deal; the network and the demo day are what is bought |
 | Seed and venture funds | Venture-scale companies with evidence | Commonly 15 to 25% dilution per round (rule of thumb); board seats from priced rounds | Growth expectations reset the company's pace; each next round needs bigger milestones |
 | Bootstrapper-oriented funds | Software with a path to profit | Equity, or shared-earnings agreements repaid from profits | Terms vary widely; read the payout mechanics and any cap |
@@ -51,8 +51,10 @@ when money buys a specific milestone faster and the founder wants the venture pa
 
 ## Grants, credits and other non-dilutive money
 
-- **Research grants**: the US SBIR and STTR programs (check their current authorization and
-  solicitations), Innovate UK, the EU's EIC Accelerator, and national or regional programs. They
+- **Research grants**: the US SBIR and STTR programs (for US small businesses mostly owned by US
+  citizens or residents; reauthorized in April 2026 through September 2031 after a six-month
+  lapse, with agencies restarting solicitations at different paces, so check each agency),
+  Innovate UK, the EU's EIC Accelerator, and national or regional programs. They
   fund defined research, take months from application to money, restrict spending and require
   reporting. Worth it when the roadmap already contains research a program targets; a poor fit
   when applying would reshape the product around the grant.
@@ -65,9 +67,13 @@ when money buys a specific milestone faster and the founder wants the venture pa
   than the credits were worth.
 - **Vendor startup programs** (payments, CRM, analytics, developer tools) discount the first
   year. Track when each discount ends; they tend to end together and land as a burn jump.
-- **Investor tax reliefs**: the UK's SEIS and EIS make investing cheaper for UK angels; obtain
-  HMRC advance assurance before the raise and issue compliance certificates after, or investors
-  cannot claim. The US qualified small business stock treatment is in `bookkeeping-tax.md`.
+- **Investor tax reliefs** (UK): SEIS and EIS give UK-taxpaying investors income tax relief and
+  capital gains exemptions, so UK angels often invest only in qualifying companies. Apply for
+  HMRC advance assurance before signing with investors (optional, but they expect it); after the
+  shares are issued, file the compliance statement so HMRC authorizes the compliance
+  certificates investors need to claim. Company limits rose in April 2026; check current ones.
+  The US counterpart, qualified small business stock, benefits US-taxpaying holders and is in
+  `bookkeeping-tax.md`; other countries have their own schemes, which a local adviser names.
 
 ## Milestones before each round
 

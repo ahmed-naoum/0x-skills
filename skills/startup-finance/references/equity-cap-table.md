@@ -17,7 +17,9 @@ assignment are `0x:company-building`.
 - **Mechanics** in a US corporation: founders buy restricted stock at a nominal price (paid in
   cash or by assigning their technology), and the company holds a right to repurchase unvested
   shares at cost if the founder leaves. The shares are owned from day one; vesting is the lapse
-  of the repurchase right.
+  of the repurchase right. In the UK and much of Europe the same effect comes from leaver
+  provisions in the articles or shareholders' agreement (unvested shares transfer back at
+  nominal value), with different tax treatment (below).
 - **Acceleration**: double-trigger (a sale, then termination without cause within a set period)
   is the norm; single-trigger acceleration on any sale worries acquirers and investors.
 - **No vesting at all**: a co-founder who leaves after three months keeps the full stake, and
@@ -32,15 +34,19 @@ a funding round that can mean a large tax bill on shares that cannot be sold.
 
 - Deadline: **30 days from the date the stock is issued**. No extension, no late filing, no
   repair afterwards short of restructuring the grant.
-- File with the IRS by a trackable method (certified mail with return receipt is the habit),
-  give a copy to the company, keep proof permanently. The IRS publishes an optional form for it;
-  a signed statement with the required content also works.
+- File with the IRS by certified mail with return receipt, or online with Form 15620 through an
+  IRS online account (available since mid-2025; use one method, never both). Give a copy to the
+  company and keep the proof permanently. Form 15620 is optional on paper; a signed statement
+  with the required content also works.
 - Applies to restricted stock and to early-exercised options; not to ordinary option grants,
   which are not stock yet.
 - Non-US founders receiving stock in a US company check with an accountant at issuance: the
   election can still matter for US tax, and home-country rules differ.
-- Other countries have their own regimes (the UK has a joint employer-employee election for
-  restricted securities with a short deadline); ask the accountant at issuance, not at vesting.
+- UK: shares with leaver or vesting restrictions are usually restricted securities; employer
+  and employee sign a joint section 431 election within 14 days of acquisition and keep it (it
+  is not sent to HMRC). Without it, value released as restrictions lift can be taxed as
+  employment income. Other countries have their own regimes; ask a local accountant at
+  issuance, not at vesting.
 
 ## Maintaining the cap table
 
@@ -116,14 +122,15 @@ rules of thumb for a seed-stage company and shrink as the company de-risks.
 A candidate deciding on an offer needs these facts, in writing:
 
 - Number of options, the fully diluted share count, and the resulting percentage.
-- Strike price (the current fair market value from the 409A valuation) and the cost to exercise
-  everything.
+- Strike price (US: fair market value from the 409A valuation; UK: the HMRC-agreed EMI value)
+  and the cost to exercise everything.
 - The last preferred price and why common is worth less: preferred shares get their liquidation
   preference first, so the preferred price is not the value of an option.
 - Vesting schedule, cliff, and what happens in a sale (acceleration or not).
-- The exercise window after leaving, and whether the options are ISOs or NSOs, with the tax
-  consequence of each in a sentence (ISO: no regular tax at exercise, but possible alternative
-  minimum tax; NSO: ordinary income on the spread at exercise). Suggest a tax adviser.
+- The exercise window after leaving, and the options' tax type with its consequence in a
+  sentence (US ISO: no regular tax at exercise, but possible alternative minimum tax; US NSO:
+  ordinary income on the spread at exercise; UK EMI: usually no income tax at exercise if the
+  strike was at least market value at grant; elsewhere the local rule). Suggest a tax adviser.
 - Expected dilution from future rounds.
 - Liquidity: no market for the shares until a sale or IPO, which may never come.
 
@@ -152,14 +159,18 @@ interest, with some states adding their own.
 
 Other rules that bite:
 
-- ISO limits: only ISOs first exercisable in a calendar year up to 100,000 of grant-date value
+- ISO limits: only ISOs first exercisable in a calendar year up to 100,000 USD of grant-date value
   keep ISO treatment; holders of more than 10% need a strike of 110% of fair market value and a
   term of at most five years.
-- US private-company grants rely on Rule 701; above a set 12-month volume, financial disclosure
-  to option holders becomes mandatory. The equity platform or counsel tracks it.
-- UK: EMI options are the standard tax-advantaged scheme for qualifying companies; agree the
-  valuation with HMRC before granting and notify each grant within the statutory deadline,
-  because a missed notification loses the tax advantage.
+- US private-company grants rely on Rule 701; when more than 10 million USD of securities is
+  sold under it in 12 months, financial statements and risk disclosure must go to holders. The
+  equity platform or counsel tracks it.
+- UK: EMI options are the standard tax-advantaged scheme for qualifying companies (size and
+  activity limits, raised in April 2026; check current ones). Agree the share value with HMRC
+  before granting (optional, but it removes the main dispute), and notify each grant to HMRC by
+  6 July after the end of the tax year of grant (the rule for grants since April 2024): a
+  missed notification loses the tax advantage unless HMRC accepts a reasonable excuse. A leaver
+  keeps EMI treatment only by exercising within 90 days of leaving.
 - EU: rules differ widely by country; many startups use virtual (phantom) share plans where real
   options are taxed badly.
 - Employees in other countries: a grant under a US plan can create local tax and securities
@@ -172,8 +183,8 @@ Other rules that bite:
 |---|---|---|
 | Founder leaves | Company repurchases unvested shares at original cost under the repurchase right; vested shares stay | Exercise the repurchase in writing within the window in the stock purchase agreement; a missed window can leave the shares with the founder |
 | Founder without vesting leaves | Keeps everything | Negotiate a buyback or voluntary reverse vesting; investors will require it |
-| Employee leaves | Unvested options return to the pool; vested options exercisable within the post-termination window (90 days is the common default) | Whether to extend the window |
-| Extended exercise window | Gives departing employees time to afford exercise | ISOs exercised more than three months after employment ends are taxed as NSOs; extending existing ISOs converts them |
+| Employee leaves | Unvested options return to the pool; vested options exercisable within the post-termination window (90 days is the common US default, matching the ISO rule; UK EMI also needs exercise within 90 days for the tax advantage) | Whether to extend the window |
+| Extended exercise window | Gives departing employees time to afford exercise | US: ISOs exercised more than three months after employment ends are taxed as NSOs, and extending the window on existing options is a modification that usually turns ISOs into NSOs; keep any extension within the option's original term to stay clear of 409A problems |
 | Termination for cause | Usually as above; some plans allow forfeiture | Read the plan wording before relying on it |
 | Sale of the company | The plan decides: options assumed by the buyer, cashed out, or accelerated | Single or double trigger, set at grant |
 | UK or EU good leaver and bad leaver | Bad leavers may lose vested shares or sell at nominal value | Enforceability varies; draft with counsel |
@@ -182,16 +193,18 @@ For any departure: board approval of the repurchase or window change; a written 
 exact exercise deadline and cost; payment for repurchased shares; cap table and platform
 updated; IP assignment confirmed and company property returned (`0x:company-building`).
 
-Extending the exercise window to several years costs the company only dilution and overhang, and
-is the cheapest generosity available in a layoff. Decide it as a policy, not case by case, so
+Extending the exercise window to several years costs the company mostly dilution and overhang
+(in the US the employee loses ISO treatment, and the company withholds tax at exercise), and is
+the cheapest generosity available in a layoff. Decide it as a policy, not case by case, so
 treatment is consistent and defensible.
 
 ## Ask the user
 
 - **How do the founders want to split equity, and why?** Default: equal, with four-year vesting,
   a one-year cliff and credit for time already served.
-- **Has every founder filed an 83(b) election within 30 days of receiving stock (US)?** If not,
-  stop and involve counsel now. Default: assume not filed until proof of mailing is seen.
+- **Has every founder made the tax election on vesting stock (US 83(b) within 30 days; UK
+  section 431 within 14 days)?** If not, stop and involve counsel now. Default: assume not made
+  until proof of filing or the signed election is seen.
 - **What equity philosophy for hires: more cash or more equity?** Default: market cash where
   affordable, equity from the rule-of-thumb bands, and a choice of mixes offered.
 - **What exercise window should leavers get?** Default: 90 days, with extension decided as a

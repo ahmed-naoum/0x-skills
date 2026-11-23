@@ -17,6 +17,9 @@ whether and how to cut burn, moving cash between banks, or worrying about one cu
 Simple runway is wrong whenever burn is changing, which is most months: committed hires, annual
 renewals, tax payments and seasonal collections all move it. Report real runway.
 
+By stage: at Prototype, personal runway and a kill date (below) are enough; from Launch, a
+monthly 18-month cash forecast and the finance pack; at Scale, the full model with scenarios.
+
 - Forecast monthly for 18 months. When real runway drops under six months, forecast the next 13
   weeks weekly, because payroll dates and large payments then decide survival.
 - Rows: opening cash; receipts by type (subscriptions, annual prepayments, invoices collected on
@@ -75,13 +78,14 @@ at the first billing month so the first opening balance is right:
 ```sql
 with m as (
   select customer_id, month, mrr,
-         lag(mrr, 1, 0) over w as prev,
+         coalesce(lag(mrr) over w, 0) as prev,
          bool_or(mrr > 0) over (partition by customer_id order by month
            rows between unbounded preceding and 1 preceding) as active_before
   from customer_mrr
   window w as (partition by customer_id order by month)
 )
 select month,
+  sum(prev) as opening_mrr,
   sum(mrr) as closing_mrr,
   sum(case when prev = 0 and mrr > 0 and not coalesce(active_before, false) then mrr else 0 end) as new_mrr,
   sum(case when prev = 0 and mrr > 0 and active_before then mrr else 0 end) as reactivation_mrr,
@@ -141,7 +145,9 @@ Eighteen months covers the runway a round is meant to buy plus the time to raise
   of the total market.
 - **Headcount**: role, start month, salary, a fully loaded multiplier for employer taxes,
   benefits, equipment and software (roughly 1.2 to 1.4 times salary in the US as a rule of
-  thumb; different elsewhere), recruiting lag, ramp time for sales hires.
+  thumb; higher where employer social contributions are large, as in much of continental
+  Europe: get the local rate from the payroll provider), recruiting lag, ramp time for sales
+  hires.
 - **Cost of revenue** per unit of usage (hosting, model tokens, processing fees, support), so
   gross margin moves with growth instead of staying a fixed percentage.
 - **Cash timing**: annual-prepay mix, payment terms, payout delays, tax payments, credit refunds.
@@ -155,7 +161,7 @@ Eighteen months covers the runway a round is meant to buy plus the time to raise
 ## Burn multiple and default alive
 
 **Burn multiple** = net burn ÷ net new ARR over the same period: how much cash buys each new
-dollar of recurring revenue. The scale its author (David Sacks) proposed: under 1 excellent, 1
+dollar of recurring revenue. The scale its author (David Sacks) proposed: under 1 amazing, 1
 to 1.5 great, 1.5 to 2 good, 2 to 3 suspect, above 3 bad. It applies to venture-funded
 companies past early revenue; before that it is noise.
 
@@ -185,13 +191,16 @@ function defaultAlive(cash: number, floor: number, revenue: number,
 
 ## Banks, processors and reserves
 
-The 2023 failure of Silicon Valley Bank left companies holding all their cash there unable to
-reach it for payroll until regulators stepped in. Plan as if nobody steps in next time.
+When Silicon Valley Bank failed in March 2023, companies holding all their cash there could not
+be sure of meeting payroll until regulators guaranteed every deposit days later. Plan as if
+nobody steps in next time.
 
 - **Two banks**, both open, funded and connected to payroll and card issuers before they are
   needed. The operating bank holds about two to three months of burn.
-- **Above deposit-insurance limits** (a fixed amount per depositor per bank: FDIC in the US,
-  national schemes in the UK and EU; check the current figure), hold the excess in an insured
+- **Above deposit-insurance limits** (at the time of writing: US FDIC 250,000 USD per depositor,
+  per bank, per ownership category; UK FSCS 120,000 GBP per banking licence since December
+  2025; EU national schemes 100,000 EUR; check the current figure and whether a company
+  depositor is covered), hold the excess in an insured
   cash sweep program that spreads deposits across many banks, or in short-term government
   securities or a government money market fund held in custody.
 - **Treasury policy**, a few lines approved by the board when there is one: allowed instruments
@@ -239,8 +248,8 @@ alive and understaffed. Involve employment counsel before announcing any reducti
 
 | Jurisdiction | Main obligations |
 |---|---|
-| US | Final-pay timing set by state law (some states require payment on the last day) and state rules on accrued vacation; federal WARN notice applies to larger employers, and some states set lower thresholds; benefits-continuation notices; severance in exchange for a release, where employees aged 40 or over must get time to consider (21 days, or 45 in a group program with required disclosures) and 7 days to revoke |
-| UK | Fair selection and consultation; notice; statutory redundancy pay after two years' service; collective consultation and government notification when 20 or more redundancies at one establishment fall within 90 days |
+| US | Final-pay timing set by state law (some states, California among them, require payment on the last day) and state rules on accrued vacation; federal WARN (60 days' notice) applies to employers with 100 or more employees, and some states set lower thresholds; benefits-continuation notices; severance in exchange for a release, where employees aged 40 or over must get time to consider (21 days, or 45 in a group program with required disclosures) and 7 days to revoke |
+| UK | Fair selection and individual consultation; notice; statutory redundancy pay after two years' service. Unfair-dismissal protection starts after two years' service, falling to six months from January 2027 under the Employment Rights Act 2025. Collective consultation and notice to the government (form HR1) when 20 or more redundancies at one establishment are proposed within 90 days; an extra organisation-wide trigger is due by regulation; failing to consult can cost up to 180 days' pay per employee since April 2026 |
 | EU | Consultation with employee representatives or works councils where they exist; long statutory notice periods in several countries |
 
 Execution: selection criteria decided and written first; affected people told individually

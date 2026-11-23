@@ -56,7 +56,7 @@ room in `exit-due-diligence.md`.
 | Post-money SAFE (the US standard form) | A right to future shares at a valuation cap and/or discount; no interest, no maturity | Pre-seed and seed in the US; fast, cheap, closes investor by investor |
 | Convertible note | Debt converting at the next round; interest and a maturity date | Investors or jurisdictions that expect it; the maturity date becomes investor leverage, so set it long |
 | Priced round (Series Seed or full venture documents) | Sale of preferred shares at a set price, with board and investor rights | Larger rounds, a lead who wants governance, or after SAFEs have stacked up |
-| UK advance subscription agreement | Prepaid subscription converting into shares, structured to keep SEIS and EIS eligibility | UK angel rounds relying on those reliefs; a US-style SAFE does not qualify |
+| UK advance subscription agreement | Prepaid subscription converting into shares, structured to keep SEIS and EIS eligibility: no refund, no interest, no variation, and a longstop date HMRC generally expects within six months | UK angel rounds relying on those reliefs; a US-style SAFE does not qualify. Get advance assurance before signing |
 | Other jurisdictions | Local equivalents, for example convertible loans in Germany, BSA AIR in France | Use the local standard; local investors know it |
 
 ## SAFE and priced-round arithmetic
@@ -89,6 +89,10 @@ Priced round:
   plan to the next round, not a round number.
 
 ## Term sheet: the terms that matter
+
+The table follows US practice (NVCA model forms). UK rounds on the BVCA forms reach similar
+economics through the articles and a shareholders' agreement (pre-emption rights, investor
+consents, leaver provisions); elsewhere, local counsel maps each term to local law.
 
 | Term | Common at seed and Series A | Push back on |
 |---|---|---|
@@ -153,7 +157,9 @@ carefully as they check the company.
 
 Slow replies and requests for "more traction" mean no; anything short of a signed term sheet is
 uncommitted. Do not advertise the raise publicly while it runs: in the US, general solicitation
-changes which securities exemption applies and what investor verification is needed.
+changes which securities exemption applies and what investor verification is needed; in the UK,
+financial promotion rules limit an unapproved pitch to exempt investors such as certified
+high-net-worth and sophisticated investors; elsewhere, ask counsel before pitching publicly.
 
 ## Negotiating
 
@@ -172,27 +178,35 @@ changes which securities exemption applies and what investor verification is nee
 
 ## Closing the round
 
-For a priced round (a SAFE collapses to signing and wiring):
+For a priced round (a SAFE collapses to signing, wiring, the cap-table entry and, in the US, the
+securities filings in step 7):
 
 1. Term sheet signed; the no-shop starts.
 2. Confirmatory diligence; a disclosure schedule listing every exception to the company's
    representations.
 3. Definitive documents (in the US standard set: stock purchase agreement, amended charter,
-   investor rights, voting, and right-of-first-refusal and co-sale agreements), usually drafted
-   by investor counsel and reviewed by company counsel.
-4. Board and stockholder approvals; in Delaware the amended certificate of incorporation is filed
-   before the closing.
+   investor rights, voting, and right-of-first-refusal and co-sale agreements; in the UK: a
+   subscription agreement, shareholders' agreement and new articles), usually drafted by
+   investor counsel and reviewed by company counsel.
+4. Board and stockholder approvals. Delaware: the amended certificate of incorporation is filed
+   and effective before the new shares are issued, usually on the closing day. UK: shareholder
+   resolutions adopting the new articles, authorizing the allotment and waiving pre-emption
+   rights. Germany and some other countries need a notary for the share issue.
 5. Signatures, then wires. Confirm wire instructions by phone to a known number: changed bank
    details by email are the standard fraud.
 6. Shares issued or SAFEs recorded; cap table updated the same day.
 7. Post-closing filings. US: Form D with the SEC within 15 days of the first sale under
-   Regulation D, plus state notice filings. UK: return of allotment to Companies House within one
-   month, and SEIS or EIS compliance statements so investors can claim relief.
-8. A new 409A valuation before the next option grants (`equity-cap-table.md`).
+   Regulation D (SAFE sales included), plus state notice filings. UK: special resolutions and the
+   new articles to Companies House within 15 days, the return of allotment (SH01) within one
+   month, and SEIS or EIS compliance statements so investors can claim relief. Elsewhere: the
+   commercial-register and securities filings local counsel lists.
+8. A new option valuation before the next grants (US 409A; UK EMI value) (`equity-cap-table.md`).
 9. Announce only after the money is in the bank.
 
-Take money only from accredited or otherwise qualified investors unless counsel has prepared the
-disclosure that others require.
+US: take money only from accredited investors unless counsel has prepared the disclosure that
+Regulation D requires for others. Other countries define their own eligible investors (UK:
+certified high-net-worth and sophisticated investors under the financial promotion rules); ask
+local counsel before accepting money from anyone else.
 
 ## Ask the user
 

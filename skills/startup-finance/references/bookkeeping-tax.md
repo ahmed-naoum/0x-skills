@@ -22,8 +22,9 @@ exists. From then on every company transaction runs through it and the company c
 nothing personal does.
 
 - **Why it matters**: commingled accounts make the books unreconcilable, turn personal spending
-  into taxable distributions or disallowed deductions, weaken limited liability (courts look at
-  commingling when deciding whether to disregard the entity), and surface in every diligence.
+  into taxable distributions or disallowed deductions, can weaken limited liability (US courts
+  weigh commingling when deciding whether to disregard the entity; other countries set the bar
+  differently), and surface in every diligence.
 - **Accounts**: one operating account; a second account at a different bank
   (`runway-forecasting.md`); optionally a sub-account that holds collected sales tax and payroll
   tax until paid. Separate company cards per category (cloud, ads, software) make
@@ -44,7 +45,7 @@ nothing personal does.
 
 | Choice | Default | Flips when |
 |---|---|---|
-| Software | QuickBooks Online in the US; Xero in the UK, Australia, New Zealand and much of the EU | The accountant works in a local system (DATEV in Germany, for example): use theirs |
+| Software | QuickBooks Online in the US; Xero (or QuickBooks) in the UK, Australia and New Zealand | In most EU countries, and whenever the accountant works in a local system (DATEV in Germany, for example): use theirs. UK VAT-registered companies need software that files under Making Tax Digital |
 | Basis | Accrual from Launch | Prototype with no revenue: cash basis is fine. The tax return may still use cash basis where the law allows; the accountant handles the difference |
 | Ownership | The company's own subscription; bookkeeper and accountant invited as users | Never books kept only inside a bookkeeping firm's proprietary system: when that firm closes or is dropped, the history goes with it |
 | Processor revenue | Summary journal per payout through a clearing account, via a maintained connector | The ledger lives in the app → custom export (`0x:payments-billing`) |
@@ -96,20 +97,24 @@ payroll (a payroll provider files and pays, but the company stays liable); **ind
 
 | Jurisdiction | Obligation | Timing | Trap |
 |---|---|---|---|
-| US, Delaware C corporation | Federal corporate return (Form 1120) | April 15 for a calendar-year company; extension available | An extension moves the filing date, not the payment date |
-| | Delaware franchise tax and annual report | March 1 each year | The state's default notice uses the authorized-shares method and can show a very large amount; recompute with the assumed par value capital method, which for a typical startup gives a small one |
+| US, Delaware C corporation | Federal corporate return (Form 1120) | April 15 for a calendar-year company; six-month extension available | An extension moves the filing date, not the payment date; a profitable company also pays estimated tax quarterly |
+| | Delaware franchise tax and annual report | March 1 each year (corporations; a Delaware LLC instead pays a flat annual tax due June 1) | The state's default notice uses the authorized-shares method and can show tens of thousands of dollars for a startup with millions of authorized shares; recompute with the assumed par value capital method (it needs total gross assets and issued shares; minimum 400 USD at the time of writing), which for a typical early startup gives a small amount. Unpaid tax blocks a certificate of good standing |
 | | State income and franchise taxes | Varies by state | An employee working from a new state creates payroll registration and often income-tax nexus there |
-| | Contractor information returns (1099-NEC) | January 31 | Collect a W-9 at onboarding; foreign contractors give a W-8BEN and get no 1099 |
-| | Foreign-owned companies: Form 5472 and related information returns | With the corporate return | A large fixed penalty per missing form even when no tax is due; foreign founders need an accountant who files these every year |
+| | Contractor information returns (1099-NEC) | January 31 | Collect a W-9 at onboarding. The reporting threshold rose from 600 to 2,000 USD for payments made from 2026 (indexed from 2027). Foreign individuals working outside the US give a W-8BEN and get no 1099; foreign contractors working inside the US raise withholding questions for the accountant |
+| | Foreign-owned companies (corporations 25% or more foreign-owned; foreign-owned single-member LLCs): Form 5472 | With the corporate return (for an LLC, a pro forma 1120) | A 25,000 USD penalty per missing form per year under current law, even when no tax is due; foreign founders need an accountant who files these every year |
 | UK private limited company | Corporation tax payment | 9 months and 1 day after the period end (companies below the large-company threshold) | Register for corporation tax within 3 months of starting to trade |
 | | Company tax return (CT600) | 12 months after the period end | |
 | | Annual accounts to Companies House | 9 months after year end; first accounts 21 months after incorporation | Late-filing penalties are automatic |
 | | Confirmation statement | Annually | |
-| | PAYE | On or before each payday, through payroll software | |
-| EU and elsewhere | Annual accounts, corporate return, periodic VAT returns | Country-specific | In several countries a licensed tax adviser is effectively required; engage one locally |
+| | PAYE | Report on or before each payday through payroll software; pay HMRC by the 22nd of the following month when paying electronically | A director on salary is on payroll too |
+| | VAT return, if registered | Usually quarterly; return and payment one month and seven days after the period end | Filed through Making Tax Digital software |
+| | Companies House identity verification | Directors and people with significant control, since November 2025 | The confirmation statement cannot be filed until every director is verified |
+| EU, Canada, Australia and elsewhere | Annual accounts, corporate return, payroll and periodic VAT or GST returns | Country-specific | In several countries a licensed tax adviser is effectively required; get the full filing calendar from a local accountant in the first month |
 
-US federal beneficial-ownership reporting rules changed repeatedly in 2024 and 2025; check
-FinCEN's current requirements rather than relying on older guidance.
+US beneficial-ownership (BOI) reporting to FinCEN no longer applies to US-formed companies or US
+persons (an interim rule in March 2025, made final in August 2026); foreign companies registered
+to do business in a US state still report. Older guidance saying every startup must file is out
+of date. Banks still collect ownership details when an account is opened.
 
 - Put every date in a shared calendar with reminders a month and a week ahead, owned by the
   founder and the accountant.
@@ -171,12 +176,14 @@ the work. Most of the money is in engineering salaries.
 
 | Jurisdiction | Mechanism | What to know |
 |---|---|---|
-| US federal | Research credit (IRC section 41) on qualified wages, supplies and part of contract research | A qualified small business (young, with gross receipts under a low threshold) can elect to apply part of the credit against employer payroll taxes, so a pre-revenue company gets cash. The election is made on a timely filed income tax return, then claimed quarterly against payroll tax; a late return can forfeit it |
-| US federal | Section 174 treatment of research costs | From 2022 domestic research costs had to be capitalized and amortized, creating taxable income for near-profitable startups; 2025 legislation restored immediate deduction of domestic research costs, with transition options for earlier years. Have the accountant review the 2022 to 2024 returns |
-| US federal | Qualified small business stock (section 1202) | Stock in a C corporation issued while its gross assets are under a threshold can exclude a large gain from federal tax after a holding period; the 2025 changes altered limits and holding periods for newly issued stock. Keep issuance dates and gross-asset records; LLC interests do not qualify until converted |
-| UK | R&D relief (merged scheme for recent periods, with extra support for R&D-intensive loss-makers) | First-time claimants must pre-notify HMRC within 6 months of the period end, and an additional information form is required; HMRC scrutiny of claims is high |
-| UK | SEIS and EIS | Investor reliefs that make raising from UK angels easier; obtain advance assurance before raising and file compliance statements after (`funding-strategy.md`) |
+| US federal | Research credit (IRC section 41) on qualified US wages, supplies and part of contract research | A qualified small business (gross receipts under 5 million USD in the year and none more than five years earlier) can elect to apply up to 500,000 USD a year of the credit against employer payroll taxes, so a pre-revenue company gets cash. The election is made on Form 6765 with a timely filed income tax return (extensions count), then claimed on Form 8974 against payroll tax from the quarter after the return is filed; a late return forfeits it for that year. Many states add their own credits |
+| US federal | Deducting research costs (sections 174 and 174A) | For 2022 to 2024, domestic research costs had to be capitalized over five years, creating taxable income for near-profitable startups. The July 2025 legislation made domestic research costs deductible again from tax years beginning in 2025; foreign research is still amortized over 15 years, so development by offshore contractors stays capitalized. Unamortized 2022 to 2024 costs can be deducted over one or two years; the small-business option to amend those returns closed on July 6, 2026. Have the accountant confirm which elections were made |
+| US federal | Qualified small business stock (section 1202) | Benefits US taxpayers holding stock of a US C corporation issued while its gross assets were under the threshold (75 million USD for stock issued after July 4, 2025; 50 million before). For the newer stock, 50% of the gain is excluded from federal tax after three years, 75% after four and 100% after five, up to the greater of 15 million USD or 10 times basis per company; older stock needs five years and caps at 10 million. Some states, California among them, do not follow it, and some service businesses do not qualify. Keep issuance dates and gross-asset records; LLC interests do not qualify until converted |
+| UK | R&D relief: for accounting periods from April 2024, the merged expenditure credit, or enhanced support (ERIS) for loss-making SMEs whose R&D is a large share of total spend | A company that has not claimed in the previous three years (first-time claimants included) must submit a claim notification within 6 months of the end of the period of account, or the claim is lost; every claim needs the additional information form. Payments to overseas contractors and externally provided workers are largely excluded. HMRC scrutiny of claims is high |
+| UK | SEIS and EIS | Investor reliefs that make raising from UK angels easier; investors expect HMRC advance assurance before they invest (optional but standard), and the company files compliance statements after (`funding-strategy.md`) |
 | EU | National schemes, for example France's research tax credit and young innovative company status, the Netherlands' WBSO payroll reduction, Germany's research allowance | Rules and rates differ by country; a local adviser files |
+| Canada | SR&ED: refundable credits for Canadian-controlled private corporations | The claim is due 18 months after the year end; control by non-residents (a US parent, foreign investors) can remove the enhanced refundable rate |
+| Australia | R&D Tax Incentive: a refundable offset for smaller companies | Register the activities with the government within 10 months of the year end, before claiming |
 
 - Keep evidence as the work happens: project descriptions, the technical uncertainty addressed,
   approaches tried, time by person per project. Ticket and sprint history is a good base;
@@ -188,8 +195,9 @@ the work. Most of the money is in engineering salaries.
 
 ## Revenue recognition and billing-to-books
 
-Under accrual accounting (ASC 606 in the US, IFRS 15 elsewhere) revenue is recognized as the
-service is delivered, not when invoiced or paid.
+Under accrual accounting (ASC 606 in the US; IFRS 15, or a local standard with similar
+principles such as FRS 102 in the UK, elsewhere) revenue is recognized as the service is
+delivered, not when invoiced or paid.
 
 | Billing event | Booked as |
 |---|---|
@@ -200,6 +208,7 @@ service is delivered, not when invoiced or paid.
 | Prepaid credits | Deferred until consumed; expired credits recognized under a policy the accountant sets |
 | Refund or credit note | Reduces revenue; not an expense |
 | Processor fees | Expense in COGS; revenue is booked gross, not net of fees |
+| Sales through a merchant of record (Paddle-style) | The merchant of record sells to the end customer; whether the company books gross sales or net payouts as revenue is a principal-or-agent judgment the accountant makes once and applies consistently |
 | Sales tax or VAT collected | A liability, never revenue |
 | Multi-year prepayment | Deferred; the part beyond 12 months is long-term |
 
