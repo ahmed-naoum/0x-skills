@@ -172,7 +172,8 @@ git config --global tag.gpgsign true
 - Rebase-merge in the web interface rewrites commits that GitHub cannot sign with the author's key, so do not combine it with this rule. Hosts have changed these details; confirm against the current documentation before requiring signatures.
 - Signing proves which key made the commit, not that the code was reviewed. Required review and code owners (`pull-requests-review.md`) cover that; provenance of build artifacts is in `0x:ci-cd-release`.
 - A lost or leaked signing key: add a new key, and remove or revoke the old one at once if it may be compromised.
-- Whether commits a removed key signed keep their badge depends on the host and has changed over time (GitHub's documentation describes a verification record stored when a commit is first verified, which persists after the key is rotated or revoked; other hosts re-evaluate against the current key list). Check the host's documentation before removing a key that was only retired. The badge is the host's display; the signature inside the commit is unaffected.
+- Whether commits a removed key signed keep their badge depends on the host and has changed over time (GitHub's documentation describes a verification record stored when a commit is first verified, which persists after the key is rotated or revoked; other hosts re-evaluate against the current key list). Check the host's documentation before removing a key that was only retired.
+- The badge is the host's display; the signature inside the commit is unaffected.
 
 ## Ask the user
 

@@ -140,7 +140,7 @@ The goal is the reason for the code, which lives in the commit message and the p
 - Blame usually lands on a formatting or refactoring commit first. Step past it with `git blame <hash>^ -- path`, or permanently by listing bulk-reformat commits in `.git-blame-ignore-revs` and setting `git config blame.ignoreRevsFile .git-blame-ignore-revs`. GitHub's blame view honors a file with that name at the repository root.
 - `git bisect run` needs a command that exits 0 for good and 1 to 127 for bad, where 125 means "cannot test this commit, skip it"; any other code aborts the bisect.
 - Make the bisect script exit 125 when the build itself fails, or a commit that merely does not build is blamed for the bug.
-- It finds the commit in about log2(n) steps, and it only works well when most commits build, which is one argument for small commits that each pass.
+- Bisect finds the commit in about log2(n) steps, and it only works well when most commits build, which is one argument for small commits that each pass.
 - End with `git bisect reset`.
 
 ## Cleaning local history before sharing
