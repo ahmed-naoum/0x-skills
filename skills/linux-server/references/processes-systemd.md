@@ -41,8 +41,7 @@ restart the parent. `ps -ef --forest` shows who started what.
 | Follow a service | `journalctl -u myapp -f` |
 | A time window | `journalctl -u myapp --since '2026-11-23 09:00' --until '09:30'`; `--since -2h` |
 | Errors only | `journalctl -u myapp -p err` (err and worse; only useful if the app sets priorities) |
-| Previous boot, to see what preceded a crash or reboot | `journalctl -b -1 -e` |
-| Kernel messages | `journalctl -k` |
+| Previous boot, to see what preceded a crash or reboot; kernel messages | `journalctl -b -1 -e`; `journalctl -k` |
 | Search | `journalctl -u myapp -g 'timeout\|ECONNRESET'` |
 | Raw message for piping to `jq` | `journalctl -u myapp -o cat --no-pager \| jq -R 'fromjson?'` |
 | Several units interleaved, UTC timestamps | `journalctl -u nginx -u myapp --since -10min --utc -o short-iso` |
@@ -223,8 +222,7 @@ systemctl list-timers; sudo systemctl start backup.service                 # see
 Cron equivalent with overlap protection, using a lock file the job's user can write:
 `15 3 * * * flock -n /tmp/backup.lock /srv/app/bin/backup.sh`.
 
-- `OnCalendar` is in the host's local time zone unless a zone is appended. Keep hosts in UTC
-  (`time-encoding.md`) so schedules have no daylight-saving gaps or repeats.
+- `OnCalendar` uses the host's time zone unless one is appended; keep hosts in UTC (`time-encoding.md`).
 - Give every job a timeout. A hung job with overlap protection blocks every later run silently.
 - Detect silence, not only failure: have the job ping a heartbeat monitor on success and alert when
   the ping is missing. A job that never starts raises no error.
@@ -282,10 +280,6 @@ and Ubuntu the `bpfcc-tools` package installs them with a `-bpfcc` suffix; `bpft
 | Which connections retransmit | `tcpretrans` |
 | Is something spawning short-lived processes that `top` never shows | `execsnoop` |
 | Where is CPU time going, and what blocks a process off-CPU | `profile` (sampling, for flame graphs); `offcputime` |
-
-```bash
-sudo bpftrace -e 'tracepoint:raw_syscalls:sys_enter { @[comm] = count(); }'   # syscalls by process
-```
 
 Overhead is far below `strace`, but tracing very frequent events (scheduler switches, every
 packet) on a busy host is still measurable: run for tens of seconds, not hours.
