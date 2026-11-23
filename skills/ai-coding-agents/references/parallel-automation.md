@@ -7,8 +7,8 @@ agents actually speed up delivery.
 ## The limit is review, not compute
 
 Parallel agents multiply output; the capacity to review, integrate and understand it does not
-grow with them. Rule of thumb: a solo developer sustains two to four concurrent implementation
-agents. Past that, pull requests queue, conflicts multiply and review quality drops, which is
+grow with them. Rule of thumb: a solo developer sustains two or three concurrent implementation
+agents, rarely four. Past that, pull requests queue, conflicts multiply and review quality drops, which is
 where defects slip in. Read-only agents (investigation, research, review) parallelize far more
 cheaply because their output is short and nothing merges.
 
@@ -40,7 +40,8 @@ pnpm install
 createdb app_invoice_export              # own database, then point DATABASE_URL at it
 ```
 
-Each worktree needs its own port (`PORT=3001 pnpm dev`), database or schema, Docker Compose
+Recent agent tools, Claude Code among them, can create a worktree per session themselves;
+that covers the checkout only. Each worktree needs its own port (`PORT=3001 pnpm dev`), database or schema, Docker Compose
 project name (`docker compose -p invoice-export up -d`, or `COMPOSE_PROJECT_NAME`) and
 end-to-end base URL. Two agents migrating one shared local database corrupt each other's runs
 in ways that look like code bugs. Put these steps in a `scripts/worktree.sh <name>` so every
@@ -99,16 +100,26 @@ whichever already holds the needed secrets with the smallest scope.
 
 ## Headless agents in CI
 
-Claude Code runs non-interactively with `-p`. Tools not explicitly allowed are refused rather
-than prompted for, so the allowlist is the permission model of the run.
+Claude Code runs non-interactively with `-p`. Set the permission mode explicitly rather than
+inheriting a default that may change between versions: `dontAsk` refuses every tool call that
+no allow rule covers, so the allowlist is the whole permission model of the run.
 
 ```bash
 claude -p "Read ci-output.txt, find the root cause of the failing test, fix it, run pnpm test. Do not edit test files." \
-  --permission-mode acceptEdits \
-  --allowedTools "Read" "Edit" "Bash(pnpm test:*)" "Bash(pnpm typecheck)" \
+  --permission-mode dontAsk \
+  --allowedTools "Read" "Grep" "Glob" "Edit" "Bash(pnpm test)" "Bash(pnpm test *)" "Bash(pnpm typecheck)" \
   --max-turns 25 \
+  --max-budget-usd 5 \
   --output-format json > result.json
 ```
+
+Current rule syntax puts a space and `*` after the command; older versions and many examples
+use a `:*` suffix, which newer versions treat as legacy. Pin the Claude Code version in CI and
+check its permissions docs, because a rule that silently fails to match turns into a refusal
+(safe) or, with a broader mode, into an unexpected approval. `--max-budget-usd` caps spend
+under API billing in print mode; check how it behaves with a subscription login before relying
+on it. "Do not edit test files" in the prompt is advice; a PreToolUse hook that refuses edits
+to `*.test.*` is the control.
 
 On GitHub, the maintained route is Anthropic's Claude Code action, installed with
 `/install-github-app` from Claude Code, which also sets up the GitHub App.
@@ -130,14 +141,18 @@ jobs:
       issues: write
       id-token: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: "--max-turns 20"
 ```
 
-For a schedule, add `schedule:` with a cron and pass the task in the action's `prompt` input.
+`id-token: write` lets the action fetch the GitHub OIDC token it uses to obtain its app
+token; drop it only if the action's README says your auth setup does not need it. Check the
+README for the current major versions of both actions before copying. For a schedule, use a
+separate workflow with `on: schedule` (plus `workflow_dispatch` for manual runs) and pass the
+task in the action's `prompt` input; the `if:` on comment text above would skip scheduled runs.
 
 | Trap | Effect | Fix |
 |---|---|---|
@@ -188,8 +203,10 @@ independent check is worth the cost, not as a default.
 
 ## Measuring whether agents speed delivery
 
-Perceived speed is unreliable: in a 2025 randomized study by METR, experienced open-source
+Perceived speed is unreliable: in METR's 2025 randomized study, experienced open-source
 developers took longer on tasks when using AI tools while believing they had been faster.
+METR now treats that result as historical for current tools and reports that later effects
+are hard to measure; the lasting lesson is the gap between impression and measurement.
 Measure outcomes, not impressions.
 
 | Metric | Definition | Watch for |

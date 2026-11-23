@@ -20,10 +20,12 @@ something. Extensions grow from real repetition, not from a catalog.
 
 Claude Code reads `CLAUDE.md` at the project root, a user-level `~/.claude/CLAUDE.md` for
 personal preferences, and `CLAUDE.md` files in subdirectories when it works in that part of the
-tree. Many other agents read `AGENTS.md`. When more than one tool is used on the repository,
-keep one source of truth: put the shared content in `AGENTS.md` and make `CLAUDE.md` a thin file
-that imports it with an `@AGENTS.md` line plus anything Claude-specific, unless the agent in use
-reads `AGENTS.md` natively.
+tree. Claude Code reads `CLAUDE.md`, not `AGENTS.md`; many other agents (Codex, Cursor and
+others) read `AGENTS.md`. When more than one tool is used on the repository, keep one source of
+truth: put the shared content in `AGENTS.md` and make `CLAUDE.md` a thin file whose first line
+is `@AGENTS.md` (an import, expanded at session start), followed by anything Claude-specific.
+Prefer the import to a symlink, which needs extra privileges on Windows. If a later Claude Code
+version reads `AGENTS.md` natively, drop the import so the content is not loaded twice.
 
 | Put in | Example |
 |---|---|
@@ -185,20 +187,23 @@ the dead end.
 | A system with a good CLI (`gh`, `psql`, provider CLIs in test mode) | The CLI plus permission rules; no MCP |
 
 Hooks live in `.claude/settings.json`. A hook command receives the event as JSON on stdin.
-Exit code 2 blocks a PreToolUse call or, for PostToolUse and Stop, feeds stderr back to the
-agent; other non-zero codes are reported but do not block.
+Exit code 2 is the blocking code, and stderr goes to the agent: on PreToolUse it cancels the
+tool call; on PostToolUse the tool has already run, so it only reports the problem; on Stop it
+refuses to let the agent finish. Exit 1 and other non-zero codes are shown as errors but block
+nothing, so a protection hook that exits 1 protects nothing.
 
 ```json
 {
   "hooks": {
-    "PreToolUse": [{ "matcher": "Edit|Write", "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/protect.sh" }] }],
-    "PostToolUse": [{ "matcher": "Edit|Write", "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format.sh" }] }],
+    "PreToolUse": [{ "matcher": "Edit|MultiEdit|Write", "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/protect.sh" }] }],
+    "PostToolUse": [{ "matcher": "Edit|MultiEdit|Write", "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format.sh" }] }],
     "Stop": [{ "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/typecheck.sh" }] }]
   }
 }
 ```
 
 ```bash
+#!/usr/bin/env bash
 # .claude/hooks/protect.sh: refuse hand edits to secrets, lockfile and migration files
 f=$(jq -r '.tool_input.file_path // empty')
 case "$f" in
@@ -208,6 +213,7 @@ exit 0
 ```
 
 ```bash
+#!/usr/bin/env bash
 # .claude/hooks/format.sh: format the edited file, never block
 f=$(jq -r '.tool_input.file_path // empty')
 case "$f" in *.ts|*.tsx|*.js|*.json|*.css|*.md) pnpm exec prettier --write "$f" >/dev/null 2>&1 ;; esac
@@ -215,6 +221,7 @@ exit 0
 ```
 
 ```bash
+#!/usr/bin/env bash
 # .claude/hooks/typecheck.sh: do not let the agent stop with type errors
 input=$(cat)
 [ "$(printf '%s' "$input" | jq -r '.stop_hook_active')" = "true" ] && exit 0
@@ -225,8 +232,9 @@ fi
 ```
 
 The `stop_hook_active` check stops an endless loop when the agent cannot fix the error. Make
-hook scripts executable (`chmod +x`) and keep them fast (seconds); a PostToolUse hook runs
-after every edit.
+hook scripts executable (`chmod +x`), require `jq` in the setup script, and keep them fast
+(seconds); a PostToolUse hook runs after every edit. Test a blocking hook once by asking the
+agent to edit `.env` and confirming the refusal appears.
 
 MCP servers worth adding for a typical web product: a browser automation server (Playwright)
 so the agent can see the UI it builds; a docs server for fast-moving libraries; read access to
@@ -254,9 +262,12 @@ Fix issue #$ARGUMENTS.
 4. Commit as "fix: <summary> (#$ARGUMENTS)" and list each changed file with the reason.
 ```
 
-Saved as `.claude/commands/fix-issue.md`, this runs as `/fix-issue 123`. A skill lives in
-`.claude/skills/<name>/SKILL.md` with `name` and `description` frontmatter; the description
-decides when it loads, so write it in the words a task arrives in. Keep its body to the
+Saved as `.claude/commands/fix-issue.md`, this runs as `/fix-issue 123`. Recent Claude Code
+versions have merged commands into skills: existing `.claude/commands/` files keep working, and
+new ones are better written as `.claude/skills/<name>/SKILL.md`, which also creates `/name`
+and can carry supporting files. A skill has `name` and `description` frontmatter; the
+description decides when the agent loads it on its own, so write it in the words a task
+arrives in. Keep its body to the
 procedure and move long reference material into files it points to.
 
 Good candidates in a web product: add a migration, add an endpoint with authorization and

@@ -50,8 +50,9 @@ hardware-backed MFA.
 
 | Option | What it enforces | Use |
 |---|---|---|
-| Permission prompts with an allowlist | Approval per action outside the allowlist | Default interactive mode. Allowlist safe commands so prompts stay rare and get read |
-| The tool's OS-level sandbox (Claude Code: `/sandbox`) | File writes confined to the project, network limited to allowed domains, applied to every subprocess | Routine local work with fewer prompts |
+| Permission prompts with an allowlist | Approval per action outside the allowlist | Interactive work. Allowlist safe commands so prompts stay rare and get read |
+| Classifier-approved mode (Claude Code: auto mode, the starting mode in recent versions) | A second model approves or blocks each action instead of prompting; deny rules are checked first | Fewer prompts in interactive work. It is a judgment, not a boundary: injected text can talk a classifier around, so keep deny rules, the sandbox and the credential rules |
+| The tool's OS-level sandbox (Claude Code: `/sandbox`) | Shell commands and their subprocesses: writes confined to the project, network limited to allowed domains, reads open except paths you deny | Routine local work; turn it on alongside either mode above |
 | Devcontainer or VM with an egress firewall | Process, filesystem and network isolation from the host | The only acceptable place for skipping permission prompts (`--dangerously-skip-permissions`) |
 | Vendor cloud sandbox or CI runner | A disposable machine per task | Unattended and parallel runs |
 
@@ -60,9 +61,12 @@ any host the network allows. Isolation narrows the blast radius; the network all
 the exit.
 
 Permission rules are not a sandbox. In Claude Code, `Read` and `Edit` deny rules govern its own
-file tools; `cat .env` through the shell is a different path that only an OS-level sandbox or a
-missing file stops. Bash rules match command prefixes, so rules that try to constrain arguments
-are easy to route around (`rm -fr`, `bash -c "..."`, a script file). Treat Bash rules as
+file tools; `cat .env` through the shell is a different path, stopped only by the OS sandbox
+with that path on its read-deny list (`sandbox.filesystem.denyRead` at the time of writing;
+check the settings reference) or by the file not existing. The sandbox, in turn, does not
+cover the built-in file tools, so secrets need both: a `Read` deny rule and a sandbox read
+deny. Bash rules match command patterns, so rules that try to constrain arguments are easy to
+route around (`rm -fr`, `git push -f`, `bash -c "..."`, a script file). Treat Bash rules as
 convenience and as speed bumps for mistakes; treat the sandbox, the network and the absence of
 credentials as security.
 
@@ -77,28 +81,34 @@ settings, deployed by an administrator, override all of them.
   "permissions": {
     "allow": [
       "Bash(pnpm typecheck)",
-      "Bash(pnpm lint:*)",
-      "Bash(pnpm test:*)",
-      "Bash(pnpm vitest:*)",
+      "Bash(pnpm lint *)",
+      "Bash(pnpm test *)",
+      "Bash(pnpm vitest *)",
       "Bash(git status)",
-      "Bash(git diff:*)",
-      "Bash(git log:*)"
+      "Bash(git diff *)",
+      "Bash(git log *)"
     ],
     "ask": [
-      "Bash(git push:*)",
-      "Bash(pnpm add:*)",
+      "Bash(git push *)",
+      "Bash(pnpm add *)",
       "Bash(pnpm db:migrate)"
     ],
     "deny": [
       "Read(./.env)",
       "Read(./.env.*)",
       "Read(./secrets/**)",
-      "Bash(git push --force:*)",
-      "Bash(rm -rf:*)"
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(rm -rf *)"
     ]
   }
 }
 ```
+
+The `Bash(cmd *)` wildcard form is current; older versions used a `cmd:*` suffix. Some versions
+have not matched a bare command against `cmd *`, so list the bare form too when it is used
+alone (`Bash(pnpm lint)`). Run `/permissions` to see the rules in effect and test one allow and
+one deny before trusting the file.
 
 Approval matrix, as a default:
 
@@ -210,8 +220,9 @@ pricing details are the `claude-api` skill.
   suits CI and automation. In Claude Code, `/cost` shows session spend on API billing.
 - **Attribution**: separate API keys or workspaces for interactive use, CI and scheduled jobs,
   so a runaway is visible by source. Set spend limits and alerts in the provider console.
-- **Per-run caps**: `--max-turns`, CI `timeout-minutes`, `concurrency` groups, and triggers on
-  mention or label rather than on every event.
+- **Per-run caps**: `--max-turns`, `--max-budget-usd` for headless runs on API billing, CI
+  `timeout-minutes`, `concurrency` groups, and triggers on mention or label rather than on
+  every event.
 - **Teams**: Claude Code can export usage and cost metrics through OpenTelemetry; a dashboard by
   person and repository shows outliers.
 - **Budget rule of thumb**: set the hard monthly cap at an amount acceptable to lose to one

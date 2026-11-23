@@ -108,7 +108,8 @@ What makes the difference:
 ## Spec, plan, then small verified steps
 
 1. **Explore.** The agent reads the named files and reports what it found, editing nothing.
-   In Claude Code use plan mode (Shift+Tab cycles modes) or say "do not edit files yet".
+   In Claude Code use plan mode (Shift+Tab cycles modes, or start with
+   `claude --permission-mode plan`) or say "do not edit files yet".
 2. **Plan.** Numbered steps, each with the files it touches and the check that proves it.
    Review the plan: it is the cheapest point to catch a wrong direction. Fix the plan, not code.
 3. **Persist the plan** in the brief file or the issue, so a fresh session can pick it up.
@@ -135,12 +136,16 @@ Example: team invitations.
 
 | # | Task | Done check | Checkpoint |
 |---|---|---|---|
-| 1 | Schema, migration, types for invitations | Migration up and down on a local copy; types compile | Human deep review, merge |
+| 1 | Schema, migration, types for invitations | Migration applies to a fresh database and to a seeded copy; generated SQL read; types compile | Human deep review, merge |
 | 2 | Create, accept, revoke on the server, with authorization | Tests incl. cross-workspace and expired-token cases | Review, merge |
 | 3 | Invitation email through the existing email wrapper | Unit test on the rendered template; one test send in the provider's sandbox | |
 | 4 | UI: invite form and pending list from existing components | Screenshots: empty, filled, error, narrow width | Review screenshots |
 | 5 | End-to-end test of invite and accept | Playwright test green twice in a row | |
 | 6 | Flag removal, docs, cleanup | Full suite | Merge |
+
+Do not ask for a "down" migration as the undo: Drizzle and several other tools have no
+built-in down migrations, and an agent asked for one will invent a mechanism. The undo is a
+new forward migration, reviewed like the first (`0x:postgres-database`).
 
 Rules for the split:
 
@@ -191,9 +196,13 @@ Restarting costs minutes; a polluted session keeps costing.
 
 ```bash
 git status && git diff --stat            # what the run actually changed
-git restore --source=HEAD -- src/other/  # drop edits outside scope, keep the rest
+git restore --source=HEAD -- src/other/  # drop edits to tracked files outside scope
+git clean -nd -- src/other/              # list new untracked files the run created; -fd deletes them
 git reset --hard <last-green-sha>        # on the agent's own branch only: discard the run
 ```
+
+`git restore` and `git reset --hard` leave untracked files in place, so a discarded run can
+leave new files behind that the next run picks up. Preview with `-n` before deleting.
 
 ## Ask the user
 

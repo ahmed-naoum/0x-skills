@@ -1,6 +1,6 @@
 ---
 name: ai-coding-agents
-description: "Gets reliable work out of coding agents such as Claude Code, Codex or Cursor: scoping and briefs, CLAUDE.md and AGENTS.md, hooks, skills and MCP servers, verifying and reviewing agent diffs, parallel worktrees, headless CI and scheduled runs, permissions, secrets and team AI policy. Use when delegating a feature, when an agent goes off track, or when setting up agents for a repository."
+description: "Gets reliable work out of coding agents such as Claude Code, Codex or Cursor: scoping and briefs, CLAUDE.md and AGENTS.md, hooks, skills and MCP servers, verification and review depth for AI-written code, parallel worktrees, headless CI and scheduled runs, permissions, secrets and team AI policy. Use when delegating a feature, when an agent goes off track, or when setting up agents for a repository."
 ---
 
 # Building with AI coding agents
@@ -61,7 +61,7 @@ extend them rather than replacing them. The defaults below are for new decisions
 | Review depth | Risk tiers 0, 1, 2; tier 2 line by line | |
 | Tests | Failing tests first for behavior changes, frozen during implementation | Throwaway prototype code |
 | Parallelism | One implementation agent at Prototype; two or three in worktrees at Launch | Read-only helpers at any stage |
-| Permission mode | Prompts with an allowlist of safe commands; accept edits on an agent branch | Prompts off only in a container or VM with an egress allowlist and no credentials |
+| Permission mode | Prompts or classifier-approved auto mode, plus deny rules for secrets and destructive commands, OS sandbox on; accept edits on an agent branch | Skipping all checks only in a container or VM with an egress allowlist and no credentials |
 | Credentials | Development database and test-mode keys only | Never: no production credentials where agents run |
 | Merging | A human merges; agents push branches | Never |
 | CI agents | Triggered by mention or maintainer label; capped turns, timeout, minimal token | |
@@ -96,8 +96,8 @@ By stage:
     environment.
 12. Destructive commands, pushes to protected branches and deploys need human approval or are
     impossible with the agent's token.
-13. Unattended runs have a turn cap, a timeout, a concurrency limit and a spend cap, and their
-    output is a pull request or an issue.
+13. Unattended runs set the permission mode and tool allowlist explicitly, have a turn cap, a
+    timeout, a concurrency limit and a spend cap, and their output is a pull request or an issue.
 14. Agent-authored pull requests are labeled so merge rate, rework and defects can be measured.
 
 ## Not this skill

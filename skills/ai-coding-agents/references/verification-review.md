@@ -87,7 +87,7 @@ Review depth follows the risk tier, not the size of the diff:
 | Symptom in the diff | Cause | How to catch it |
 |---|---|---|
 | Method, option or config key that does not exist | Training on other versions or other libraries | Typecheck; for untyped config, ask for the doc link and check it |
-| New dependency with an unfamiliar or slightly-off name | Invented package name; attackers register commonly invented names | Check every new dependency: `npm view <name> repository.url` and its publish history; reject unknown publishers |
+| New dependency with an unfamiliar or slightly-off name | Invented package name; attackers register commonly invented names | Check every new dependency: `npm view <name> repository.url` and `npm view <name> time` (publish history); reject unknown publishers and packages days old |
 | Expected value changed, assertion removed, `.skip`, looser matcher, raised timeout | Rewarded for green | Diff test files separately; freeze tests written first (below) |
 | Coverage threshold lowered, lint rule disabled, `strict` loosened, CI step removed | Same, one level up | The config-file list above; CODEOWNERS on tooling paths |
 | Reformatted or renamed files unrelated to the task | "While I was here" | Formatter hook so noise never appears; reject or split |
@@ -156,9 +156,11 @@ an extra reviewer and never becomes the approver.
   on `main`: pull request required, status checks required, force pushes blocked. In a team,
   one human approval, "require approval of the most recent reviewable push" (so an agent push
   after approval resets it), and code-owner review on tier 2 paths.
-- **Solo founder.** GitHub does not let an author approve their own pull request, so the
-  control is different: agents never merge, their tokens cannot bypass rulesets, and the
-  founder merges after green CI and their own review.
+- **Solo founder.** GitHub does not let an author approve their own pull request, so a rule
+  requiring one approval blocks the founder from merging their own work. Require a pull
+  request and passing status checks with zero required approvals; the control is that agents
+  never merge, their tokens cannot bypass rulesets, and the founder merges after green CI and
+  their own review.
 - **Independent context.** The reviewer sees the diff and the brief, not the author's session.
   A model reviewing inside the conversation that produced the code tends to agree with it.
 - **Prompt for signal.** Correctness, security, missing tests, scope against the description;
