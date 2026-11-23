@@ -18,7 +18,6 @@ sudo journalctl -k -b | grep -iE 'killed process|out of memory|segfault|i/o erro
 |---|---|---|
 | `code=exited, status=1` (any small number) | The app chose to exit: uncaught error, bad config | The app's own last log lines |
 | `status=127`, or `status=203/EXEC` | Command not found, not executable, bad shebang, wrong architecture | `ExecStart` path, `ls -l`, PATH (see `shell-files.md`) |
-| `status=126` | Found but not executable | Mode, `noexec` mount |
 | `status=200/CHDIR`, `217/USER`, `226/NAMESPACE` | `WorkingDirectory`, `User`, or a sandbox path does not exist | The unit file |
 | `code=killed, signal=KILL` (exit 137 in a shell or container) | SIGKILL: the OOM killer, a stop timeout, or a person | Kernel log for an OOM line; `Result=oom-kill` |
 | `signal=TERM` (143) | Asked to stop: a deploy, a reboot, another unit | Journal around that time: `journalctl --since -10min` |
@@ -33,12 +32,7 @@ is in the kernel log, not the app log.
 Signals: send `TERM` and wait; use `KILL` only when that fails, because the process gets no chance
 to finish requests, flush or release locks. `HUP` conventionally means reload config. A zombie
 (`Z` in `ps`) is already dead and cannot be killed; its parent is not collecting it, so fix or
-restart the parent.
-
-```bash
-ps -eo pid,ppid,user,state,etime,rss,args --sort=-rss | head -15   # biggest by memory
-ps -ef --forest                                                    # who started what
-```
+restart the parent. `ps -ef --forest` shows who started what.
 
 ## journalctl
 
@@ -51,9 +45,7 @@ ps -ef --forest                                                    # who started
 | Kernel messages | `journalctl -k` |
 | Search | `journalctl -u myapp -g 'timeout\|ECONNRESET'` |
 | Raw message for piping to `jq` | `journalctl -u myapp -o cat --no-pager \| jq -R 'fromjson?'` |
-| Several units interleaved | `journalctl -u nginx -u myapp --since -10min` |
-| Timestamps in UTC | add `--utc -o short-iso` |
-| Disk used | `journalctl --disk-usage` |
+| Several units interleaved, UTC timestamps | `journalctl -u nginx -u myapp --since -10min --utc -o short-iso` |
 
 Traps: without membership of `adm` or `systemd-journal` (or sudo) only the user's own entries are
 shown and the output looks empty. Under a log flood journald rate-limits and drops messages
@@ -122,22 +114,17 @@ Decisions and traps:
   (`RequiresMountsFor=/mnt/data`), it needs the network or database up (add retry on startup in
   the app; ordering alone does not guarantee the peer accepts connections), or it is a user unit
   (`systemctl --user`) and lingering is off (`loginctl enable-linger <user>`).
-- Change packaged units with `sudo systemctl edit <unit>` (a drop-in), never by editing files
-  under `/usr/lib/systemd/`.
 - `systemd-analyze security myapp` scores the sandbox. The five hardening lines above are the
   cheap majority of the benefit; add `ReadWritePaths` for each directory the app must write.
-
-Prove it: `sudo systemctl kill -s KILL myapp` and watch it return; reboot the host once before
-Launch and confirm `systemctl is-active myapp` without logging in to fix anything.
+- Prove it: `sudo systemctl kill -s KILL myapp` and watch it return; reboot the host once before
+  Launch and confirm `systemctl is-active myapp` without logging in to fix anything.
 
 ## Sockets, files and system calls
 
 ```bash
 sudo ss -ltnp                      # listening TCP sockets with owning process
 sudo ss -ltnp 'sport = :3000'      # who holds port 3000 ("address already in use")
-ss -s                              # socket counts by state
 ss -tan state time-wait | wc -l    # sockets in TIME-WAIT
-sudo lsof -p <pid> | wc -l         # everything a process has open
 sudo lsof -i :5432                 # processes with connections on a port
 sudo lsof +L1                      # deleted files still held open
 ```
@@ -187,16 +174,12 @@ Better, give the growing service its own `MemoryMax` so it is killed alone and r
 | Kills line up with one job or endpoint | One operation loads too much at once | Stream or paginate it |
 | Kills at the same time each day | A scheduled job (backup, report) pushes the host over | Limit that job with its own unit and `MemoryMax` |
 
-Sample to see the shape: `systemctl status` shows current and peak memory for the unit;
-`systemd-cgtop -m` ranks units live.
-
 Node specifics: V8 has its own heap ceiling. Set `--max-old-space-size` (in MB) to about 75% of
 the unit or container limit, so V8 collects harder and fails with a readable "heap out of memory"
 error instead of being SIGKILLed with nothing in the log. Resident memory exceeds the V8 heap
 (buffers, native modules), so a leak outside the heap shows in RSS but not in heap statistics.
-
-Some distributions run `systemd-oomd`, which kills whole cgroups under sustained memory pressure
-before the kernel does; its decisions are in `journalctl -u systemd-oomd`.
+`systemd-cgtop -m` ranks units by memory live. Where `systemd-oomd` runs, it kills whole cgroups
+under sustained pressure before the kernel does; see `journalctl -u systemd-oomd`.
 
 ## Scheduled work
 
@@ -219,9 +202,7 @@ Type=oneshot
 User=app
 ExecStart=/srv/app/bin/backup.sh
 TimeoutStartSec=1h
-```
 
-```ini
 # /etc/systemd/system/backup.timer
 [Unit]
 Description=Nightly backup
@@ -259,18 +240,16 @@ Cron equivalent with overlap protection, using a lock file the job's user can wr
 | Connection tracking table | Random connection timeouts; `nf_conntrack: table full, dropping packet` in the kernel log | `sysctl net.netfilter.nf_conntrack_count net.netfilter.nf_conntrack_max` | `net.netfilter.nf_conntrack_max` |
 | Ephemeral ports | `EADDRNOTAVAIL`, "Cannot assign requested address" on outbound connects | `sysctl net.ipv4.ip_local_port_range`; TIME-WAIT count | Reuse connections first; then widen the range |
 | inotify watches | "System limit for number of file watchers reached" (`ENOSPC`) from dev servers and watchers | `sysctl fs.inotify.max_user_watches` | Raise it in `sysctl.d` |
-| Memory map areas | Search engines and some databases refuse to start | `sysctl vm.max_map_count` | The value the software documents |
 
 - `/etc/security/limits.conf` and `ulimit` in a profile apply to login sessions only. They do not
   affect systemd services; set `Limit*=` in the unit and verify in `/proc/<pid>/limits`.
-- A descriptor count that keeps rising at steady traffic is a leak (unclosed sockets or files).
-  Raising the limit only delays the failure; find it with `lsof -p <pid>` grouped by type.
+- A descriptor count rising at steady traffic is a leak; raising the limit only delays it.
+  Find what accumulates with `sudo lsof -p <pid>`.
 - Ephemeral ports limit connections from one source address to one destination address and port
   (roughly 28,000 with the default range), and closed connections hold their port in TIME-WAIT for
   about a minute. It is hit by a proxy or app that opens a new connection per request to one
   upstream. The fix is keep-alive and connection pools; widening `ip_local_port_range` is second.
   Never enable `tcp_tw_recycle` from old guides; it broke clients behind NAT and was removed.
-- Conntrack exists only when stateful firewall or NAT rules are loaded, which includes Docker.
 
 Persist kernel settings in `/etc/sysctl.d/90-<reason>.conf` with a comment saying which symptom
 justified them, then `sudo sysctl --system`.
@@ -286,9 +265,7 @@ copied from another decade. Change one setting when a counter proves the need.
 | SYN flood or bursts of new connections dropped | `net.ipv4.tcp_max_syn_backlog`; keep `net.ipv4.tcp_syncookies=1` | Real floods are absorbed upstream (`0x:web-networking`) |
 | Idle connections die silently behind a load balancer or NAT | Keep-alive interval below the middlebox idle timeout, set in the client library or pool; system default `net.ipv4.tcp_keepalive_time` is 2 hours | Applies to database and upstream connections held open |
 | Slow large transfers over long or lossy paths, served directly to clients | `net.core.default_qdisc=fq` and `net.ipv4.tcp_congestion_control=bbr` | Check `sysctl net.ipv4.tcp_available_congestion_control`. Behind a CDN it only affects the CDN-to-origin hop |
-| High-bandwidth transfers between distant hosts capped below link speed | `net.core.rmem_max`, `net.core.wmem_max`, `net.ipv4.tcp_rmem`, `net.ipv4.tcp_wmem` maximums | Rare for web workloads |
-
-Measure before and after with the same counter, and revert what shows no effect.
+| High-bandwidth transfers between distant hosts capped below link speed | `net.core.rmem_max`, `net.core.wmem_max`, `net.ipv4.tcp_rmem`, `net.ipv4.tcp_wmem` maximums | Rare for web workloads. Measure before and after; revert what shows no effect |
 
 ## eBPF tools
 
@@ -304,9 +281,7 @@ and Ubuntu the `bpfcc-tools` package installs them with a `-bpfcc` suffix; `bpft
 | Who connects where, and how long do connections live | `tcpconnect`, `tcpaccept`, `tcplife` |
 | Which connections retransmit | `tcpretrans` |
 | Is something spawning short-lived processes that `top` never shows | `execsnoop` |
-| Which files are being opened, and which opens fail | `opensnoop -x` |
-| Where is CPU time going across the whole host | `profile` (sampling, for flame graphs) |
-| What is the process blocked on when off-CPU | `offcputime` |
+| Where is CPU time going, and what blocks a process off-CPU | `profile` (sampling, for flame graphs); `offcputime` |
 
 ```bash
 sudo bpftrace -e 'tracepoint:raw_syscalls:sys_enter { @[comm] = count(); }'   # syscalls by process
@@ -322,8 +297,6 @@ packet) on a busy host is still measurable: run for tens of seconds, not hours.
   with `Restart=always`.
 - **How long may a request or job run during shutdown?** It sets `TimeoutStopSec` and how long a
   deploy waits. Default: 30 seconds for web processes, longer for job workers.
-- **Is a daily automatic restart acceptable while a leak is investigated?** It hides the leak and
-  keeps customers served. Default: yes at Prototype and Launch, with a ticket to fix the cause.
 - **If the nightly job fails or does not run, who must know and how fast?** Backups and billing
   jobs need a heartbeat alert; a cache warm-up does not. Default: heartbeat on anything touching
   data or money.
