@@ -1,6 +1,6 @@
 ---
 name: data-stores
-description: Decides when a product needs more than Postgres and runs what it adds, covering Redis caching, search and pgvector, S3 or R2 object storage, warehouses, pipelines, event streams, and retention and deletion across all stores. Use when asked whether to add Redis, Elasticsearch, a vector database or Kafka, to cache a slow read, add search, store user files, sync an index, load a warehouse, or delete a user's data everywhere.
+description: Decides when a product needs more than Postgres and runs what it adds, covering Redis caching, search and pgvector, S3 or R2 object storage, warehouses, pipelines, event streams, and retention and deletion. Use when asked whether to add Redis, Elasticsearch, a vector database or Kafka, to cache a slow read, add search, store user files, sync an index, load a warehouse, or delete a user's data everywhere.
 ---
 
 # Data stores beyond the primary database
