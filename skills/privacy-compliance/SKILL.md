@@ -1,6 +1,6 @@
 ---
 name: privacy-compliance
-description: Keeps a web product lawful and sellable by working out which privacy, security-certification, consumer, sector and licensing rules apply and what they require in practice. Use when asked about GDPR or CCPA, a cookie banner, a privacy policy or terms of service, a deletion or export request, a DPA or subprocessor list, SOC 2, ISO 27001, PCI, HIPAA, the EU AI Act, sanctions, a data breach notice, or a GPL or AGPL dependency.
+description: Keeps a web product lawful and sellable by working out which privacy, security-certification, consumer, sector and licensing rules apply and what they require. Use when asked about GDPR or CCPA, a cookie banner, a privacy policy or terms of service, a deletion or export request, a DPA or subprocessor list, SOC 2, ISO 27001, PCI, HIPAA, the EU AI Act, sanctions, a data breach notice, or a GPL or AGPL dependency.
 ---
 
 # Privacy, legal and compliance
