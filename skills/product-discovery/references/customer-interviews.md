@@ -11,7 +11,7 @@ follows from that; most wasted research answers a question nobody was going to a
 
 | Decision to make | Method | Typical time | Sample |
 |---|---|---|---|
-| Is there a problem worth solving, and for whom? | Problem interviews about past behavior | 1–3 weeks | 8–15 per segment |
+| Is there a problem worth solving, and for whom? | Problem interviews about past behavior | 1–3 weeks | 5–10 per segment, in batches of about five |
 | Why did people buy or switch to what they use now? | Switch (jobs-to-be-done) interviews with recent buyers | 1–2 weeks | 6–10 recent switchers |
 | What do users of existing tools hate? | Review and forum mining | 1–2 days | 50–200 reviews |
 | How common is a problem already understood? | Survey with closed questions | 1–2 weeks | 100+ responses from the segment |
@@ -62,9 +62,21 @@ I learn across these conversations. Would <two specific times> work?
 - Send in batches of 20–30, measure the reply rate, and fix the targeting or the first line before
   sending more. Most cold messages go unanswered; that is a reason to send more, not to widen
   the target.
+- Cold email law differs by country. The US allows unsolicited business email with honest
+  headers and a working opt-out; Germany, among others, requires prior consent for promotional
+  email even to businesses; under GDPR a prospect list needs a lawful basis, and people must be
+  told where their details came from and be removed on request. A genuine one-to-one research
+  request carries less risk than a pitch, but once a message promotes the product the stricter
+  rules apply. Write each message individually, honor every "no" at once, and check
+  `0x:privacy-compliance` before outreach into the EU or UK at any volume.
+- Send from a personal mailbox at human volume, not through the product's transactional email
+  provider or sending domain: spam complaints on cold mail damage the reputation that password
+  resets and receipts depend on (`0x:email-notifications`). Outreach at sales volume is
+  `0x:sales-support`.
 - Incentives: professionals often accept the findings summary or a small donation; consumers
   usually need a gift card. Keep it modest; a large incentive attracts people who fake the
-  screener.
+  screener. Some employers (government, healthcare, large enterprises) bar staff from accepting
+  gifts; offer a donation to a charity instead.
 - Five to eight interviews per segment usually show repeating patterns (rule of thumb). If ten
   still show no pattern, the segment is too broad: split it rather than adding interviews.
 

@@ -1,6 +1,6 @@
 ---
 name: product-discovery
-description: "Decides what to build and why: customer interviews, problem and demand validation, MVP scoping, specs and PRDs, prioritization, roadmaps and product-market fit. Use when asking if an idea is worth building, planning or synthesizing customer interviews, cutting an MVP, writing a spec, prioritizing a backlog or feature requests, planning a quarter, or deciding whether to pivot."
+description: "Decides what to build and why: customer interviews, jobs-to-be-done, problem and demand validation, MVP scoping, specs and PRDs, prioritization, roadmaps and product-market fit. Use when asking if an idea is worth building, planning or synthesizing customer interviews, cutting an MVP, writing a spec, prioritizing a backlog, answering a feature request, planning a quarter, or judging fit or a pivot."
 ---
 
 # Product discovery and management
@@ -49,7 +49,7 @@ tool or a roadmap, work within it. The defaults below are for new decisions.
 
 | Decision | Default | Flips when |
 |---|---|---|
-| Research method | Problem interviews about past behavior, 5–8 per segment | Options known and counts needed → survey; "can they use it?" → usability test |
+| Research method | Problem interviews about past behavior, 5–10 per segment | Options known and counts needed → survey; "can they use it?" → usability test |
 | Who interviews | The founder, weekly | Scale: everyone making product decisions keeps the habit |
 | Proof of demand | Pre-order or LOI signed by a budget holder | Low-price consumer product → paid sign-ups or deposits |
 | Demand test | Outreach, concierge and pre-sale | Existing product with users → fake door behind a flag |
@@ -83,7 +83,8 @@ By stage:
    workaround.
 2. The ICP is backed by a list of at least 100 named prospects with a contact route for each.
 3. Every interview has a card (job, trigger, current solution, spend, pain rung, quotes) written
-   the same day.
+   the same day, and any recording, session replay or cold outreach had the consent its
+   jurisdiction requires.
 4. The ranked problem table shows unprompted counts as "n of N" per segment, linked to interview
    IDs; segments are not merged.
 5. Every demand test had its threshold, time box and kill line written before it started, and the

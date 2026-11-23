@@ -18,6 +18,10 @@ Validate in this order and stop at the first step that fails:
 Jumping to step 6 with a polished landing page is the common mistake: without steps 1–3 the page
 targets nobody in particular and its result cannot be interpreted.
 
+At Prototype the whole sequence applies to the product. At Launch and Scale, run it for any
+feature that would take more than about two weeks: steps 1, 3, 4 and 6 still apply, with a fake
+door in place of a landing page.
+
 ## Write the problem statement
 
 ```text
@@ -120,6 +124,9 @@ Landing page rules:
   the qualified; it separates the ICP from the curious.
 - Vary one thing at a time (segment, problem framing, or price). Copy and conversion mechanics
   belong to `0x:growth-marketing`.
+- The signup form collects personal data: link a privacy notice, and get the marketing permission
+  the visitor's jurisdiction requires before sending anything beyond the promised updates
+  (`0x:privacy-compliance`).
 
 Fake door rules: tell the truth on the next screen, never take money for it, limit exposure to a
 slice of users behind a flag (`0x:ci-cd-release`), and remove it when the window closes.
@@ -163,9 +170,16 @@ Money is the only proof of willingness to pay. Ask for it before building.
 Pre-orders (self-serve or small B2B):
 
 - Use the payment provider's hosted payment link (`0x:payments-billing`); write no billing code.
-- State the delivery date, what is included, and "full refund on request until delivery". Rules on
-  pre-orders and delayed delivery vary by jurisdiction (`0x:privacy-compliance`), and processors
-  restrict long gaps between charge and delivery; check both before charging.
+- State the delivery date, what is included, and "full refund on request until delivery".
+- Consumer rules on paying before delivery vary by jurisdiction: US rules on goods ordered online
+  require shipping within the promised time (or 30 days if none is stated) or else notifying the
+  buyer and offering a refund, and EU consumers have withdrawal rights on distance contracts.
+  Check `0x:privacy-compliance` before taking consumer pre-orders.
+- Card authorizations expire within days, so a hold cannot bridge a long gap. Either charge now
+  with the refund promise above, or save the card at sign-up and charge on delivery (in Stripe, a
+  setup-mode Checkout or a SetupIntent). A saved card is a weaker commitment than a charge but
+  avoids refunds and non-delivery chargebacks. Long charge-to-delivery gaps raise the processor's
+  risk view of the account; check its current terms.
 - A founding-customer price with a stated end date is fine. Free is not a pre-order.
 - Deliver on the date or refund proactively. A missed date without contact turns supporters into
   chargebacks.
@@ -175,6 +189,9 @@ Letters of intent (B2B):
 - Non-binding, one page: buyer organization, the problem in their words, intended scope, price or
   budget range, intended start date, conditions to purchase, and the signature of someone who
   controls budget.
+- Say "non-binding" at the top and label each term. The label alone does not settle it: wording,
+  exclusivity or a price lock, and how both sides behave afterward can make parts enforceable.
+  Have a lawyer read any LOI that adds exclusivity, confidentiality or a committed price.
 - An LOI from a user without budget authority is a compliment on letterhead. Ask who signs
   purchase orders and get that person.
 - A paid pilot beats an LOI, and an LOI beats verbal enthusiasm. Pilot and contract terms belong
@@ -194,6 +211,9 @@ influence and a discount.
 
 - Put it in a one-page agreement: duration (often about three months), cadence, data handling and
   conversion terms. Without written conversion terms, partners become free users who never pay.
+- If their data includes personal data about their own customers or staff, the founder processes
+  it on their behalf and a data processing agreement is usually required
+  (`0x:privacy-compliance`). Use their name or logo publicly only with written permission.
 - Build what at least two partners need or what clearly fits the ICP. One partner steering the
   roadmap turns the product into their custom software.
 - A partner who misses two sessions in a row is telling the truth about their pain; replace them.

@@ -16,6 +16,9 @@ success will be measured, a spec review, or a press release and FAQ for a larger
 A spec says what and why; a design doc says how. Mixed, the document is too technical for
 customers to review and too vague to build from.
 
+At Prototype, keep only problem, non-goals and acceptance criteria. The measurement and rollout
+sections pay off from Launch, when there is a baseline to move and there are users to disrupt.
+
 ## The one-page spec
 
 ```markdown

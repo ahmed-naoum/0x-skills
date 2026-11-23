@@ -11,12 +11,14 @@ the product in general" scores everything high and decides nothing.
 
 | Factor | Scale | Set it from |
 |---|---|---|
-| Impact | 3 large, 2 medium, 1 small, 0.5 minimal, on the goal metric | Accounts affected, revenue at stake, which funnel step |
-| Confidence | 100% measured, 80% several customers' behavior, 50% a few interviews or requests, 20% intuition | The evidence, never the enthusiasm |
-| Effort | Person-weeks, rounded up | A range; re-estimate anything over two weeks after a spike |
+| Impact | 3 massive, 2 high, 1 medium, 0.5 low, 0.25 minimal, on the goal metric | Accounts affected, revenue at stake, which funnel step |
+| Confidence | 100% measured, 80% several customers' behavior, 50% a few interviews or requests; below 50% is a guess to test, not score | The evidence, never the enthusiasm |
+| Effort | Person-weeks, rounded up (RICE uses person-months; keep one unit per backlog) | A range; re-estimate anything over two weeks after a spike |
 
-Score = Impact × Confidence ÷ Effort. Adding Reach (accounts affected per quarter) as a
-multiplier gives RICE; use it when items touch very different numbers of users.
+Score = Impact × Confidence ÷ Effort. These are Intercom's RICE scales; adding Reach (accounts
+affected per quarter) as a multiplier gives full RICE, worth it when items touch very different
+numbers of users. ICE variants instead rate impact, confidence and ease 1–10; never mix scales
+within one backlog, because the rankings stop being comparable.
 
 - Score only the top twenty candidates. Archive anything untouched for six months; what matters
   comes back.

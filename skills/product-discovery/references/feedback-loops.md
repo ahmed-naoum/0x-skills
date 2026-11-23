@@ -47,7 +47,10 @@ do something else, which is a positioning signal for `0x:growth-marketing`).
   still hit them.
 - Track time from sign-up to first outcome, and whether it was reached unassisted.
 - Move to self-serve when calls stop surfacing new stumbles, usually somewhere around fifty users.
-  Then watch session recordings (with notice and masked inputs) and keep calling a sample.
+  Then watch session recordings and keep calling a sample. Replay scripts generally need opt-in
+  consent in the EU and UK and have drawn wiretap claims in US states that require all-party
+  consent: ship them with consent where required, notice everywhere and masked inputs
+  (`0x:privacy-compliance`).
 
 Activation measurement is `0x:product-analytics`; structured onboarding programs for larger
 accounts are `0x:sales-support`; formal usability testing is `0x:ui-ux-design`.
@@ -83,7 +86,8 @@ Tag every conversation on three axes:
 | Area | The product areas, using the roadmap's names |
 | Problem | The underlying problem record, not the requested solution |
 
-Account, plan, revenue and segment come automatically from the helpdesk integration.
+Connect the helpdesk to account data so account, plan, revenue and segment attach automatically;
+fields typed in by hand go stale.
 
 - Weekly: counts by type and area, the top five problems by accounts affected, and the trend
   against last week. Confusion tickets are product or documentation debt and belong in the count,
@@ -97,9 +101,14 @@ Support operations themselves (tools, response times, macros) are `0x:sales-supp
 
 ## Run churn-reason surveys and exit interviews
 
-Cancellation flow: one question with fixed options plus optional free text, never a gate that
-makes cancelling harder. Rules on how easy cancellation must be differ by jurisdiction and keep
-changing (`0x:privacy-compliance`).
+Cancellation flow: one optional, skippable question with fixed options plus free text, with the
+cancel action still on screen; never a gate that makes cancelling harder. Many jurisdictions
+require online cancellation to be about as easy as signing up and restrict save flows. In the US,
+state auto-renewal laws (California's among the strictest) and FTC enforcement under existing law
+continue even though the FTC's 2024 click-to-cancel rule was vacated in 2025; Germany requires a
+cancellation button for consumer contracts concluded online; the UK has a subscription regime
+pending. These rules change often: check the current ones before designing the flow
+(`0x:privacy-compliance`; save offers are `0x:sales-support`).
 
 ```text
 Why are you cancelling?
@@ -125,8 +134,8 @@ Stated reasons are polite simplifications; read them against behavior before act
 
 Exit interviews: offer a 15-minute call to churned accounts that fit the ICP, with a small thank
 you. Ask for the timeline: when they first thought about leaving, what happened then, what they
-use now, what would have kept them. Five to ten of these explain more than hundreds of ticked
-boxes. Save offers and retention playbooks are `0x:sales-support`; churn-rate analysis is
+use now, what would have kept them. Five to ten of these usually explain more than all the
+ticked boxes (rule of thumb). Save offers and retention playbooks are `0x:sales-support`; churn-rate analysis is
 `0x:product-analytics`.
 
 ## Run win/loss interviews and fix the top objection
@@ -198,16 +207,18 @@ flattens to a stable floor above zero means some segment keeps getting value; a 
 sliding toward zero means no fit yet, whatever the sign-ups say. A healthy floor depends on the
 category and natural usage frequency; compare against the product's own earlier cohorts.
 
-**The 40% survey.** Ask users who have experienced the core value (used it at least twice, and
-recently): "How would you feel if you could no longer use <product>?" Very disappointed / Somewhat
+**The 40% survey.** Ask users who have experienced the core value (used the core of the product
+at least twice, the latest time within about two weeks): "How would you feel if you could no longer use <product>?" Very disappointed / Somewhat
 disappointed / Not disappointed / I no longer use it. 40% or more answering "very disappointed" is
 the widely used benchmark.
 
-- Read it only after roughly 40 responses from qualified users; below that, report counts.
+- Read it only after roughly 40 responses from qualified users (where Superhuman found it became
+  directionally right); below that, report counts. Surveying 60–80 users often yields 40.
 - Segment the answers. The segment with the highest "very disappointed" share is the ICP to focus
   on; ask that group for the main benefit and who else would benefit.
-- Ask the "somewhat disappointed" group what would make it indispensable. Their answers, filtered
-  by the main benefit the "very disappointed" group named, are the roadmap toward fit.
+- Ask everyone how the product could be better. Keep only the "somewhat disappointed"
+  respondents who name the same main benefit as the "very disappointed" group; what holds them
+  back is the roadmap toward fit. Set aside requests from those who do not value that benefit.
 
 **Organic pull.** Customers arrive and expand without being pushed: a growing share of sign-ups
 heard about it from a colleague or friend, inbound requests name a specific use case, accounts add
@@ -226,8 +237,8 @@ back to `problem-validation.md` to pivot the segment or the problem.
   roughly the first fifty.
 - **Where should feedback live?** Default: helpdesk tags plus one table of problem records.
 - **May sessions be recorded?** It needs notice, consent where required, and masking. Default:
-  watched calls with consent; in-product recordings only with notice and masked inputs
-  (`0x:privacy-compliance`).
+  watched calls with consent; in-product recordings only with consent where required (EU and UK
+  users, US all-party-consent states), notice and masked inputs (`0x:privacy-compliance`).
 - **What are beta participants promised about price afterward?** Default: a founding discount for
   a fixed period, decided before anyone is invited.
 - **What counts as fit for this business?** Default: a flattening retention curve plus at least
