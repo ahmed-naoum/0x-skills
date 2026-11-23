@@ -1,6 +1,6 @@
 ---
 name: linux-server
-description: Sets up, hardens, scripts and diagnoses Linux servers, covering CPU, memory and disk bottlenecks, systemd services, SSH and firewalls, patching, container limits and signals, time zones and text encoding. Use when a server is slow, out of memory or the disk is full, a service crashes or does not survive a reboot, setting up a new VPS, writing a bash script, or fixing permission denied and PATH errors.
+description: Sets up, hardens, scripts and diagnoses Linux servers, covering CPU, memory and disk bottlenecks, systemd services, SSH and firewalls, patching, container limits, time zones and text encoding. Use when a server is slow, out of memory or the disk is full, a service crashes or does not survive a reboot, setting up a new VPS, sizing an instance or disk, writing a bash script, or fixing permission denied and PATH errors.
 ---
 
 # Linux servers and the machine
@@ -55,11 +55,11 @@ that evidence, change one thing, and leave the host in a state that a script can
 |---|---|---|
 | Run a server at all | No: a PaaS first (`0x:cloud-infrastructure`) | The PaaS limits the product or costs clearly more |
 | Distribution | Current Ubuntu LTS or Debian stable | The project or team already uses another |
-| Size | Prototype: 2 vCPU, 2 to 4 GB, burstable allowed. Launch: 2 to 4 vCPU, 4 to 8 GB, non-burstable | Measured peak: CPU above 60 to 70%, available memory under 20%, any swapping |
+| Size | Prototype: 2 vCPU, 2 to 4 GB, burstable allowed (check whether it throttles or bills for extra credits). Launch: 2 to 4 vCPU, 4 to 8 GB, non-burstable | Measured peak: CPU above 60 to 70%, available memory under 20%, any swapping |
 | Scaling | Up before out | Losing one host must be survivable (Scale) |
 | Disks | General-purpose network SSD; data on its own volume; under 70 to 80% full | Latency-critical database: provisioned IOPS |
 | Swap | 1 to 2 GB swap file, `vm.swappiness=10` | Orchestrator nodes that require none |
-| Process supervision | systemd unit: own user, `Restart=always`, `MemoryMax`, `LimitNOFILE`, enabled | The app runs in containers with a restart policy |
+| Process supervision | systemd unit: own user, `Restart=always` with no start limit, `MemoryMax`, `LimitNOFILE`, enabled | The app runs in containers with a restart policy |
 | Scheduled jobs | systemd timer in UTC with a timeout and a heartbeat | More than one host: the app's job queue |
 | Logs | stdout to journald, capped; Docker logs capped | Shipping to a log service from Launch (`0x:site-reliability`) |
 | Access | Key-only SSH as a non-root sudo user, one ed25519 key per device, root login off | Team grows or audit needed: identity-based access |
@@ -93,8 +93,9 @@ kernel tuning only where measurements call for it.
    heap ceiling sits below the limit.
 7. Journal, app logs and container logs are size-capped; `df -h` and `df -i` are under 80%; a
    disk alert and a job heartbeat reach a person.
-8. Automatic security updates are on (`unattended-upgrade --dry-run` or the dnf timer), with a
-   reboot policy, and no reboot is pending.
+8. Automatic security updates are on (`apt-config dump APT::Periodic` shows both values "1" and
+   `unattended-upgrade --dry-run` succeeds, or the dnf timer is active), with a reboot policy,
+   and no reboot is pending; vendor-repository packages are on a manual patch calendar.
 9. Every script passes `shellcheck`, uses `set -euo pipefail`, and a second run changes nothing
    and exits 0.
 10. Every change made on the host is in the provisioning script or a unit file in the repo; no

@@ -41,6 +41,8 @@ Pressure stall information (PSI) is the most direct signal: `some avg10=12.50` i
 of the time. `full` means all non-idle tasks were stalled at once. Sustained `some` above roughly
 10% for a resource is worth acting on; treat that threshold as a rule of thumb. With cgroup v2 the
 same files exist per service and per container (`cpu.pressure`, `memory.pressure`, `io.pressure`).
+If `/proc/pressure` is missing, the kernel has PSI turned off by default; boot with `psi=1` to
+enable it.
 
 ## High load average: which resource is it
 
@@ -98,13 +100,19 @@ shortage kills processes.
   for the architecture it will run on; building under emulation is slow and a wrong-architecture
   image fails with "exec format error".
 - **Burstable or shared-CPU types**: right for Prototype and for services that idle most of the
-  time. Wrong for anything with steady CPU above the type's baseline and for databases: when
-  credits run out, performance falls to a fraction and steal time rises.
+  time. Wrong for anything with steady CPU above the type's baseline and for databases. What
+  happens when credits run out depends on the credit mode: in a standard mode the CPU drops to
+  the baseline and steal time rises; in an "unlimited" mode the instance keeps bursting and the
+  surplus is billed. Some providers launch burstable types in the unlimited mode by default (AWS
+  does for its current T families), so the symptom is a larger bill, not a slow host. Check the
+  mode and the surplus-credit metric when choosing one.
 - **Network**: bandwidth and packet-rate limits scale with instance size and are enforced silently.
   For most web products the bill for outbound traffic matters before the bandwidth limit does;
   check the provider's egress pricing for media-heavy products.
-- **Local NVMe (instance storage)** is fast and is erased when the instance stops or is replaced.
-  Use it for caches and scratch only.
+- **Local NVMe on a large cloud (instance store, local SSD, temporary disk)** is fast and is
+  erased when the instance stops, is resized or is replaced. Use it for caches and scratch only.
+  A VPS's local disk is different: it persists across reboots but lives and dies with that one
+  machine, so it still needs snapshots and off-host backups.
 
 | Stage | Starting point | Change when |
 |---|---|---|
@@ -233,8 +241,9 @@ fio --name=rand --rw=randrw --rwmixread=70 --bs=8k --size=4G --ioengine=libaio -
 ```
 
 - Read the sync latency percentiles from the first test, not the mean. Each committing transaction
-  waits for one sync, so p99 sync latency bounds p99 commit latency. Low single-digit milliseconds
-  is typical for network SSD; tens of milliseconds means the volume will limit write throughput.
+  waits for one sync, so p99 sync latency bounds p99 commit latency. As a rule of thumb, low
+  single-digit milliseconds is normal for network SSD and well under one for local NVMe; tens of
+  milliseconds means the volume will limit write throughput.
 - Without `--direct=1` (or a file larger than RAM) the second test measures the page cache.
 - Run long enough to outlast burst credits; a cloud volume's first minutes can be far faster than
   its sustained rate. Compare the sustained IOPS with what was provisioned.
@@ -247,12 +256,12 @@ When medians are fine and p99 is bad, and the application profile is clean, chec
 
 | Suspect | Evidence | Fix |
 |---|---|---|
-| CPU steal | `st` in `vmstat`/`mpstat` above a few percent during the slow periods | Move off burstable or shared-CPU types to dedicated vCPUs; stopping and starting the instance usually lands it on different hardware |
+| CPU steal | `st` in `vmstat`/`mpstat` above a few percent during the slow periods | Move off burstable or shared-CPU types to dedicated vCPUs; on clouds where a stop and start reschedules the instance, that also moves it off a noisy host (a reboot does not) |
 | Exhausted burst credits | Slowdown with a sharp start; credit balance at zero in provider metrics | Larger or non-burstable type; provisioned IOPS |
 | Disk neighbor or volume limit | `await` rises while the host's own IOPS do not | Provisioned-IOPS class, or check the instance-level storage cap |
 | Network allowance exceeded | Drops with no interface errors; provider counters in `ethtool -S <iface>` (on AWS, the `*_allowance_exceeded` counters) | Larger instance; fewer, longer-lived connections |
 | cgroup CPU throttling | `nr_throttled` rising in the container's `cpu.stat` | See `container-internals.md` |
-| Transparent huge pages | Latency spikes with `sy` time in compaction; common with databases and Redis | Set THP to `madvise` as those systems recommend |
+| Transparent huge pages | Latency spikes with `sy` time in compaction; common with databases and Redis; `cat /sys/kernel/mm/transparent_hugepage/enabled` shows `[always]` | Set `madvise` or `never`, whichever that database's documentation asks for (Redis warns at startup when it is `always`); persist it with a boot parameter or a unit |
 | NUMA imbalance | Only on multi-socket sizes: `lscpu \| grep -i numa` shows more than one node, `numastat` shows one node exhausted | Instance size that fits one node, or `numactl --interleave=all` for the database |
 
 NUMA does not apply to small instances with a single node; do not spend time on it there.

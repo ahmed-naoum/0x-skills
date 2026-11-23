@@ -17,12 +17,7 @@ laptop, or access for several people needs to be managed properly.
   off forwarding and terminals; `command=` pins what the key can run.
 
 ```text
-# ~/.ssh/config
-Host *
-    IdentitiesOnly yes
-    ServerAliveInterval 60
-    AddKeysToAgent yes
-
+# ~/.ssh/config   (first value found wins, so specific hosts first, "Host *" last)
 Host prod
     HostName 203.0.113.10
     User admin
@@ -32,6 +27,11 @@ Host db-internal
     HostName 10.0.1.5
     User admin
     ProxyJump prod
+
+Host *
+    IdentitiesOnly yes
+    ServerAliveInterval 60
+    AddKeysToAgent yes
 ```
 
 | Symptom | Cause | Fix |
@@ -61,8 +61,7 @@ from a second terminal.
 
 ```bash
 # 1. As root (or the image's default user): create the admin user and give it the key
-adduser --disabled-password --gecos '' admin
-usermod -aG sudo admin                        # group is "wheel" on the RHEL family
+useradd -m -s /bin/bash -G sudo admin        # "wheel" on the RHEL family; password stays locked
 install -d -m 700 -o admin -g admin /home/admin/.ssh
 install -m 600 -o admin -g admin /root/.ssh/authorized_keys /home/admin/.ssh/authorized_keys
 echo 'admin ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/90-admin
@@ -81,8 +80,13 @@ ssh admin@<host> true; ssh -o BatchMode=yes root@<host> true   # second must fai
 Then: firewall (below), automatic updates and the exposure audit (`packages-updates.md`), time
 sync and UTC (`time-encoding.md`). Put all of it in the provisioning script rather than typing it.
 
+- Copy `authorized_keys` from the account you actually logged in with (`/home/ubuntu/.ssh/...`
+  on images whose default user is not root), or paste the public key. On images that block root,
+  root's file starts with a `command="echo 'Please login as the user ...'"` prefix; copied, it
+  locks the new user out the same way. Step 2 catches it; `head -c 120` on the file shows it.
+
 - `passwd -l` locks the password only. Root can still log in with a key until sshd forbids it,
-  and a locked password does not stop key logins for any user. To cut off a user, remove their
+  and with the usual `UsePAM yes` a locked password does not stop key logins for any user. To cut off a user, remove their
   keys or expire the account (`usermod --expiredate 1 <user>`).
 - Passwordless sudo for the admin user is the normal choice when login is key-only: the key is
   the credential. If the user wants a second factor for root, give the admin account a strong
@@ -116,16 +120,17 @@ sudo sshd -T | grep -Ei '^(permitrootlogin|passwordauthentication|kbdinteractive
   trust only the `sshd -T` output, which prints the effective configuration.
 - Confirm the main `sshd_config` has an `Include /etc/ssh/sshd_config.d/*.conf` line; without it
   the drop-in does nothing.
-- Reload, not restart, and test from a new terminal before closing the current one. Existing
-  sessions survive a reload, which is the safety net.
+- Test from a new terminal before closing the current one. Existing sessions survive a reload or
+  restart of sshd; the open session is the way back in if the new config refuses logins.
 - `AllowUsers` is exclusive. Forgetting the deploy user locks CI out on the next deploy.
 - Disable both `PasswordAuthentication` and `KbdInteractiveAuthentication`; with only the first
   off, PAM can still offer a password prompt.
 - Leave ciphers, MACs and key-exchange lists at the defaults of a current OpenSSH. Lists pasted
   from old hardening guides remove newer algorithms and add nothing.
 - Moving SSH off port 22 reduces log noise, not risk. Skip it by default. If done: open the new
-  port in every firewall first, and note that on distributions where SSH is socket-activated the
-  port is set on `ssh.socket`, not only in `sshd_config`.
+  port in every firewall first. On socket-activated SSH (Ubuntu 22.10 and later) the listener
+  belongs to `ssh.socket`: after changing `Port`, run `systemctl daemon-reload` and
+  `systemctl restart ssh.socket`, then confirm with `ss -ltn` before closing the old session.
 
 ## Firewall
 
@@ -138,7 +143,7 @@ Two layers, both default-deny for inbound traffic:
 ```bash
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
-sudo ufw allow OpenSSH            # before "enable", or the session is cut off
+sudo ufw allow 22/tcp             # before "enable", or the session is cut off
 sudo ufw allow 80,443/tcp
 sudo ufw enable
 sudo ufw status verbose
@@ -199,7 +204,7 @@ With key-only login, password guessing cannot succeed; what remains is log noise
 exposure to future SSH daemon bugs. In order of value:
 
 1. Restrict port 22 to known source addresses or a VPN at the provider firewall. The noise stops.
-2. Otherwise rate-limit: `sudo ufw limit OpenSSH`, or fail2ban.
+2. Otherwise rate-limit: `sudo ufw limit 22/tcp`, or fail2ban.
 3. Current OpenSSH releases also penalize sources that fail repeatedly on their own.
 
 ```ini
@@ -220,7 +225,7 @@ Review logins when something feels off and on a schedule (monthly is a reasonabl
 
 ```bash
 sudo journalctl -u ssh --since -7d | grep -E 'Accepted|Failed|Invalid user' | tail -50
-last -a | head -20                     # recent sessions with source address
+last -a | head -20                     # recent sessions; "wtmpdb last" where wtmp was replaced (Debian 13)
 sudo journalctl _COMM=sudo --since -7d # what was run through sudo
 ssh-keygen -lf ~/.ssh/authorized_keys  # fingerprints, to match "Accepted publickey ... SHA256:..."
 ```

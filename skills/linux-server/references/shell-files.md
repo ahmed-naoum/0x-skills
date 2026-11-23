@@ -16,7 +16,7 @@ script that must be safe to rerun, copying files between machines, or mounting a
 | Your app | `/srv/<app>` or `/opt/<app>`; pick one per host and keep it | `systemctl show -p WorkingDirectory,ExecStart <unit>` |
 | Admin-installed binaries | `/usr/local/bin` | `command -v <name>`; `type -a <name>` lists every match on PATH |
 | Runtime sockets, pid files | `/run/` (tmpfs, gone at reboot) | |
-| Scratch | `/tmp` (cleared at boot, may be RAM-backed), `/var/tmp` (survives reboot) | |
+| Scratch | `/tmp` (cleared at boot, may be RAM-backed), `/var/tmp` (survives reboot); `systemd-tmpfiles` also deletes old files in both on many distributions, so neither is storage | `systemd-tmpfiles --cat-config` |
 | Live kernel and process state | `/proc/<pid>/`, `/sys/` | `/proc/<pid>/{cwd,exe,environ,limits,fd}` |
 
 Which package owns a file: `dpkg -S /path` or `rpm -qf /path`. Which file a running process actually
@@ -80,6 +80,9 @@ sudo visudo -c && sudo -l -U deploy      # check all files; list what deploy may
   pager, `tee`, `find`, `tar`, `docker` or a script the user can modify is a rule that grants root.
 - `sudo` resets the environment and uses its own `secure_path`. "Works as me, command not found
   with sudo" means the binary is in a user-local directory; use the absolute path.
+- On Ubuntu 26.04 and later, `sudo` is sudo-rs, which implements a subset of the sudoers language.
+  A rule copied from older documentation may not match the same way: confirm each rule with
+  `sudo -l -U <user>` and one real run as that user (`man sudoers-rs` lists what is supported).
 
 ## Pipelines that answer a question
 
@@ -209,14 +212,18 @@ rsync -a --delete ./build/ deploy@host:/srv/app/releases/new/
   created inside the destination. With `--delete`, getting this wrong deletes the wrong tree, which
   is why the dry run comes first.
 - `-a` keeps modes, times and symlinks. Ownership is kept only when the receiving side runs as
-  root; otherwise files belong to the login user. Set it deliberately with `--chown=app:app`, or
-  `--rsync-path='sudo rsync'` with a narrow sudo rule.
+  root; otherwise files belong to the login user, and `--chown=app:app` is silently not applied.
+  Simplest: sync as the deploy user into a directory it owns and give the service user read
+  access through the group. Setting owners needs root on the receiver
+  (`--rsync-path='sudo rsync' --chown=app:app`), and a sudo rule for `rsync` is a rule that
+  grants root, because rsync can overwrite any file.
 - Add `-H -A -X` for hard links, ACLs and extended attributes (full-system or backup copies), and
   `--numeric-ids` when user names differ between machines.
 - `-z` helps over a slow link and hurts on a fast one; `--partial` resumes large files.
 - `scp` is fine for one file; `-p` keeps mode and times. For trees use rsync: it resumes, deletes
   and does not follow symlinks into a copy of their targets.
-- Switch a release atomically: `ln -s releases/new current.tmp && mv -T current.tmp current`.
+- Switch a release atomically: `ln -sfn releases/new current.tmp && mv -Tf current.tmp current`
+  (GNU `mv`; the rename replaces the link in one step, so there is no moment without `current`).
 - Do not rsync the data directory of a running database: the copy is inconsistent. Use the
   database's dump or backup tool (`0x:postgres-database`).
 
@@ -244,13 +251,15 @@ lsblk -f                          # the new device must show an empty FSTYPE
 sudo mkfs.ext4 /dev/nvme1n1       # destroys whatever is on it; confirm the device twice
 sudo mkdir -p /mnt/data
 echo 'UUID=<from blkid> /mnt/data ext4 defaults,nofail 0 2' | sudo tee -a /etc/fstab
-sudo findmnt --verify && sudo mount -a && findmnt /mnt/data
+sudo findmnt --verify && sudo systemctl daemon-reload && sudo mount -a && findmnt /mnt/data
 ```
 
 - Mount by `UUID=`, not `/dev/sdb` or `/dev/nvme1n1`: device names can change between boots.
 - `nofail` on every non-root volume. Without it, a missing or slow volume drops the boot into
   emergency mode and the host is unreachable over SSH.
 - Always run `findmnt --verify` and `mount -a` after editing fstab and before the next reboot.
+  systemd turns fstab into mount units, so run `systemctl daemon-reload` after each edit too, or
+  the boot uses the old view.
 - Mounting over a non-empty directory hides its contents; they come back when unmounted. The
   reverse trap is worse: if the mount is missing, the service writes into the empty directory on
   the root disk. Add `RequiresMountsFor=/mnt/data` to the unit so it refuses to start instead.
@@ -262,7 +271,8 @@ Grow a filesystem (online, no unmount, for ext4 and XFS):
 sudo growpart /dev/nvme0n1 1            # only if the filesystem sits on a partition
 sudo resize2fs /dev/nvme0n1p1           # ext4: takes the device
 sudo xfs_growfs /mnt/data               # XFS: takes the mount point
-sudo lvextend -r -l +100%FREE /dev/vg0/data   # LVM: grows the volume and filesystem together
+sudo pvresize /dev/nvme0n1p1            # LVM: first let the volume group see the larger disk
+sudo lvextend -r -l +100%FREE /dev/vg0/data   # then grow the volume and filesystem together
 ```
 
 - Shrinking: XFS cannot shrink; ext4 shrinks only unmounted; cloud volumes generally cannot be

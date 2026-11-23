@@ -21,7 +21,10 @@ Rules:
 - One source of truth for the version, committed: `.nvmrc` or `.node-version` (and `engines` in
   `package.json`), `.python-version`, or the version manager's own file. CI and the Dockerfile read
   or mirror it. "Works locally, fails in production" is often a different major version.
-- Use even-numbered Node LTS lines in production, and move before the line's end of life.
+- Run only a Node line that is in LTS (Active or Maintenance) in production. Through Node 26
+  those are the even-numbered lines; from Node 27 every major line is released in April and
+  becomes LTS in October, so "even means LTS" no longer holds. Move before the line's end of
+  life, and check both dates on the Node.js release schedule rather than from memory.
 - Pin the package manager too (the `packageManager` field in `package.json`), so pnpm's lockfile
   format does not change between machines.
 - A version manager installs under the user's home and activates through shell startup files.
@@ -55,7 +58,9 @@ sudo apt-get update
 ```
 
 Do not follow guides that use `apt-key add`: it trusts the key for every repository, and the
-command is deprecated and absent from current releases.
+command is deprecated and removed in the newest releases. Newer releases also write sources in
+the deb822 format (`/etc/apt/sources.list.d/*.sources` with a `Signed-By:` field); either format
+works if the key is scoped.
 
 | Task | Debian, Ubuntu | RHEL family |
 |---|---|---|
@@ -65,7 +70,7 @@ command is deprecated and absent from current releases.
 | Freeze a package | `sudo apt-mark hold <pkg>`; list with `apt-mark showhold` | `dnf versionlock add <pkg>` (versionlock plugin) |
 | What would be upgraded | `apt list --upgradable` | `dnf check-update` |
 | Undo a transaction | reinstall the previous version by hand | `dnf history`, `dnf history undo <id>` |
-| Finish an interrupted install | `sudo dpkg --configure -a` | `dnf history redo last` or rerun |
+| Finish an interrupted install | `sudo dpkg --configure -a` | rerun the same command; `dnf history info last` shows what completed |
 
 - Use `apt-get` in scripts; `apt` is for interactive use and warns that its output is not stable.
 - Hold what must only change deliberately: the database server, the container engine, anything
@@ -91,9 +96,16 @@ Debian and Ubuntu:
 
 ```bash
 sudo apt-get install -y unattended-upgrades needrestart
-sudo dpkg-reconfigure -f noninteractive unattended-upgrades   # writes 20auto-upgrades
-sudo unattended-upgrade --dry-run --debug                     # proves the config parses and what it would do
+echo 'unattended-upgrades unattended-upgrades/enable_auto_updates boolean true' | sudo debconf-set-selections
+printf 'APT::Periodic::Update-Package-Lists "1";\nAPT::Periodic::Unattended-Upgrade "1";\n' \
+  | sudo tee /etc/apt/apt.conf.d/20auto-upgrades
+apt-config dump APT::Periodic                 # both values must read "1"
+sudo unattended-upgrade --dry-run --debug     # proves the config parses and what it would do
 ```
+
+Write the file and the debconf answer together rather than relying on
+`dpkg-reconfigure -f noninteractive`, which does not reliably enable it, and a debconf answer
+that disagrees with the file can rewrite it on a later package upgrade.
 
 ```text
 // /etc/apt/apt.conf.d/52local-unattended   (overrides 50unattended-upgrades)
@@ -103,7 +115,14 @@ Unattended-Upgrade::Package-Blacklist { "postgresql-"; "docker-ce"; };
 ```
 
 RHEL family: install `dnf-automatic`, set `apply_updates = yes` and `upgrade_type = security` in
-`/etc/dnf/automatic.conf`, and enable `dnf-automatic.timer`.
+`/etc/dnf/automatic.conf`, and enable `dnf-automatic.timer`. Recent versions have a `reboot`
+setting (`when-needed`); on older ones schedule a reboot when `dnf needs-restarting -r` says so.
+Newer Fedora releases ship dnf5, where the package and timer names differ; check with
+`systemctl list-timers`.
+
+- Only the distribution's own origins are upgraded by default. Packages from vendor repositories
+  (Docker, a Node or database vendor repo) are not patched automatically unless their origin is
+  added to `Unattended-Upgrade::Origins-Pattern`; patch those on the manual calendar below.
 
 - A new kernel, C library or TLS library is installed on disk but not in use until the reboot or
   service restart. `/var/run/reboot-required` exists when a reboot is pending (Debian family);
@@ -183,9 +202,15 @@ package_update: true
 package_upgrade: true
 packages: [ufw, unattended-upgrades]
 runcmd:
-  - ufw allow OpenSSH
+  - ufw allow 22/tcp
   - ufw --force enable
 ```
+
+- Use the port, not the `OpenSSH` application profile, in unattended setup: if the profile is
+  missing the allow fails, the next line still enables a default-deny firewall, and the host is
+  unreachable over SSH.
+- A `users:` list replaces the image's default user (`ubuntu`, `debian`, `ec2-user`). Add
+  `- default` as the first entry to keep it.
 
 - The first line must be exactly `#cloud-config`. A YAML mistake does not stop the boot: the host
   comes up with nothing applied. Check with `cloud-init status --long`, read

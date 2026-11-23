@@ -9,7 +9,7 @@ Ask systemd first; it recorded how the main process ended.
 
 ```bash
 systemctl status myapp                      # state, last exit, the last log lines
-systemctl show myapp -p Result,ExecMainCode,ExecMainStatus,NRestarts,MemoryPeak
+systemctl show myapp -p Result,ExecMainCode,ExecMainStatus,NRestarts,MemoryPeak   # MemoryPeak: recent systemd on cgroup v2 only
 journalctl -u myapp -b -n 200 --no-pager    # this boot; add -b -1 for the previous boot
 sudo journalctl -k -b | grep -iE 'killed process|out of memory|segfault|i/o error'
 ```
@@ -39,10 +39,10 @@ restart the parent. `ps -ef --forest` shows who started what.
 | Need | Command |
 |---|---|
 | Follow a service | `journalctl -u myapp -f` |
-| A time window | `journalctl -u myapp --since '2026-11-23 09:00' --until '09:30'`; `--since -2h` |
+| A time window | `journalctl -u myapp --since '2026-11-23 09:00' --until '2026-11-23 09:30'` (a bare time means today); `--since -2h` |
 | Errors only | `journalctl -u myapp -p err` (err and worse; only useful if the app sets priorities) |
 | Previous boot, to see what preceded a crash or reboot; kernel messages | `journalctl -b -1 -e`; `journalctl -k` |
-| Search | `journalctl -u myapp -g 'timeout\|ECONNRESET'` |
+| Search | `journalctl -u myapp -g ECONNRESET` (a PCRE pattern; alternation is a bare pipe, not `\|` as in grep) |
 | Raw message for piping to `jq` | `journalctl -u myapp -o cat --no-pager \| jq -R 'fromjson?'` |
 | Several units interleaved, UTC timestamps | `journalctl -u nginx -u myapp --since -10min --utc -o short-iso` |
 
@@ -60,8 +60,7 @@ does not exist, the journal lives in memory and is lost at reboot; create the di
 Description=My app
 After=network-online.target
 Wants=network-online.target
-StartLimitIntervalSec=300
-StartLimitBurst=20
+StartLimitIntervalSec=0
 
 [Service]
 User=app
@@ -102,10 +101,11 @@ Decisions and traps:
   otherwise start times out.
 - `Restart=always` for servers. `on-failure` does not restart after exit code 0 or a clean signal,
   which leaves a service down after an unexpected clean exit.
-- Restart limits: by default a unit that starts 5 times within 10 seconds is marked failed and
-  left down. With a short `RestartSec` a crash loop reaches that in seconds. Set `RestartSec` to a
-  few seconds and the limits explicitly as above, and alert on `NRestarts` rising: a service that
-  restarts forever looks healthy to systemd.
+- Restart limits: by default 5 starts within 10 seconds mark the unit failed, and it stays down
+  until `reset-failed` or a reboot. With the default 100 ms `RestartSec` a brief database outage
+  gets there in a second. For servers set `StartLimitIntervalSec=0` and `RestartSec` of a few
+  seconds (systemd 254+ adds backoff: `RestartSteps=`, `RestartMaxDelaySec=`), and alert on
+  `NRestarts` rising: a service that restarts forever looks healthy to systemd.
 - Stop behavior: systemd sends SIGTERM, waits `TimeoutStopSec` (default 90 s), then SIGKILL. The
   app must handle SIGTERM by finishing in-flight requests and closing; keep the timeout longer
   than the longest request and shorter than the deploy tolerates.
@@ -113,7 +113,7 @@ Decisions and traps:
   (`RequiresMountsFor=/mnt/data`), it needs the network or database up (add retry on startup in
   the app; ordering alone does not guarantee the peer accepts connections), or it is a user unit
   (`systemctl --user`) and lingering is off (`loginctl enable-linger <user>`).
-- `systemd-analyze security myapp` scores the sandbox. The five hardening lines above are the
+- `systemd-analyze security myapp` scores the sandbox. The hardening lines above are the
   cheap majority of the benefit; add `ReadWritePaths` for each directory the app must write.
 - Prove it: `sudo systemctl kill -s KILL myapp` and watch it return; reboot the host once before
   Launch and confirm `systemctl is-active myapp` without logging in to fix anything.
@@ -162,9 +162,10 @@ The kernel logs which constraint was hit and the victim's memory:
 | `Killed process 1234 (node) ... anon-rss:` | The victim and its resident memory at death |
 
 On a host-wide OOM the victim is the process with the highest badness score, roughly the largest,
-which is often the database rather than the process that grew. Protect what must survive and make
-the expendable killable: `OOMScoreAdjust=-900` on the database unit, a positive value on workers.
-Better, give the growing service its own `MemoryMax` so it is killed alone and restarted.
+which is often the database rather than the process that grew. Give workers a positive
+`OOMScoreAdjust=`; a negative value on a unit is inherited by every child, so protect a database
+only as its documentation describes (`0x:postgres-database`). Better, give the growing service its
+own `MemoryMax` so it is killed alone and restarted.
 
 | Evidence | Diagnosis | Action |
 |---|---|---|
@@ -174,7 +175,7 @@ Better, give the growing service its own `MemoryMax` so it is killed alone and r
 | Kills at the same time each day | A scheduled job (backup, report) pushes the host over | Limit that job with its own unit and `MemoryMax` |
 
 Node specifics: V8 has its own heap ceiling. Set `--max-old-space-size` (in MB) to about 75% of
-the unit or container limit, so V8 collects harder and fails with a readable "heap out of memory"
+the unit or container limit (a rule of thumb; lower it when the process holds large buffers), so V8 collects harder and fails with a readable "heap out of memory"
 error instead of being SIGKILLed with nothing in the log. Resident memory exceeds the V8 heap
 (buffers, native modules), so a leak outside the heap shows in RSS but not in heap statistics.
 `systemd-cgtop -m` ranks units by memory live. Where `systemd-oomd` runs, it kills whole cgroups

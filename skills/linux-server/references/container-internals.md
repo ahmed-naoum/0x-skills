@@ -94,8 +94,10 @@ With cgroup v2 (`stat -fc %T /sys/fs/cgroup` prints `cgroup2fs`) the files are u
 Memory:
 
 - The trustworthy evidence of a kill is `oom_kill` in `memory.events` and the kernel log line.
-  Docker's `OOMKilled` flag can miss the case where a child process was killed and the main
-  process survived, which shows up as a worker that keeps disappearing.
+  Docker's `OOMKilled` flag has changed meaning between engine versions (in some it is set when
+  any process, including an `exec` session, was killed; it is cleared on restart), so do not
+  conclude "not OOM" from it. A child killed while the main process survives shows up as a
+  worker that keeps disappearing with the container still running.
 - A cgroup's memory includes its page cache, but cache is reclaimed before anything is killed.
   Judge from `anon` plus `shmem`, not from the total. Files written to a tmpfs mount or
   `/dev/shm` are `shmem`: they count against the limit and cannot be reclaimed.
@@ -139,7 +141,7 @@ flag removes one step an attacker needs.
 |---|---|---|
 | "Permission denied" writing to a volume | The volume or bind mount is owned by root | `chown` the host directory to the numeric ID; for named volumes create the directory with that owner in the image so a new volume inherits it |
 | "Read-only file system" | The app writes to its own tree: caches, pid files, uploads | `docker diff <c>` on an unhardened run lists every path written; give each a tmpfs or volume |
-| Cannot bind port 80 | Low ports are privileged | Listen on a high port and map it; only if that is impossible, `--cap-add=NET_BIND_SERVICE` |
+| Cannot bind port 80 | Docker (20.10 and later) lets any user bind low ports inside a container's own network namespace, so this appears with host networking, rootless engines or other runtimes | Listen on a high port and map it; only if that is impossible, `--cap-add=NET_BIND_SERVICE` |
 | Orchestrator refuses "run as non-root" | `USER` is a name it cannot verify | Use a numeric user ID |
 
 Never grant these to an application container, because each is equivalent to root on the host:

@@ -48,8 +48,9 @@ timedatectl timesync-status          # with systemd-timesyncd
 - UTC on every host makes logs from different machines line up, removes daylight-saving gaps and
   repeats from host-level schedules, and makes `date` output unambiguous. Container images are
   UTC unless changed; leave them.
-- Run exactly one time-sync service. `systemd-timesyncd` is enough for most hosts; chrony copes
-  better with virtual machines that pause or drift. On a large cloud, point it at the provider's
+- Run exactly one time-sync service, normally the one the distribution installed
+  (`systemd-timesyncd` or chrony); two fight over the clock. chrony copes better with virtual
+  machines that pause or drift. On a large cloud, point it at the provider's
   own time service.
 - If outbound traffic is filtered, NTP (UDP port 123) to the chosen servers must be allowed, or
   the clock drifts with no error anywhere.
