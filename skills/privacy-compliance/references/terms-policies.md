@@ -81,7 +81,8 @@ Limits on what terms can do:
 
 | Method | Enforceability |
 |---|---|
-| Clickwrap: an unticked checkbox, or a clear statement directly at the signup button ("By creating an account you agree to the Terms and Privacy Policy") with visible links | Regularly upheld |
+| Clickwrap: an unticked checkbox beside visible links to the terms | Regularly upheld; the strongest evidence and the default for consumer signup |
+| Sign-in wrap done well: a clear statement directly at the signup button ("By creating an account you agree to the Terms") with visible links | Generally upheld when the notice is conspicuous and next to the button |
 | Sign-in wrap with small gray text far from the button | Litigated; outcomes depend on the design |
 | Browsewrap: a footer link and "by using this site you agree" | Regularly rejected |
 
@@ -172,12 +173,14 @@ whatever its size or location:
 | All intermediaries, including hosting | A single point of contact for authorities and for users; an EU legal representative if not established in the EU; terms that describe moderation rules and tools; act on orders from authorities |
 | Hosting services | An easy electronic notice mechanism for illegal content; timely, diligent decisions; a statement of reasons to the affected user for each restriction; report suspected serious crimes threatening life or safety |
 | Online platforms (content disseminated to the public) | Internal complaint handling, out-of-court dispute options, trusted flaggers, measures against repeat misuse, ad and recommender transparency, no dark patterns, protections for minors, transparency reports. Micro and small enterprises (under 50 staff and a low turnover ceiling) are exempt from this tier, not from the two above |
-| Marketplaces | Trader identification and traceability |
+| Marketplaces | Trader identification and traceability; micro and small enterprises are exempt from this tier as well |
 | Very large platforms | Not a small-company concern |
 
 **Other regimes to check when hosting content.** The UK Online Safety Act applies to
-user-to-user and search services with UK users regardless of size: illegal-content and
-children's risk assessments, proportionate safety measures, reporting and complaints routes.
+user-to-user and search services with links to the UK regardless of size: an illegal-content
+risk assessment, a children's access assessment and, where children are likely to use the
+service, a children's risk assessment, proportionate safety measures, reporting and complaints
+routes.
 US providers that become aware of child sexual abuse material must report it to the national
 clearinghouse and preserve it; never review such material beyond what the report requires. EU
 rules allow authorities to order removal of terrorist content within one hour. Several

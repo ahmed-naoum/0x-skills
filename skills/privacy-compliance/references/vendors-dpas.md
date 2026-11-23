@@ -113,7 +113,8 @@ law in the destination could compel access, how likely that is for this data, an
 supplementary measures (encryption with keys held in the EU, pseudonymization before sending,
 minimization). For US vendors, the framework's safeguards apply to SCC transfers as well, which
 shortens the memo. Keep SCCs in place as a fallback even when the vendor is DPF-certified,
-since adequacy decisions have been struck down twice before.
+since the two earlier EU-US arrangements were struck down (2015 and 2020) and the current one
+is under appeal at the Court of Justice.
 
 Choosing an EU region does not by itself remove the transfer question if the vendor's staff or
 its own sub-vendors can access the data from outside the EU. The vendor's DPA says whether they

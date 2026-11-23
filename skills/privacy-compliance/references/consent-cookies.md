@@ -18,7 +18,9 @@ anonymized" do not answer rule 1.
 
 | Region | Non-essential trackers | What that means in code |
 |---|---|---|
-| EU, EEA, UK, Switzerland | Opt-in before anything loads | Banner, blocked by default |
+| EU, EEA | Opt-in before anything loads | Banner, blocked by default |
+| UK | Opt-in, except analytics used only by the site operator for aggregate statistics, which since 5 February 2026 may run with clear notice and an easy opt-out | Banner for ads, pixels and third-party tracking; first-party statistics may run with a working opt-out |
+| Switzerland | Clear notice and an easy way to refuse is generally enough; consent for high-risk profiling | Most sites reuse the EU banner for simplicity |
 | US | Opt-out of sale, sharing and targeted ads; honor Global Privacy Control | "Your Privacy Choices" link; no banner required, though wiretap-style lawsuits over pixels and session replay make disclosure prudent |
 | Elsewhere (Brazil, Canada, others) | Mixed; mostly consent-leaning | Treat like the EU unless advised otherwise |
 
@@ -37,9 +39,11 @@ link everywhere. If geo-detection is not available, show the opt-in banner to ev
 
 "Necessary" is judged from the user's side, not the business's: revenue attribution is not
 necessary to deliver a page. A few regulators exempt narrowly configured audience measurement
-(first-party, no cross-site tracking, aggregate use only); the UK's 2025 data law added a
-similar statistics exemption with an opt-out. Treat these as country-specific and confirm before
-relying on them.
+(first-party, no cross-site tracking, aggregate use only), as France's regulator does; the UK
+exemption above is similar but requires notice and an opt-out and never covers advertising. EU
+proposals (the 2025 Digital Omnibus) to move cookie rules into the GDPR and widen exemptions
+were still being negotiated in late 2026. Treat all of these as country-specific and confirm
+before relying on them.
 
 ## Avoid needing a banner
 
@@ -71,7 +75,8 @@ thumb is that a fair banner loses a large share of EU visitors from the analytic
 - Withdrawal as easy as giving: a persistent "Cookie settings" link in the footer that reopens
   the same dialog. On withdrawal, stop the tags and delete their cookies.
 - Do not re-ask on every visit after a rejection. Remember a refusal as long as an acceptance;
-  six to twelve months is common regulator guidance for re-prompting.
+  re-prompting after six months (the French regulator's suggestion) to twelve months is common
+  practice.
 - The banner must be keyboard-operable and screen-reader-labeled, must not trap focus badly on
   mobile, and must not shift layout (reserve space or overlay).
 - No guilt wording ("No, I don't care about my experience"), no hidden reject in gray text.
@@ -112,15 +117,26 @@ gtag('consent', 'update', { analytics_storage: 'granted' }); // only the purpose
 cookieless pings while denied. Default to basic for EU traffic: whether the pings need consent
 is disputed, and basic is the defensible position.
 
-For a PostHog-style SDK, start opted out and opt in on consent:
+For a PostHog-style SDK, start opted out and without device storage, and enable both on
+consent. Opting out of capture alone can still leave the SDK's identifier cookie, so set
+persistence too:
 
 ```ts
-posthog.init(key, { api_host: host, opt_out_capturing_by_default: true });
+const ok = consent.analytics === true; // read from the consent module on every page load
+posthog.init(key, {
+  api_host: host,
+  persistence: ok ? "localStorage+cookie" : "memory", // no cookie or storage before consent
+  opt_out_capturing_by_default: !ok,                   // no events before consent
+});
 // after the user accepts analytics
+posthog.set_config({ persistence: "localStorage+cookie" });
 posthog.opt_in_capturing();
-// on withdrawal
+// on withdrawal: stop capture, then delete the SDK's ph_* cookies and storage keys
 posthog.opt_out_capturing();
 ```
+
+SDK option names change between versions; confirm in devtools that nothing is written before
+acceptance.
 
 Build or buy: a hand-built banner is fine for a handful of first-party-controlled tags. Use a
 consent management platform when running programmatic ads (the IAB TCF string and Google's

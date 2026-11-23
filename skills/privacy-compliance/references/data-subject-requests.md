@@ -32,9 +32,9 @@ Train whoever reads the inboxes to route them to `privacy@` the same day.
 Work to an internal target of 14 days so that one missed handoff does not breach. Requests are
 free. A fee or refusal is allowed only for manifestly unfounded or excessive requests, and the
 burden of showing that is on the business; the refusal must still be sent on deadline with
-reasons and the right to complain. Under GDPR the period generally runs from receipt, or from
-the moment identity is confirmed where a verification request was genuinely needed and sent
-promptly; do not use verification to stall.
+reasons and the right to complain. Under GDPR the period generally runs from receipt; the UK regulator, and
+some EU regulators, let it start when identity is confirmed, but only where verification was
+genuinely needed and requested promptly. Do not use verification to stall.
 
 ## What each right requires
 

@@ -12,14 +12,14 @@ Reach is set by where the people are, not where the company is.
 |---|---|---|
 | EU GDPR | Established in the EU, or offering goods or services to people in the EU, or monitoring their behavior (Art. 3) | None. No revenue or headcount floor |
 | UK GDPR | Same test for people in the UK | None |
-| CCPA/CPRA (California) | For-profit, does business in California, and meets one threshold: annual gross revenue above an inflation-adjusted figure in the mid tens of millions of USD, or personal information of 100,000+ California consumers or households, or 50%+ of revenue from selling or sharing personal information | Yes: below all thresholds it does not apply |
+| CCPA/CPRA (California) | For-profit, does business in California, and meets one threshold: worldwide annual gross revenue above $25 million adjusted for inflation every other year ($26,625,000 from 2025; check the current figure), or personal information of 100,000+ California consumers or households, or 50%+ of revenue from selling or sharing personal information | Yes: below all thresholds it does not apply |
 | Other US state privacy laws | Usually a count of state residents whose data is processed (commonly 100,000, lower in small states; a few have no count at all) | Usually yes; check each state |
 | Sector laws (HIPAA, COPPA, GLBA) | By data type and customer, not size | See `sector-consumer-rules.md` |
 
 Signals that the product "targets" the EU: EU languages or currencies, EU shipping, EU customer
 logos, ads aimed at EU countries, a `.de` or `.fr` domain. A site that is merely reachable from
-the EU is not targeting it. A B2B SaaS with one EU customer is in scope as that customer's
-processor through the DPA regardless.
+the EU is not targeting it. A B2B SaaS with one EU customer is bound by the processor duties
+through the DPA it signs with that customer, even where GDPR does not reach it directly.
 
 Working rule for a solo founder: build to GDPR once and treat US state laws as a delta (opt-out of
 sale and sharing, Global Privacy Control, a few notice items). GDPR is the stricter structure and
@@ -87,7 +87,7 @@ requested, transferred or retained too long.
 
 ## Lawful basis
 
-Each purpose needs exactly one basis, chosen before collection and stated in the privacy policy.
+Each purpose needs a lawful basis, chosen before collection and stated in the privacy policy.
 Switching later, especially from consent to legitimate interests after a refusal, is not
 accepted by regulators.
 
@@ -140,6 +140,9 @@ When CCPA or a similar state law applies:
 - Honor Global Privacy Control as a valid opt-out of sale and sharing. California and a growing
   list of states require it, and regulators have enforced it against sites that ignored it.
 - No retaliation or worse service for exercising rights; contracts with service providers.
+- California's regulations in effect from 2026 add risk assessments, cybersecurity audits and
+  automated decision-making duties for covered businesses, phased in over several years by size
+  and activity; check which apply once a threshold above is met.
 
 GPC arrives as a request header and a JavaScript property:
 
@@ -165,10 +168,10 @@ not only an attacker. Containment and forensics belong to `0x:web-security`
 
 | Regime | Who is told | Deadline | Threshold |
 |---|---|---|---|
-| GDPR, controller | Lead supervisory authority | 72 hours after becoming aware; give reasons if later, and report in phases if facts are incomplete | Unless unlikely to result in a risk to people |
+| GDPR, controller | The lead supervisory authority if the company has an EU main establishment; without one, each authority whose residents are affected, and the ICO for UK data | 72 hours after becoming aware; give reasons if later, and report in phases if facts are incomplete | Unless unlikely to result in a risk to people |
 | GDPR, controller | Affected individuals | Without undue delay | High risk to them; not needed if the data was unintelligible (properly encrypted, key not taken) |
 | GDPR, processor | The controller (the customer) | Without undue delay; the DPA usually sets hours | Any breach of their data, no risk threshold |
-| US states (all have a statute) | Affected residents; often the attorney general above a headcount; sometimes credit bureaus | "Without unreasonable delay"; many states cap it at 30 to 60 days | Defined data elements (name plus SSN, license, financial account, often credentials, medical or biometric data); encryption is usually a safe harbor |
+| US states (all have a statute) | Affected residents; often the attorney general above a headcount; sometimes credit bureaus | "Without unreasonable delay"; a growing number set a fixed outer limit, commonly 30 to 60 days | Defined data elements (name plus SSN, license, financial account, often credentials, medical or biometric data); encryption is usually a safe harbor |
 | Contracts | Customers, payment processor, insurer | Whatever was signed, often 24 to 72 hours | Often "suspected" incidents too |
 
 Sequence once a breach is suspected:
@@ -179,8 +182,8 @@ Sequence once a breach is suspected:
    forensics firm, and pay for them.
 3. Scope from the data map: which categories, how many people, which countries and states,
    which customers are controllers.
-4. Decide notification with counsel. Under-notifying is an offense; over-notifying a
-   non-reportable event has its own cost. Notify processor-side customers first, since their
+4. Decide notification with counsel. Failing to notify a reportable breach is itself an
+   infringement that regulators fine; over-notifying a non-reportable event has its own cost. Notify processor-side customers first, since their
    clock starts when they hear.
 5. Record every breach, including those not notified, with the facts, effects, decision and
    reasoning. Regulators ask for this register.
@@ -197,8 +200,8 @@ is a transfer.
 
 | Destination | Mechanism |
 |---|---|
-| Adequate country (the Commission's list includes the UK, Switzerland, Japan, Canada for commercial organizations, and others) | None needed |
-| US recipient certified under the EU-US Data Privacy Framework | Adequacy applies; check the recipient's active listing on the official DPF site. The framework has survived one court challenge and remains contested, so keep SCCs as the fallback in the contract |
+| Adequate country (the Commission's list includes the UK, renewed in December 2025 until 2031, Switzerland, Japan, Canada for commercial organizations, and others; check the current list) | None needed |
+| US recipient certified under the EU-US Data Privacy Framework | Adequacy applies; check the recipient's active listing on the official DPF site. The EU General Court upheld the framework in September 2025 and an appeal to the Court of Justice is pending, so keep SCCs as the fallback in the contract |
 | Anyone else | Standard Contractual Clauses (2021 set, the module matching the roles) plus a transfer impact assessment; for UK data the UK addendum or IDTA |
 
 Vendor-side mechanics are in `vendors-dpas.md`. When a customer asks for "EU data residency",
@@ -235,8 +238,9 @@ own DPIA; a prepared product description of data flows and safeguards answers mo
   through targeting or monitoring must appoint a representative in a member state where its data
   subjects are, unless processing is occasional, involves no large-scale special-category data
   and is low risk. Ongoing SaaS for EU users is not occasional. Commercial representative
-  services exist for a modest annual fee; name the representative in the privacy policy. The UK
-  has had a parallel requirement; check the current UK rule before buying a UK representative.
+  services exist for a modest annual fee; name the representative in the privacy policy. UK GDPR
+  Art. 27 sets the same duty for UK users of a company with no UK establishment; confirm the
+  current ICO guidance before appointing, since removing it has been proposed before.
 - **DPO (Art. 37).** Mandatory when core activities involve large-scale regular and systematic
   monitoring of people, or large-scale special-category data, or for public bodies. Some member
   states add their own triggers (Germany's is based on the number of staff regularly handling

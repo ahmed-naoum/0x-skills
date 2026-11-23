@@ -61,7 +61,7 @@ details and dates must be confirmed before relying on them.
 | Data requests | Manual | Self-serve export and delete in settings, a `privacy@` inbox, runbook and log, 14-day internal target | Automated across systems and vendors |
 | Retention | None formal | Written schedule enforced by jobs; backups about 30 days; legal-hold flag | Audited |
 | Vendors | Prefer vendors with a DPA and region choice | Inventory, saved DPAs, public subprocessor list, own DPA published | Annual reviews, notice workflow for changes |
-| Payments | Hosted checkout or provider iframes | SAQ A filed yearly; no third-party scripts on checkout pages | Script inventory and tamper monitoring formalized |
+| Payments | Hosted checkout or provider iframes | SAQ A filed yearly, quarterly ASV scan passing; no third-party scripts on checkout pages | Script inventory and tamper monitoring formalized |
 | Certifications | None | Security overview and honest questionnaires | SOC 2 (US buyers) or ISO 27001 (European buyers) when deals require it |
 | Regulated sectors | Stay out | Prohibit regulated data in the terms unless deliberately supported | Enter with specialist counsel |
 | Sanctions | None | Geo-block embargoed regions; restriction in the terms | Name screening for enterprise customers |
@@ -97,7 +97,7 @@ steps as signup.
 10. Terms acceptance is an affirmative act at signup and stores user, document, version,
     timestamp and IP; every published version is retrievable.
 11. Card numbers never reach the servers, logs or support tools; checkout pages load only
-    inventoried scripts; the correct SAQ is on file.
+    inventoried scripts; the correct SAQ is on file and its required ASV scans pass.
 12. Subscription checkout shows price, period, renewal and cancellation next to the button,
     and cancellation works online without contacting support.
 13. CI fails on a dependency license outside the allowlist; distributed artifacts include

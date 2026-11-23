@@ -30,9 +30,10 @@ What remains even at SAQ A:
 - Use only PCI-compliant providers and keep their attestation on file.
 - Secure the accounts that could change the payment integration: provider dashboard, DNS,
   hosting, the repository and CI. Unique accounts with MFA.
-- Keep the site that serves the redirect or iframe patched and free of injected scripts; check
-  the current SAQ A text for the external vulnerability scan requirement that applies to
-  e-commerce pages.
+- Keep the site that serves the redirect or iframe patched and free of injected scripts, and
+  pass an external vulnerability scan by an Approved Scanning Vendor (ASV) at least every three
+  months (requirement 11.3.2, part of SAQ A under v4). Payment providers and acquirers often
+  bundle an ASV service; check the current SAQ A text for the exact requirement list.
 - Never store the card verification code after authorization, in any form, by anyone. Never
   log or screenshot full card numbers; scrub them from support tickets if a customer pastes one.
 - Tokens, last four digits, brand and expiry returned by the provider are safe to store.
@@ -204,8 +205,8 @@ unknown firm.
 | Security training | At hire and annually | Completion records |
 | ISO only: internal audit and management review | Annually | Reports and minutes |
 
-Put each row in the calendar with an owner on the day the policies are signed. Missing a
-quarterly access review is the single most common Type II exception at small companies. Answering
+Put each row in the calendar with an owner on the day the policies are signed. A missed
+quarterly access review is a common Type II exception at small companies, since nothing forces it. Answering
 buyers' questionnaires from this material is covered in `0x:sales-support`.
 
 ## Ask the user
