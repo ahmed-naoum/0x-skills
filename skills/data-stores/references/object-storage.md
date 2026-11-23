@@ -66,8 +66,11 @@ tmp/<file_id>                                   expires by lifecycle rule
 Order of operations, which is where consistency is won or lost:
 
 - **Create:** insert the row as `pending` → the client uploads → the server confirms with a
-  `HEAD` request and records the real size and checksum → mark `ready`. Only `ready` rows are
-  shown or downloadable. Never trust a client-declared size or type.
+  `HEAD` request and records the real size → mark `ready`. Only `ready` rows are shown or
+  downloadable. Never trust a client-declared size or type: sign the content type into the
+  upload URL so the stored type is the server's choice, and record a checksum only if the
+  upload was made with one (an `ETag` is not a content hash for multipart or KMS-encrypted
+  objects).
 - **Delete:** mark the row deleted in the transaction → a job deletes the object → the row is
   removed later. Never delete the object inside a transaction that can still roll back, and
   never rely on `ON DELETE CASCADE` to clean files: the database removes the rows and the
@@ -101,8 +104,9 @@ const url = await getSignedUrl(
   be revoked individually. It ends up in browser history, proxy logs and chat messages.
 - **Expiry: 1 to 15 minutes for a download started by a click.** Longer only for large files on
   slow connections (expiry is checked when the request starts, not during transfer). There is a
-  provider maximum, and a URL signed with temporary role credentials stops working when those
-  credentials expire, whatever expiry was requested.
+  provider maximum (seven days with S3 signature version 4), and a URL signed with temporary
+  role credentials stops working when those credentials expire, whatever expiry was requested;
+  that is the usual reason links die early when the application runs under an assumed role.
 - **Sign at click time, not at page render.** A list of 50 files with 50 signed URLs in the
   HTML goes stale while the tab is open and gets cached. Link to an application route such as
   `/files/:id/download` that checks access and answers with a redirect to a fresh URL.
@@ -117,8 +121,11 @@ const url = await getSignedUrl(
   signed cookies or signed URLs over a path prefix, or an authenticated image route with
   private cache headers.
 
-Signed upload URLs: a presigned `PUT` cannot cap the upload size by itself; a presigned `POST`
-policy can (`content-length-range`), where the provider supports it. Details and the
+Signed upload URLs: a presigned `PUT` cannot enforce a size range. At most it pins one exact
+size, when `Content-Length` is among the signed headers and the server knows the byte count in
+advance. A presigned `POST` policy can enforce a range (`content-length-range`), but not every
+compatible store accepts `POST` uploads (R2 documents that it does not). Either way, compare
+the size from `HEAD` with the limit at confirmation and delete what exceeds it. Details and the
 verification step belong to `0x:backend-architecture`.
 
 ## Choosing a provider
@@ -129,7 +136,7 @@ the provider), request counts for small objects, and where the compute that read
 | Provider | Choose when | Know |
 |---|---|---|
 | AWS S3 | The application runs on AWS; compliance features are needed (object lock, replication, fine-grained IAM, event notifications, many storage classes) | Internet egress is billed per gigabyte and dominates for download-heavy products; put a CDN in front |
-| Cloudflare R2 | Download-heavy or media-heavy products; the site is already behind Cloudflare; multi-cloud readers | No egress fee; storage and operations are billed. S3-compatible API with gaps; verify each feature needed (lifecycle, storage classes, notifications, object lock) against current documentation |
+| Cloudflare R2 | Download-heavy or media-heavy products; the site is already behind Cloudflare; multi-cloud readers | No egress fee; storage and operations are billed. The S3 API has gaps: when this was written its compatibility page listed object versioning, S3 object lock and presigned `POST` as not implemented (it has its own bucket lock rules). Verify each feature needed (versioning, lifecycle, storage classes, notifications, retention locks) against current documentation |
 | Backblaze B2 and similar | Large volumes of backups and archives at low cost | Fewer integrations; check egress terms |
 | Google Cloud Storage, Azure Blob | The application runs in that cloud | Same economics as S3 |
 | Storage bundled with a PaaS | Prototype; small files; convenience matters more than unit cost | Usually a markup over an underlying store; check egress and size limits before Launch |
@@ -140,15 +147,20 @@ zero-egress storage. If the user has no preference and no AWS footprint, R2 behi
 sound default for user files; on AWS, S3.
 
 "S3-compatible" is not identical. Expect to set the endpoint, a placeholder region, and
-sometimes path-style addressing; newer AWS SDK releases enable integrity checksums by default,
-which some compatible stores reject until configured (`requestChecksumCalculation:
-"WHEN_REQUIRED"` in the JavaScript SDK). Keep provider specifics in one storage module with a
+sometimes path-style addressing. AWS SDK releases since early 2025 add integrity checksums to
+requests by default, which some compatible stores reject and which can break presigned uploads
+with a signature mismatch; the fix in the JavaScript SDK is `requestChecksumCalculation:
+"WHEN_REQUIRED"` and `responseChecksumValidation: "WHEN_REQUIRED"` on the client. Test an
+upload and a presigned upload after every SDK upgrade. Keep provider specifics in one storage module with a
 small interface (put, get-signed-url, head, delete) so a move is a configuration change plus a
 copy job.
 
 ## Lifecycle rules, storage classes and versioning
 
-Set these when the bucket is created; nobody returns to do it until the bill hurts.
+Set these when the bucket is created; nobody returns to do it until the bill hurts. At
+Prototype the multipart-abort and `tmp/` rules are enough; versioning with its expiry rule
+arrives at Launch; storage-class transitions wait for Scale, when the bill justifies the
+arithmetic.
 
 | Rule | Setting | Why |
 |---|---|---|
@@ -162,14 +174,17 @@ Set these when the bucket is created; nobody returns to do it until the bill hur
 or delete (including one by a bug or a leaked credential) becomes recoverable. Two consequences:
 it must be paired with the noncurrent-version expiry above, and a "deleted" object still exists
 as an older version until that rule removes it, which matters for deletion promises
-(`data-lifecycle.md`). Versioning is not a backup against losing the account or the bucket; for
+(`data-lifecycle.md`). Where the store has no object versioning (check R2), the substitutes are
+immutable keys, the delayed deletion described above, and a scheduled copy of irreplaceable
+data to a second bucket. Versioning is not a backup against losing the account or the bucket; for
 data whose loss would end the business, replicate to a second account or provider at Scale.
 Object lock (write-once retention) is for compliance and ransomware resistance, and locked
 objects cannot be deleted early by anyone, so apply it only to buckets that need it.
 
 **Storage classes.** Cheaper classes charge less for storage and more for access, with strings
 attached: a minimum storage duration (deleting early still bills the full period), a minimum
-billable object size, per-request transition fees and retrieval fees. So:
+billable object size, per-request transition fees and retrieval fees (on S3's
+infrequent-access class, 30 days and 128 KB when this was written). So:
 
 - Standard for anything accessed, small, or short-lived. Millions of small objects moved to an
   infrequent-access class can cost more than leaving them.
@@ -177,8 +192,9 @@ billable object size, per-request transition fees and retrieval fees. So:
   large enough to benefit.
 - Infrequent-access for large objects kept more than a few months and rarely read: old
   attachments, completed exports that must be retained.
-- Archive classes for data kept for obligations and essentially never read. Retrieval can take
-  minutes to hours and must be requested; never put anything a user can click on there.
+- Archive classes for data kept for obligations and essentially never read. In the classes
+  that need a restore request, retrieval takes from minutes to many hours, a day or more in
+  the deepest tier; never put anything a user can click on there.
 
 Check current thresholds and prices before writing a transition rule; do the arithmetic for
 the bucket's real object-size distribution.

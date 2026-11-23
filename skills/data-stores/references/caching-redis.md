@@ -19,6 +19,10 @@ long as the cache does. Work down this list and stop at the first step that meet
 6. Redis, when the value is expensive, read far more often than written, shared by all instances,
    and allowed to be stale.
 
+Stage: at Prototype stop at steps 1 and 2. Redis caching is a Launch tool for a measured hot
+read. The stampede defenses beyond TTL jitter matter once concurrent misses on one key can hurt
+the database, usually at Scale.
+
 Frameworks with a built-in data cache (Next.js) follow the same rules below; the mechanics are in
 `0x:react-nextjs`.
 
@@ -82,8 +86,9 @@ myapp:prod:project-summary:v3:t_812:p_4471:en
   each reads and writes its own, and the old keys expire. Bump the version in the same commit
   that changes the cached shape.
 - **Validate on read.** Parse cached values with the same schema validator used at other trust
-  boundaries and treat a failed parse as a miss. JSON loses `Date`, `BigInt`, `Map` and
-  `undefined`; a value typed as `Date` comes back as a string unless the parse step restores it.
+  boundaries and treat a failed parse as a miss. JSON turns a `Date` into a string, drops
+  `undefined` and the contents of a `Map`, and throws on `BigInt`; the parse step is where
+  those types are restored.
 - **Environment in the key or a separate instance per environment.** Staging sharing production
   keys is a real incident pattern.
 - **Hash long or user-supplied parts** (search parameters) into a digest, after normalizing
@@ -118,16 +123,21 @@ survives that, or warm the critical keys before shifting traffic.
 
 ## Memory, eviction and persistence
 
-- **Set `maxmemory`** (managed plans set it by tier). The default eviction policy is
-  `noeviction`: when memory is full, writes fail with an out-of-memory error.
+- **Set `maxmemory` and the eviction policy explicitly, then read back what is in force**
+  (`CONFIG GET maxmemory-policy`, or the provider's console where `CONFIG` is blocked). Managed
+  plans set the memory limit by tier. Open-source Redis and Valkey default to `noeviction`: when
+  memory is full, writes fail with an out-of-memory error. Managed services choose their own
+  default (often `volatile-lru`), and some serverless tiers do not let it be changed.
 - **Pure cache:** `allkeys-lru` or `allkeys-lfu`. Redis then drops the least useful keys under
   pressure, which is the desired behavior.
 - **Queues, locks, rate-limit state, sessions:** `noeviction`. An evicted job or lock is data
-  loss. BullMQ requires this policy.
+  loss. BullMQ's documentation requires this policy, so confirm the chosen tier allows it
+  before putting a queue there.
 - **Therefore do not share one instance between a cache and a job queue.** The two need opposite
   eviction policies, and a cache surge must not be able to fail job writes. Two small instances
-  beat one large one. If they must share, `volatile-lru` evicts only keys with a TTL, which
-  holds only as long as every cache key has a TTL and no queue key does.
+  beat one large one. If a cache must share with other state that is not a queue,
+  `volatile-lru` evicts only keys with a TTL, which holds only as long as every cache key has
+  a TTL and no key that must survive does. That compromise is not open to BullMQ.
 - **Sizing:** sample real values with `MEMORY USAGE <key>`, multiply by the expected key count,
   and leave headroom for per-key overhead, fragmentation and replication buffers; plan for peak
   use around two thirds of the limit (rule of thumb). Watch `used_memory`, `evicted_keys` and
@@ -137,10 +147,12 @@ survives that, or warm the critical keys before shifting traffic.
   fsync, which still loses up to about a second on a crash. Replication is asynchronous, so a
   failover can drop acknowledged writes. This is why Redis is never the only copy of anything
   that matters.
-- **Redis or Valkey:** Valkey is the open-source fork created after Redis changed its license
-  in 2024, and several cloud providers offer it as their managed option. For caching, counters
-  and locks the commands used here are the same on both; choose by what the host offers and
-  what the client library supports.
+- **Redis or Valkey:** Valkey is the Linux Foundation fork taken from Redis 7.2 when Redis left
+  its open-source license in 2024 (Redis 8 later added an AGPL option). Several clouds offer
+  Valkey as a managed engine, often at a lower price. The commands used in this file are the
+  same on both; choose by what the host offers and what the client library supports. The two
+  diverge in what was added after the fork (Redis 8's bundled search, JSON and vector types,
+  and newer commands on each side), so check before depending on anything beyond the 7.2 set.
 - **Serverless and edge runtimes** open a connection per invocation and exhaust the connection
   limit. Use a provider with an HTTP API or a pooled client there, and reuse the client across
   invocations where the runtime allows.
@@ -158,7 +170,8 @@ SET rl:login:203.0.113.7 0 EX 60 NX
 INCR rl:login:203.0.113.7
 ```
 
-Send both in one `MULTI` transaction or a Lua script. Counters whose total matters (billable
+Send both in one `MULTI` transaction or a Lua script. `INCR` leaves the existing expiry
+untouched, so the window ends 60 seconds after its first request. Counters whose total matters (billable
 usage, quota consumed) are written to Postgres; Redis may hold a fast approximate copy for
 display or pre-checks, reconciled from the database.
 
@@ -238,4 +251,5 @@ status = 'pending'`, `SELECT ... FOR UPDATE`, or an idempotency key. See
 - **Is losing counters or sessions on a Redis failure acceptable?** If not, that state belongs
   in Postgres. Default: Redis holds only what can be lost.
 - **What is the monthly budget for the cache?** Memory is the price driver; a smaller instance
-  with the right eviction policy often serves as well as a large one.
+  with the right eviction policy often serves as well as a large one. Default: the smallest
+  managed tier that holds measured peak memory with headroom, plus a spending alert.

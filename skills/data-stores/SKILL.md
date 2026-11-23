@@ -54,12 +54,12 @@ truth and how every other store is rebuilt from it.
 |---|---|---|---|
 | Stores | Postgres + object storage | Add Redis only for a concrete need | Search engine, warehouse, event log as measured needs appear, all managed |
 | Cache | None; fix the query | HTTP/CDN first, then cache-aside in Redis with TTL + delete-on-write | Stale-while-revalidate on hot keys; per-key-family metrics |
-| Redis instances | — | Separate instance for queue (`noeviction`) and cache (`allkeys-lru`) | Same, sized from measured memory |
+| Redis instances | — | One for cache (`allkeys-lru`); a Redis-backed queue, if the project has one, gets its own (`noeviction`) | Same, sized from measured memory |
 | Rate limits | In-process or none | Redis sliding window via a maintained library | Fail-open or fail-closed decided per limit |
 | Search | `ILIKE` with a trigram index | Postgres full-text + trigram | Hosted engine when typo tolerance, facets or ranking are measured needs |
 | Vectors | pgvector, exact scan | pgvector with HNSW, tenant filter in SQL | Dedicated store only when pgvector's memory or recall fails |
 | Index sync | — | Job enqueued in the write transaction + reconciliation sweep | Change data capture through a managed service |
-| Files | Private bucket, row per object | Signed URLs at click time, lifecycle rules, versioning on user data | Reconciliation, quotas, second copy of critical data |
+| Files | Private bucket, row per object | Signed URLs at click time, lifecycle rules, versioning on user data (delayed deletion where the store has none) | Reconciliation, quotas, second copy of critical data |
 | Storage provider | The host's cloud, or R2 | Same; CDN in front of public assets | Revisit by egress bill |
 | Analytics data | Product analytics tool | Read replica; rollup tables | Serverless warehouse, managed connectors, dbt, freshness alerts |
 | Events between systems | Function calls | Postgres job queue, outbox | Managed broker or log when several consumers need replay |
@@ -81,8 +81,8 @@ index document, no personal data in cache keys or event payloads that outlive th
    read from a cache at decision time.
 5. Every cache key contains environment, schema version and tenant or user scope, has a TTL,
    and cached values are validated on read.
-6. Redis has an explicit `maxmemory` policy that matches its use, and queue data does not share
-   an evicting instance.
+6. `CONFIG GET maxmemory-policy` (or the provider console) shows a policy that matches each
+   Redis instance's use, and queue data does not share an evicting instance.
 7. A test with two tenants proves that search, autocomplete, facets and vector queries return
    nothing across the boundary; no unscoped search key reaches the browser.
 8. Buckets block public access; every object has a database row with tenant, key, size and

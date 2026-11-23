@@ -33,10 +33,10 @@ Scale, and each one arrives managed, not self-hosted.
 
 | Need | In Postgres | Sign the ceiling is reached |
 |---|---|---|
-| Job queue | Table with `FOR UPDATE SKIP LOCKED` (pg-boss, Graphile Worker) | Sustained thousands of jobs per second; queue-table bloat hurting the primary |
+| Job queue | Table with `FOR UPDATE SKIP LOCKED` (pg-boss, Graphile Worker) | Sustained thousands of jobs per second (rule of thumb; measure); queue-table bloat hurting the primary |
 | Cache of an expensive read | Materialized view, summary table, or the query fixed with an index | Read is already indexed, still hot, and tolerates staleness |
 | Text search | `tsvector` + GIN, `pg_trgm` | Typo tolerance, facets with counts, or relevance tuning become product requirements |
-| Vector similarity | `pgvector` with HNSW | Tens of millions of vectors, or index memory crowding out the main workload |
+| Vector similarity | `pgvector` with HNSW | The index no longer fits in memory beside the main workload (rule of thumb: somewhere in the tens of millions of vectors, sooner with large dimensions) |
 | Document data | `jsonb` + GIN, expression indexes | Almost never the reason to leave |
 | Pub/sub between app instances | `LISTEN`/`NOTIFY` | Needs durability or fan-out to many subscribers |
 | Locks, leader election | Advisory locks | Lock traffic at a rate that matters to the primary |
@@ -45,10 +45,13 @@ Scale, and each one arrives managed, not self-hosted.
 | Analytics | Read replica, rollup tables | Scans slow the replica, or data from other systems must be joined |
 
 Traps in the Postgres-only route, so they are known rather than discovered: `NOTIFY` messages are
-not stored, a listener that is disconnected misses them, the payload is limited to roughly 8 kB,
-and `LISTEN` does not work through a transaction-mode connection pooler. A queue table with high
-churn needs aggressive autovacuum settings on that table. Session-level advisory locks also break
-under transaction-mode pooling; use the transaction-scoped variant (`pg_advisory_xact_lock`).
+not stored and a disconnected listener misses them, so treat a notification as a wake-up hint and
+re-read state from a table. The payload must stay under 8000 bytes. Transactions that call
+`NOTIFY` are serialized on a global lock at commit, so keep it off hot write paths. `LISTEN`
+needs its own direct connection: it does not work through a transaction-mode connection pooler.
+A queue table with high churn needs aggressive autovacuum settings on that table. Session-level
+advisory locks also break under transaction-mode pooling; use the transaction-scoped variant
+(`pg_advisory_xact_lock`).
 
 ## When each common addition is justified
 
@@ -77,7 +80,7 @@ These solve different problems and are routinely confused.
 
 Stay on a Postgres-backed job queue while there is one application and one worker pool. Enqueueing
 in the same transaction as the business write removes a whole class of lost-job and phantom-job
-bugs, and no other option offers that. Move the job system to Redis (BullMQ) when volume or
+bugs, which a queue in another system can only approximate with an outbox. Move the job system to Redis (BullMQ) when volume or
 features such as rate-limited queues, flows and fine-grained priorities demand it; that Redis
 instance then holds data that must not be evicted (see `caching-redis.md`).
 
@@ -113,25 +116,34 @@ needs for row-level security, rich extensions or logical replication.
 Settings that separate a working deployment from `database is locked` errors:
 
 ```sql
-PRAGMA journal_mode = WAL;        -- readers do not block the writer; persists in the file
+PRAGMA journal_mode = WAL;        -- readers do not block the writer; stored in the database file
 PRAGMA busy_timeout = 5000;       -- wait for the write lock instead of failing at once
-PRAGMA synchronous = NORMAL;      -- safe with WAL; a power loss may drop the last commits, not corrupt
-PRAGMA foreign_keys = ON;         -- off by default, and must be set on every connection
+PRAGMA synchronous = NORMAL;      -- with WAL: a power loss may drop the last commits, not corrupt
+PRAGMA foreign_keys = ON;         -- off by default
 ```
 
+Only `journal_mode` is stored in the file. The other three are per connection and revert to
+their defaults on every new one, so set them in the code that opens connections, not once by
+hand. Keep `synchronous = FULL` where losing the last committed transactions in a power loss is
+unacceptable (money).
+
 Open write transactions with `BEGIN IMMEDIATE`. A deferred transaction that reads and then tries
-to write can fail with `SQLITE_BUSY` without honoring the busy timeout. Declare tables `STRICT`,
+to write after another connection has committed fails with `SQLITE_BUSY` at once, whatever the
+busy timeout. Declare tables `STRICT`,
 otherwise a column accepts values of any type. Schema changes are limited: many alterations
 mean creating a new table and copying.
 
 Backups: a plain file copy of a live database can be corrupt. Use `VACUUM INTO`, the backup API,
 or continuous replication of the WAL to object storage (Litestream), and test a restore.
 
-libSQL (the fork behind Turso) adds a server mode and embedded replicas: a local file for reads
-that syncs from a remote primary. Cloudflare D1 is SQLite reached from Workers through a binding,
-with a per-database size limit, built for many small databases rather than one large one; check
-the current limits before committing. In both, writes still go to a single primary, so a write
-from a far region pays the round trip.
+libSQL (the SQLite fork behind Turso Cloud) adds a server mode and embedded replicas: a local
+file for reads that syncs from a remote primary, with writes sent to that primary. Its vendor is
+also building a separate Rust rewrite of SQLite with its own sync mechanism and steers new
+projects toward it, so check which engine and sync path the current SDK recommends before
+designing around either. Cloudflare D1 is SQLite reached from Workers through a binding, with a
+per-database size cap (10 GB on the paid plan when this was written; check the current limits)
+and a design aimed at many small databases, such as one per tenant, rather than one large one.
+In both, writes go to a single primary, so a write from a far region pays the round trip.
 
 Flip to Postgres when a second writer process on another machine is needed, or when write
 contention shows up as busy timeouts under normal load.
@@ -185,7 +197,7 @@ a columnar engine.
 | Engine | Use for | Know before choosing |
 |---|---|---|
 | **DuckDB** | In-process analytics: batch reports, ad hoc analysis, querying Parquet or CSV files in object storage, embedded in a job or script | A library, not a server. One process writes at a time. No operations at all, which is why it is the first columnar step. |
-| **ClickHouse** | Customer-facing analytics and event data at volume with sub-second aggregates under concurrency | Insert in batches (or enable asynchronous inserts), never row by row. The table's `ORDER BY` key decides query speed and is expensive to change. Updates and deletes are heavy background mutations. Deduplication by `ReplacingMergeTree` is eventual, so queries must tolerate or collapse duplicates. |
+| **ClickHouse** | Customer-facing analytics and event data at volume with sub-second aggregates under concurrency | Insert in batches (or enable asynchronous inserts), never row by row. The table's `ORDER BY` key decides query speed and is expensive to change. Design tables as append-only: classic `ALTER TABLE ... UPDATE/DELETE` mutations rewrite whole data parts in the background, and the lightweight deletes and updates of newer releases are cheaper but still not meant for request-rate row changes (check their status in the version in use). Deduplication by `ReplacingMergeTree` happens at merge time, so queries must tolerate or collapse duplicates. |
 | **Cloud warehouse** (BigQuery, Snowflake) | Internal business analytics joining many sources | Latency and pricing models suit analysts, not the request path. See `streams-pipelines.md`. |
 
 Customer-facing dashboards ("usage over the last 90 days") are a product feature with product
@@ -203,8 +215,10 @@ retention by dropping whole partitions, and downsampling.
   rollup tables (per hour, per day) for dashboards. This carries far more than most products
   ever write.
 - Next step inside Postgres: the TimescaleDB extension (automatic partitioning, compression,
-  continuously maintained aggregates). Check that the managed Postgres provider offers it and
-  under which license edition before designing around it.
+  continuously maintained aggregates). Its vendor (now named TigerData) keeps compression and
+  continuous aggregates under its own source-available license, so other clouds that offer the
+  extension typically ship the Apache-licensed edition without them, and some managed Postgres
+  providers do not offer it at all. Check what the provider ships before designing around it.
 - At volume (rule of thumb: billions of rows, or aggregation latency on the request path that
   rollups cannot meet), move the data to ClickHouse or a managed time-series service.
 - Cardinality is the trap in every time-series system: a tag or label holding user IDs or

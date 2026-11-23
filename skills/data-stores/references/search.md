@@ -54,7 +54,8 @@ Trigram:
 ```sql
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE INDEX customers_name_trgm ON customers USING gin (name gin_trgm_ops);
--- now indexed: name ILIKE '%acme%'   and   name % 'acmee'  (similarity)
+-- now indexed: name ILIKE '%acme%'   and   name % 'acmee'
+-- (% matches above pg_trgm.similarity_threshold, default 0.3)
 ```
 
 Patterns shorter than three characters cannot use the index well; require a minimum length or
@@ -65,7 +66,7 @@ add the `btree_gin` extension and index `(tenant_id, search)`.
 ## Tenant and permission filters
 
 Search is a second read path into the data, and it bypasses whatever authorization the main
-query layer has. Every leak described here has shipped in real products.
+query layer has.
 
 - **The filter is part of the query, added on the server from the session**, never taken from a
   client parameter and never applied after the engine returns. Post-filtering leaks through
@@ -101,10 +102,10 @@ document, count or suggestion.
 
 | Option | Fits | Operating burden | Watch for |
 |---|---|---|---|
-| Postgres (rungs 1–3) | Up to millions of rows per search scope with modest relevance needs | None added | Ranking cost on common terms; facets by `GROUP BY` |
+| Postgres (rungs 1–3) | Up to millions of rows per search scope (rule of thumb) with modest relevance needs | None added | Ranking cost on common terms; facets by `GROUP BY` |
 | Meilisearch | Product and content search with typo tolerance and facets, small team | Low; hosted cloud available | Indexing is asynchronous; very large datasets and complex aggregations are not its target |
 | Typesense | Same space; fast instant search | Low; hosted cloud available | The index lives in memory, so RAM must exceed index size |
-| Algolia | Best-in-class hosted relevance and tooling, no operations | None | Usage-based price grows with records and searches; estimate at 10x volume before committing |
+| Algolia | Mature hosted relevance, analytics and frontend libraries | None | Usage-based price grows with records and searches; estimate at 10x volume before committing |
 | Elasticsearch / OpenSearch | Tens of millions of documents and up, complex aggregations, custom analyzers, log-style data | High even when managed: shards, heap, mappings, version upgrades | A mapping cannot be changed in place; wrong shard counts are painful to fix |
 
 Decision: if Postgres falls short at Launch, choose a hosted Meilisearch, Typesense or Algolia
@@ -144,7 +145,8 @@ the paths where it matters.
 3. Backfill the new index from the database in batches ordered by primary key.
 4. Verify: document counts per tenant match, and the golden query set (below) passes.
 5. Switch the alias the application reads (`docs`) to the new index in one atomic operation:
-   an alias in Elasticsearch, OpenSearch and Typesense; an index swap in Meilisearch.
+   an alias in Elasticsearch, OpenSearch and Typesense; an index swap in Meilisearch; in
+   Algolia, which has no aliases, an atomic move of the new index over the live name.
 6. Keep the old index until the next day for rollback, then delete it.
 
 The application always queries through the alias, never the versioned name. Know the full
@@ -157,8 +159,10 @@ Autocomplete, client side: debounce 150 to 250 ms, cancel the previous request w
 five to eight suggestions. Server side: target a p95 well under 100 ms (rule of thumb), since
 latency is felt on every keystroke. Decide which kind is being built: query suggestions
 (completing popular searches, from the search log) or instant results (matching records). In
-Postgres, prefix autocomplete on one field is a B-tree index on `lower(name) text_pattern_ops`
-with `LIKE 'acm%'`; fuzzy autocomplete is the trigram index.
+Postgres, prefix autocomplete on one field is a B-tree expression index,
+`CREATE INDEX ON customers (lower(name) text_pattern_ops)`, queried with the same expression,
+`lower(name) LIKE 'acm%'`, with `%` and `_` escaped in the user's input; fuzzy autocomplete is
+the trigram index.
 
 Facets and filters:
 
@@ -180,7 +184,7 @@ Facets and filters:
 CREATE EXTENSION IF NOT EXISTS vector;
 ALTER TABLE chunks ADD COLUMN embedding vector(1536);   -- must equal the model's dimension
 CREATE INDEX chunks_embedding_idx ON chunks
-  USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64);
+  USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64);  -- the defaults
 
 SET hnsw.ef_search = 100;                               -- default 40; higher = better recall, slower
 SELECT id FROM chunks
@@ -193,19 +197,25 @@ LIMIT 10;
   `vector_l2_ops`, `<#>` with `vector_ip_ops`. The index is used only for
   `ORDER BY <column> <operator> <value> LIMIT n` in ascending order; ordering by an expression
   such as `1 - (embedding <=> $1)` forces a full scan.
+- A plain `SET` lasts for the session. Behind a transaction-mode pooler it lands on an
+  arbitrary connection; use `SET LOCAL` inside the query's transaction.
+- **Dimension limit:** an index covers at most 2,000 dimensions for `vector` and 4,000 for
+  `halfvec`. A 3,072-dimension embedding therefore needs a `halfvec` column or a model option
+  that returns fewer dimensions. Check this when choosing the model, not at `CREATE INDEX`.
 - **Filtering is the main trap.** The approximate index finds nearest neighbors first and the
   `WHERE` clause is applied afterward, so a selective filter can return fewer rows than the
   limit, or none. Options: for scopes of up to tens of thousands of rows, skip the vector index
   and let a B-tree on `tenant_id` narrow to an exact scan, which is fast and has perfect
-  recall; enable iterative index scans (`hnsw.iterative_scan`) on pgvector versions that have
-  them; partition or build partial indexes for a few large tenants.
+  recall; enable iterative index scans (`SET hnsw.iterative_scan = strict_order`, pgvector
+  0.8.0 and later), which keep scanning until the limit is filled or `hnsw.max_scan_tuples` is
+  reached; partition or build partial indexes for a few large tenants.
 - HNSW is the default index: good recall and speed, no training step, slower to build and
   larger in memory. IVFFlat builds faster and smaller but must be created after data is loaded
   and loses recall as data drifts.
 - Build the index after bulk loading, with generous `maintenance_work_mem`, and use
   `CREATE INDEX CONCURRENTLY` on a live table. The index should fit in memory; when it does
-  not, latency collapses. Half-precision (`halfvec`) storage or lower-dimension embeddings
-  halve the footprint.
+  not, latency collapses. Half-precision storage (`halfvec`) halves the footprint, usually
+  with little recall loss (confirm on the golden set); fewer dimensions shrink it further.
 - Store the embedding model name and version beside each vector. Vectors from different models
   are not comparable; a model change means re-embedding everything into a new column and
   switching, the same pattern as an index rebuild.

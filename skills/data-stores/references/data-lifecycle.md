@@ -9,7 +9,10 @@ lawful bases behind it are `0x:privacy-compliance`; nothing here is legal advice
 
 Deletion, export, retention and breach response all start from the same artifact: a data map
 that says which class of data sits in which store. Keep it as a file in the repository so it
-changes in the same pull request as the schema or the new vendor.
+changes in the same pull request as the schema or the new vendor. By stage: the map and
+collecting less start at Prototype; user export and deletion, the retention configuration and
+purge jobs are Launch work; tenant deletion with proof, yearly exit tests, archiving and
+per-tenant keys wait for Scale unless a contract demands them sooner.
 
 | Class | Examples | Handling |
 |---|---|---|
@@ -63,17 +66,21 @@ Deletion sequence:
 
 1. Authenticate the request; re-confirm for destructive actions.
 2. Immediately: disable the account, revoke sessions, tokens and API keys, cancel subscriptions.
-3. Grace period (commonly 7 to 30 days) during which the account can be restored.
+3. Grace period (commonly 7 to 30 days) during which the account can be restored. Where a law
+   or contract sets a deadline for completing deletion, the grace period, the batch schedules
+   and the vendor deletions all have to fit inside it.
 4. Hard-delete job, idempotent and resumable: primary database → object storage (every version)
    → search and vector indexes → cache → warehouse and analytics → each vendor through its
    deletion API (analytics, email, support, CRM, error tracker).
 5. Record completion in a deletion log holding the internal ID, timestamps and per-handler
    status, and no personal data.
 
-**Backups** cannot be edited row by row. The standard approach: deleted data ages out of
-backups within the backup retention period, that period is stated in the privacy documentation,
-and after any restore the deletion log is replayed so deleted users do not come back. Without
-the replay step, a restore silently resurrects every account deleted since the backup.
+**Backups** cannot be edited row by row. The common engineering practice: deleted data ages out
+of backups within the backup retention period, that period is stated in the privacy
+documentation, and after any restore the deletion log is replayed so deleted users do not come
+back. Without the replay step, a restore silently resurrects every account deleted since the
+backup. Whether this satisfies a particular law or contract is a `0x:privacy-compliance`
+question; a short backup retention makes the answer easier.
 
 **Re-import** is the other resurrection path: a connector or sync job that reloads history
 brings the person back into the warehouse or CRM. Delete at the source first, then downstream.
@@ -107,8 +114,10 @@ periods for financial and tax records vary by jurisdiction and need professional
 
 Mechanics by store:
 
-- **Large time-based Postgres tables:** partition by time and drop old partitions. A drop is
-  instant and leaves no bloat.
+- **Large time-based Postgres tables:** partition by time and drop old partitions, which is
+  near-instant and leaves no bloat. On a busy table detach first with `ALTER TABLE ... DETACH
+  PARTITION ... CONCURRENTLY` (PostgreSQL 14 and later), so the parent is not locked
+  exclusively, then drop.
 - **Unpartitioned tables:** delete in batches in a loop until no rows remain, with an index on
   the timestamp. One giant `DELETE` is a long transaction that bloats the table, lags replicas
   and can block migrations.
@@ -241,9 +250,11 @@ searched. Passwords are hashed, not encrypted (`0x:auth-identity`).
 - **Envelope encryption.** A key-management service holds the master key and never releases
   it. The application asks it to generate or unwrap data keys, encrypts fields locally, and
   stores the wrapped data key or its ID beside the ciphertext.
-- **Authenticated encryption through a vetted library** (Tink, the AWS Encryption SDK,
-  libsodium), not hand-assembled primitives. With AES-GCM a nonce must never repeat under one
-  key; a repeat breaks confidentiality and integrity.
+- **Authenticated encryption through a vetted library** (the AWS Encryption SDK, libsodium,
+  Tink; confirm a maintained release exists for the project's language), not hand-assembled
+  primitives. With AES-GCM a nonce must never repeat under one key; a repeat breaks
+  confidentiality and integrity, and random 96-bit nonces stay safe only up to about 2^32
+  encryptions per key, one more reason for a data key per record or per tenant.
 - **Bind ciphertext to its place.** Pass tenant ID, table, column and row ID as associated
   data so a ciphertext copied to another row fails to decrypt.
 - **Store a key version with every value.** Rotating the master key re-wraps data keys cheaply;
@@ -258,10 +269,11 @@ searched. Passwords are hashed, not encrypted (`0x:auth-identity`).
 - **Crypto-shredding:** with a data key per tenant or per user, destroying the key makes every
   copy unreadable, including backups and event logs. It is the strongest answer to deletion in
   immutable stores. The same property means a lost key is lost data; rely on the key service's
-  durability and deletion-delay window.
+  durability and deletion-delay window. Whether key destruction counts as erasure under a
+  given law is a `0x:privacy-compliance` question.
 
-Avoid in-database encryption functions that take the key as a query parameter: the key travels
-to the database and can land in statement logs. Key storage and algorithm choices are
+Avoid in-database encryption functions that take the key as a query parameter (pgcrypto's
+`pgp_sym_encrypt` and similar): the key travels to the database and can land in statement logs. Key storage and algorithm choices are
 `0x:web-security` (`secrets.md`).
 
 ## Ask the user
@@ -277,6 +289,8 @@ to the database and can land in statement logs. Key storage and algorithm choice
 - **How long are backups kept?** That is the true upper bound on how long deleted data
   persists. Default: 30 days.
 - **Does the product hold sensitive data or customers' third-party credentials?** If so,
-  field-level encryption moves from optional to required.
+  field-level encryption moves from optional to required. Default: yes for any stored OAuth
+  token or third-party API key.
 - **Do customers need a deletion certificate or data residency?** Common in enterprise deals;
-  cheap if tenant scoping is in place, expensive to retrofit.
+  cheap if tenant scoping is in place, expensive to retrofit. Default: not yet, but keep
+  tenant scoping complete so either can be added.

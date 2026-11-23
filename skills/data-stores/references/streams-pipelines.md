@@ -69,19 +69,21 @@ timestamps in UTC and define the reporting time zone once, in staging.
 
 | Source | Default | Reason |
 |---|---|---|
-| SaaS APIs with wide, changing schemas (payment provider, ad platforms, CRM, support desk) | Managed connector (Fivetran, Airbyte Cloud, Stitch, or the vendor's own warehouse export) | Their APIs change, paginate and rate-limit in ways that eat days; the connector vendor absorbs it |
+| SaaS APIs with wide, changing schemas (payment provider, ad platforms, CRM, support desk) | Managed connector (Fivetran, Airbyte Cloud or a comparable service), or the source vendor's own warehouse export where one exists | Their APIs change, paginate and rate-limit in ways that eat days; the connector vendor absorbs it |
 | The product's own Postgres | Managed connector if the price fits; otherwise a small script or an open-source loader such as dlt | The schema is known and under control |
 | High-volume event or log tables | Custom batch export, or the analytics tool's export | Row-based connector pricing multiplies on high-churn tables |
 | A niche API no connector covers | Custom script | No choice |
 
 Rule of thumb: if a connector costs less per month than two hours of the founder's time, buy
-it. Before committing, estimate the bill from the row counts that change monthly, since that is
-the usual pricing unit.
+it. Before committing, estimate the bill from the rows that change each month: monthly active
+rows or a similar volume measure is the common pricing unit, and a table that rewrites every
+row daily bills as its full size. This market consolidates and reprices often, so confirm the
+vendor's current product and pricing model instead of relying on a remembered one.
 
 A custom loader is production code and needs: a stored cursor, idempotent writes, pagination
 and rate-limit handling, retries with backoff, a backfill mode for a date range, detection of
 new or changed columns, a failure alert, and a scheduler. A scheduled CI workflow is enough at
-Launch; an orchestrator (Dagster, Airflow) is a Scale purchase, when dependencies between jobs
+Launch (its start times are best-effort, so pair it with the heartbeat check below); an orchestrator (Dagster, Airflow) is a Scale purchase, when dependencies between jobs
 become the problem.
 
 ## Transformations into trusted metric tables
@@ -137,7 +139,7 @@ Reverse ETL pushes warehouse-defined audiences and attributes into CRM, email an
 until Scale; at Launch, send the handful of needed properties straight from the application to
 the email tool or CRM.
 
-When it is built (Hightouch, Census, or a script):
+When it is built (Hightouch, Fivetran Activations, which absorbed Census, or a script):
 
 - The segment is a mart model with tests; the sync tool only moves it.
 - Upsert by a stable external ID, never by email address, which changes and duplicates.
@@ -174,7 +176,9 @@ Postgres logical replication traps:
 
 - **A replication slot retains WAL until its consumer confirms it.** A stopped or forgotten
   consumer fills the primary's disk and takes the database down. Monitor, alert, and cap with
-  `max_slot_wal_keep_size`. Drop slots that are no longer used.
+  `max_slot_wal_keep_size` (unlimited by default). When the cap is reached the slot is
+  invalidated and its consumer must take a fresh snapshot, which is the right trade against a
+  full disk. Drop slots that are no longer used.
 
 ```sql
 SELECT slot_name, active,
@@ -185,8 +189,11 @@ FROM pg_replication_slots;
 - Requires `wal_level = logical` (a restart) and a direct connection, not a transaction-mode
   pooler. Confirm the managed provider supports it and what happens to slots on failover.
 - Updates and deletes carry only the primary key of the old row by default. A table without a
-  primary key cannot replicate updates or deletes at all. Set `REPLICA IDENTITY FULL` on a
-  table only when consumers need the previous values, at a WAL-volume cost.
+  primary key that is published for updates and deletes does worse than fail to replicate:
+  Postgres rejects `UPDATE` and `DELETE` on it with a replica-identity error, so adding such a
+  table to a publication (or creating one `FOR ALL TABLES`) breaks application writes. Give
+  every table a primary key first. Set `REPLICA IDENTITY FULL` only when consumers need the
+  previous values, at a WAL-volume cost.
 - Large unchanged column values (TOAST) are omitted from update events; consumers must not
   treat absence as null.
 - Schema changes are not replicated as events. Coordinate migrations with consumers: add
@@ -238,6 +245,7 @@ consumers. Skip until Scale unless the product itself is event-driven.
 - **What is the budget for warehouse and connectors together?** Default: serverless warehouse,
   managed connectors only for the billing and ad sources.
 - **Which metric definitions are official?** How MRR, active and churned are defined is a
-  business decision that must be made once, by the founder.
+  business decision that must be made once, by the founder. Default: the definitions in
+  `0x:payments-billing` and `0x:product-analytics`, written into each model's description.
 - **May personal data go into the warehouse and on to ad or email tools?** Default: IDs and
   pseudonymous attributes only; no free text; syncs filtered by consent.
