@@ -74,7 +74,9 @@ hides the backlog. Count confusion as a product defect with a documentation or c
 ## Refunds and cancellations by written policy
 
 Write the policy once, publish it, and let support apply it without asking. Consumer law can
-grant more than this; check each market (`0x:privacy-compliance`).
+grant more than this: EU and UK consumers have a 14-day withdrawal right for online purchases
+(with conditions for services already started), and EU law now requires an online withdrawal
+button for it. Check each market (`0x:privacy-compliance`).
 
 | Case | Default |
 |---|---|
@@ -91,8 +93,10 @@ grant more than this; check each market (`0x:privacy-compliance`).
 - Ask the reason once, offer one fitting alternative (pause, downgrade, a fix), then do what they
   asked without friction. A refused small refund often returns as a chargeback that costs more
   (mechanics → `0x:payments-billing`; save offers → `success-churn.md`).
-- Cancellation works in the product without contacting anyone. Several jurisdictions require
-  cancelling online to be as easy as signing up, and hidden cancellation drives chargebacks.
+- Cancellation works in the product without contacting anyone. Consumer laws in several places
+  require online cancellation without obstruction for anyone who signed up online (California's
+  automatic renewal law, Germany's cancellation button; the US FTC pursues hard-to-cancel
+  subscriptions under ROSCA), and hidden cancellation drives chargebacks.
 - Confirm in writing: amount refunded, when it appears, when access ends, how to export data.
 
 ## AI support agent: what it answers, when a human takes over
@@ -110,12 +114,14 @@ An AI agent answers well only what the help center already answers well; fix the
 
 - Handover carries the transcript and collected details into the ticket; the customer never
   repeats themselves and is told when a human will reply.
-- Say that it is an AI. Several laws require chatbot disclosure, and customers react worse when
-  they find out later.
+- Say that it is an AI. The EU AI Act requires it from August 2026 for systems that talk with
+  people, some US states have bot-disclosure laws, and customers react worse when they find out
+  later.
 - Limits on money and access live in code behind the same audited API humans use, never only in
   the prompt.
 - Measure resolution by sampling transcripts weekly, not by "the customer stopped replying". Hunt
-  for invented policies: companies have been held to promises their chatbots made.
+  for invented policies: companies have been held to what their chatbots said (in 2024 a Canadian
+  tribunal made Air Canada pay after its chatbot misstated a refund policy).
 - Building the agent (retrieval, guardrails, evals) → `0x:ai-features`.
 
 ## Admin actions support gets without an engineer

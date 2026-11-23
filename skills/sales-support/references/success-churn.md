@@ -19,7 +19,8 @@ Split them first. In card-billed self-serve products failed payments are often a
 all churn, and they are the cheapest to fix. Involuntary fixes (mechanics → `0x:payments-billing`):
 
 - Provider smart retries and the card networks' automatic card updater switched on.
-- Email before a card expires; dunning email with a direct update-payment link behind no login.
+- Email before a card expires; dunning email with a direct update-payment link that needs no
+  login (the billing provider's hosted, single-purpose link).
 - In-app banner on past-due accounts; full access during the retry period.
 - B2B annual plans: invoice to accounts payable by bank transfer, with a billing contact who is
   not the champion.
@@ -27,7 +28,7 @@ all churn, and they are the cheapest to fix. Involuntary fixes (mechanics → `0
 
 Finding the causes of voluntary churn:
 
-1. Require a reason in the cancellation flow (below).
+1. Ask for a reason in the cancellation flow (below).
 2. Within days of a cancellation, the founder emails personally asking for 15 minutes, with no
    pitch. A stated "too expensive" is often a proxy for low use; the conversation finds the real cause.
 3. Read the account's usage over the 30 to 90 days before it left: ever activated? When did usage
@@ -78,7 +79,8 @@ SQL query, a CRM field and a weekly review are enough before that.
 
 In the product, at most two screens before confirmation:
 
-1. A required reason: five to seven options plus "other" with a text box.
+1. A reason, one click: five to seven options plus "other" with a text box. For consumer
+   subscriptions let it be skipped; some cancellation laws treat mandatory extra steps as obstruction.
 2. One offer matched to that reason, or none.
 
 | Reason | Offer |
@@ -92,9 +94,10 @@ In the product, at most two screens before confirmation:
 
 3. Confirmation: the end date, how long data is kept, how to export, how to reactivate; repeat it by email.
 
-- Cancel stays one click from the offer and never requires a call or chat. Several jurisdictions
-  require cancellation to be as easy as signup, and obstruction turns into chargebacks and public
-  complaints.
+- Cancel stays one click away, visible next to the offer, and never requires a call or chat.
+  Several jurisdictions require consumer cancellation without obstruction (California allows one
+  save attempt online, only with the cancel button shown alongside it), and obstruction turns into
+  chargebacks and public complaints.
 - One save offer per customer per period; repeated discounts teach customers to cancel for them.
 - Measure the save rate and whether saved customers are still paying 90 days later. A save that
   churns next month is a deferred loss.

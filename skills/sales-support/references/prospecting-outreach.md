@@ -38,16 +38,17 @@ An ICP is usable only when it is narrow enough to produce a list by query.
 4. Give every A account a "reason to contact now" column. An empty cell means the email will be generic.
 5. Pick one to three people per account: the person who feels the pain and the person who owns the
    budget. Verify every address with a verification service before the first send.
-6. Record each contact's source. Privacy law can require telling a person where their data came
-   from, and the source column later shows which channel produces customers.
+6. Record each contact's source. GDPR and UK GDPR require telling a named contact where their data
+   came from, at the latest in the first message; the column also shows which channel produces
+   customers.
 
 When outbound fails, check list fit before rewriting copy: the right message to the wrong list
 gets nothing, and a plain message to a list with a live trigger gets replies.
 
 ## Warm introductions first
 
-A warm introduction converts to a meeting far more often than a cold email (rule of thumb: about
-an order of magnitude). Exhaust them before buying data.
+A warm introduction converts to a meeting far more often than a cold email. Exhaust them before
+buying data.
 
 - Sources: former colleagues and employers, investors and their portfolio companies, advisors,
   communities where the ICP gathers, people who engaged with the founder's writing, and existing
@@ -101,7 +102,7 @@ date, champion and economic buyer, source, competitor (including "do nothing").
 | Proof | One concrete result from a similar customer, or one credible reason you can solve it | Replaces adjectives |
 | Ask | An interest question ("Worth comparing notes?"), not a fixed 30-minute slot | A small yes is easier than a calendar commitment |
 | Form | Under about 100 words, plain text, no images or attachments, no links in the first touch | Links, images and tracking reduce inbox placement |
-| Footer | Name, company, postal address, a plain opt-out line | Required in several jurisdictions; lowers complaint rates |
+| Footer | Name, company, postal address, a plain opt-out line; for EU and UK contacts, a link to a privacy notice that names the data source | Required in several jurisdictions; lowers complaint rates |
 
 ```text
 Subject: support hiring at Acme
@@ -133,15 +134,21 @@ Mechanics of authentication and reputation → `0x:email-notifications`. Cold-sp
   receive and are read. Never send from a no-reply address.
 - Warm new mailboxes for a few weeks before real volume. Keep each mailbox to tens of messages a
   day (rule of thumb); add mailboxes rather than volume per mailbox.
-- Keep spam complaints well below the mailbox providers' ceilings (Google asks senders to stay
-  under 0.1% and enforces at 0.3%); keep bounces under about 2% (rule of thumb) by verifying.
+- Keep spam complaints well below the mailbox providers' ceilings (Google's sender guidelines ask
+  for under 0.1% as measured in Postmaster Tools and treat 0.3% or more as non-compliant; check the
+  current guidelines); keep bounces under about 2% (rule of thumb) by verifying.
 - Turn off open and click tracking. Tracking pixels and rewritten links hurt placement, and privacy
   proxies (Apple Mail Privacy Protection) make open rates meaningless.
-- Law differs by recipient country. The US (CAN-SPAM) allows B2B cold email with honest headers,
-  a postal address and a working opt-out honored promptly. The UK allows it to corporate addresses
-  (not sole traders) with an opt-out; Germany and some other EU states require prior consent even
-  for B2B; Canada (CASL) requires consent with narrow implied-consent cases. GDPR governs the list
-  itself. Check before each new country → `0x:privacy-compliance`.
+- Law differs by recipient country; this is a summary to check, not advice. The US (CAN-SPAM)
+  allows B2B cold email with honest headers and subject, a postal address and an opt-out honored
+  within 10 business days. The UK (PECR) allows it to corporate subscribers such as companies and
+  LLPs with an opt-out, but sole traders and most partnerships count as individuals and need
+  consent. Germany requires prior express consent for email advertising even to businesses; some
+  other EU states are similarly strict while others (France, for one) allow B2B email relevant to
+  the recipient's role. Canada (CASL) requires consent; implied consent covers narrow cases such as
+  an address conspicuously published for the role with no notice refusing solicitations. GDPR and
+  UK GDPR also govern the list itself (a lawful basis, usually legitimate interests with a written
+  assessment). Check before each new country → `0x:privacy-compliance`.
 
 ## Follow-up sequence without becoming spam
 
@@ -162,6 +169,9 @@ Mechanics of authentication and reputation → `0x:email-notifications`. Cold-sp
 - At most two people per account in sequence at once, with coordinated messages; never the same
   email to five people at one company.
 - Recontact a "not now" at exactly the time they named. It is now a warm lead.
+- Calls carry their own rules: in the UK screen numbers against the Corporate Telephone Preference
+  Service; in Germany a B2B cold call needs at least presumed interest; in the US, no autodialed or
+  prerecorded calls or texts to mobiles without consent. Check before adding a call step.
 
 ## First salesperson: only after founder-led sales repeats
 

@@ -1,6 +1,6 @@
 ---
 name: sales-support
-description: "Wins and keeps customers: prospecting and cold outreach, discovery calls and demos, proposals and contract redlines, security questionnaires, onboarding, support operations, churn and renewals, and reviews. Use when writing a cold email, preparing a demo, answering a security questionnaire or redlines, setting up support, handling an angry customer, a refund request or a bad review, or when customers churn."
+description: "Wins and keeps customers: prospecting and outreach, discovery calls and demos, proposals, statements of work and redlines, security questionnaires, onboarding, support operations, churn and renewals, and reviews. Use when writing a cold email, preparing a demo, answering a security questionnaire or redlines, setting up support, handling an angry customer, a refund request or a bad review, or when customers churn."
 ---
 
 # Sales, support and customer success
@@ -69,7 +69,7 @@ The defaults below are for new decisions.
 | AI support agent | Not before the top articles exist; a human on request, always | |
 | Admin access | Read-only, logged, time-limited impersonation | Write access only with customer consent |
 | Health score | Three to five signals, red, yellow, green, in a query plus a CRM field | CS platform at Scale |
-| Cancellation | In the product, required reason, one matched offer, pause option | |
+| Cancellation | In the product, one-click reason (skippable for consumers), at most one matched offer with cancel always visible, pause option | |
 | Reviews | Ask everyone at a defined success moment; no gating, no incentives tied to sentiment | |
 
 By stage:
@@ -87,7 +87,8 @@ By stage:
 1. Every open deal in the CRM has a stage that matches its exit criterion, an amount, a dated next
    step and a close date; none has a next step in the past.
 2. Cold email goes from a separate domain with SPF, DKIM and DMARC aligned, without tracking, with
-   an opt-out, and a shared suppression list stops every sequence on reply, bounce or opt-out.
+   an opt-out (and, for EU or UK contacts, a privacy-notice link naming the data source), and a
+   shared suppression list stops every sequence on reply, bounce or opt-out.
 3. Every qualified deal has a named economic buyer, a quantified pain and a known buying process;
    unknowns are written as questions for the next call.
 4. A pilot, if any, has written success criteria agreed with the economic buyer and conversion

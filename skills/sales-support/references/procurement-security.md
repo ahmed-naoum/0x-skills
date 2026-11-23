@@ -46,7 +46,7 @@ stalls the deal while the buyer's interest cools.
 | Uptime record | Public status page with history | Launch |
 
 - Publish a trust page: public overview plus NDA-gated downloads. Trust-center products exist
-  (Vanta, Drata, SafeBase and others); at Launch a page and a shared folder are enough.
+  (Vanta, Drata, which bought SafeBase, and others); at Launch a page and a shared folder are enough.
 - Everything in the pack must be true today, because answers and documents get attached to the
   contract as representations. "Planned, target date Q3" is an acceptable answer; a false "yes" is
   a liability and, after a breach, evidence against you.
@@ -93,7 +93,7 @@ questionnaire is a preference until a buyer says it blocks signature.
 | SSO (SAML or OIDC) | Mid-market and up | Usually the first; place it in a higher plan (`0x:pricing-monetization`); build → `0x:auth-identity` |
 | Roles and permissions | Teams beyond a handful of users | → `0x:auth-identity` |
 | Audit log | Security reviews | Append-only, exportable, admin-visible |
-| SOC 2 Type II | Enterprise security teams | Months of observation; start before the deal that needs it |
+| SOC 2 Type II | Enterprise security teams | An observation period of months (commonly 3 to 12) once controls run; a Type I report, at a point in time, can bridge; start before the deal that needs it |
 | SCIM provisioning | Large organizations with an identity provider | → `0x:auth-identity` |
 | Data residency | EU enterprise and public sector | Expensive: a separate deployment to run forever |
 | Contractual SLA with credits | Enterprise legal | Only once uptime is measured (`0x:site-reliability`) |
@@ -112,9 +112,9 @@ Keep a vendor kit in one folder, current:
 | Item | Notes |
 |---|---|
 | Legal entity name, registration number, address | Exactly as on the contract and invoices |
-| Tax forms | US buyers: Form W-9 for a US entity, Form W-8BEN-E for a non-US entity (with any treaty claim); VAT number for EU buyers |
+| Tax forms | US buyers: Form W-9 from a US entity, Form W-8BEN-E from a non-US entity (with any treaty claim); VAT number for EU and UK buyers; other countries have their own supplier forms. An accountant confirms which apply |
 | Bank details | On letterhead or a bank-issued letter |
-| Certificate of insurance | General liability, technology errors and omissions, cyber; buyers often set minimum limits and ask to be named as additional insured, which the broker can issue |
+| Certificate of insurance | General liability, technology errors and omissions, cyber; buyers often set minimum limits and ask to be named as additional insured, which usually needs a policy endorsement from the broker |
 | Security pack | As above |
 | Attestations | Supplier code of conduct, anti-bribery, sanctions, modern-slavery statements: read them and sign only what is true |
 | Contacts | Sales, billing, security, legal |
@@ -122,8 +122,10 @@ Keep a vendor kit in one folder, current:
 - Business email compromise targets supplier bank details. Never change bank details on the
   strength of an email in either direction; confirm by phone on a known number, and tell buyers
   you will never change them by email.
-- Some supplier networks charge for premium supplier accounts; the free tier is normally enough
-  to receive POs and submit invoices. Check before accepting a paid plan.
+- Some supplier networks charge suppliers subscription or transaction fees once document volume
+  or value passes a threshold (SAP Business Network's enterprise account works this way; its
+  standard account is free). Read the current fee terms before upgrading, and ask the buyer
+  whether the free account is enough for their POs and invoices.
 - Get insurance quotes before the first enterprise contract. If the buyer's minimums exceed what
   is affordable, negotiate the requirement in the contract (`proposals-contracts.md`).
 - One owner and one inbox for portals: they send renewal requests for expiring documents, and the

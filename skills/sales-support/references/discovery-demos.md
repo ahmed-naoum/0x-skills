@@ -130,7 +130,7 @@ deal justifies the work. Skip it for small deals: a monthly plan with easy cance
 
 | Term | Default |
 |---|---|
-| Price | Paid, a meaningful fraction of the annual price, credited to year one on conversion. Unpaid pilots get no attention on the buyer's side |
+| Price | Paid, a meaningful fraction of the annual price, credited to year one on conversion. Unpaid pilots get little attention on the buyer's side |
 | Length | 30 to 60 days; 90 only with a reason. Long pilots lose their sponsor |
 | Scope | One team, one or two use cases, named users |
 | Success criteria | Two to four measurable criteria agreed in writing with the economic buyer, each with how and by whom it is measured |

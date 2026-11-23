@@ -25,9 +25,11 @@ Mechanics:
   forbids selectively soliciting positive reviews, other platforms ban it too, and consumer
   regulators can treat it as deceptive. Asking everyone who reaches a defined milestone is fine.
 - No fake reviews, no undisclosed reviews by staff or relatives, no paying for positive reviews.
-  US federal rules ban fake reviews and incentives conditioned on positive sentiment and carry
-  civil penalties; EU and UK consumer law prohibit similar practices. Platform-run incentive
-  programs (a disclosed gift card for any honest review) follow that platform's rules.
+  The US FTC's 2024 rule on consumer reviews bans fake reviews, incentives conditioned on
+  sentiment, undisclosed insider reviews and review suppression, with civil penalties per
+  violation; the UK (DMCC Act, since April 2025) and EU consumer law ban fake reviews and hidden
+  incentives. Platform-run incentive programs (a disclosed gift card for any honest review) follow
+  that platform's rules; Google does not allow incentives for reviews at all.
 - Never offer anything to remove or change a negative review.
 
 Referrals: at the same moments, ask "who else do you know who has this problem?" and give a

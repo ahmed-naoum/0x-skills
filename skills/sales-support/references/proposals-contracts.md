@@ -61,8 +61,12 @@ contract:
 | Signatories, terms version, concessions granted | Disputes and the next negotiation |
 
 Set two reminders per contract: about 120 days before the end (renewal work starts,
-`success-churn.md`) and 30 days before the customer's notice deadline. Keep an obligation register
-with an owner per promise: "notify Customer X of security incidents within 48 hours" must be in
+`success-churn.md`) and 30 days before the customer's notice deadline. Also send the customer a
+written renewal reminder before their notice deadline: New York's General Obligations Law 5-903,
+which covers business service contracts, can make an auto-renewal unenforceable without a notice
+15 to 30 days before that deadline, and consumer auto-renewal laws add notices of their own.
+
+Keep an obligation register with an owner per promise: "notify Customer X of security incidents within 48 hours" must be in
 the incident runbook, or it will be breached in the first incident.
 
 ## Negotiating discounts, annual prepay and terms
@@ -82,7 +86,8 @@ Never give without getting. Every concession is traded for something of value to
 - Prefer non-price concessions: onboarding hours, extra training, a longer export window.
 - Hold any discount until the end. Offered early, it becomes the floor for the next ask,
   including procurement's.
-- Refuse most-favored-customer pricing: it makes every future discount retroactive.
+- Refuse most-favored-customer pricing: it ties every later discount, to anyone, to this
+  customer's price and invites audits of your other deals.
 - Discount limits and the value of annual prepay are policy → `0x:pricing-monetization`.
 
 ## Concede, trade or refuse
@@ -160,9 +165,11 @@ requested address. Offer card and bank transfer with a hosted pay link (mechanic
 | Beyond | Collections or legal action only where the amount justifies it |
 
 Most late enterprise payments are process failures, not unwillingness: fix the process before
-escalating tone. Suspension for non-payment after notice, and late interest within local legal
-limits, must be in the terms; without them the only lever is goodwill. Collect the deposit before
-starting services work.
+escalating tone. Put suspension for non-payment after notice, and a late-interest rate within
+local limits, in the terms: without a suspension right the only lever is goodwill. Some
+jurisdictions give statutory interest on late B2B payments even without a clause (the UK and EU
+do), and some cap payment terms or interest rates; check where the customer is. Collect the
+deposit before starting services work.
 
 ## Statement of work for custom work
 
