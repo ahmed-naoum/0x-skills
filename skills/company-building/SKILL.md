@@ -50,12 +50,12 @@ within them. The defaults below are for new decisions.
 
 | Decision | Default | Flips when |
 |---|---|---|
-| Entity | The home country's standard limited company; in the US, an LLC when bootstrapped | US venture funding is likely → Delaware C corporation |
-| Founder equity | 4-year vesting with a 1-year cliff for every founder; US 83(b) election within 30 days | |
+| Entity | The home country's standard limited company (UK Ltd, French SAS or SASU, German GmbH or UG); in the US, an LLC when bootstrapped | US venture funding is likely → Delaware C corporation |
+| Founder equity | 4-year vesting with a 1-year cliff for every founder; US 83(b) election within 30 days, UK section 431 election within 14 days; elsewhere ask a tax advisor how unvested founder shares are taxed | |
 | Co-founder terms | Near-equal split, a tie-break, written decision rights per domain | |
 | IP | Present-tense assignment signed by every founder, employee, contractor and advisor before work | |
-| Trademark | Knockout search before naming; file in the home and largest market before launch | Prototype with a provisional name → search only |
-| Insurance | None at Prototype; tech E&O plus cyber at the first B2B contract; D&O with outside directors | A contract requires it sooner |
+| Trademark | Knockout search before naming; file in the home and largest market before launch (one EU trade mark covers every member state) | Prototype with a provisional name → search only |
+| Insurance | None at Prototype; tech E&O plus cyber at the first B2B contract; D&O with outside directors; workplace-injury cover from the first employee where the law requires it | A contract requires it sooner |
 | Patents | Skip; protect trade secrets | Genuine technical invention, or the sector expects patents → file before any disclosure |
 | Strategy | One page, reread quarterly | |
 | Quarterly goals | Solo: 1 objective, 2-3 key results; about ten people: 2-3 objectives | |
@@ -66,7 +66,7 @@ within them. The defaults below are for new decisions.
 | Rhythm | Weekly written update, monthly business review, quarterly goals and retrospective | |
 | Meetings | Decision meetings with a pre-read; status in writing | |
 | Continuity | A named deputy with legal and account authority, tested | |
-| HR | Payroll provider or PEO plus an employment lawyer on call | About 15 people or several countries → fractional HR, then a people lead |
+| HR | Payroll provider (or a PEO in the US) plus an employment lawyer on call | About 15 people or several countries → fractional HR, then a people lead |
 
 By stage:
 
@@ -85,8 +85,8 @@ By stage:
 2. Each key result has a baseline, a target, a date and one owner; none is a task.
 3. Every filing deadline of every entity is in a compliance calendar with an owner, and the company
    is in good standing.
-4. Every founder's shares vest with a documented repurchase right; where the US 83(b) election
-   applies, it was filed within 30 days and proof is kept.
+4. Every founder's shares vest with a documented repurchase right or leaver clause; where a US 83(b)
+   (30 days) or UK section 431 (14 days) election applies, it was made in time and proof is kept.
 5. Every founder, employee, contractor and advisor signed a present-tense IP assignment; no
    contributor is missing.
 6. The founder confirmed that no current or former employer's invention or non-solicit clause

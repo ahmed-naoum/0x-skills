@@ -37,7 +37,10 @@ billed, and could someone legally act for the company? Three layers must exist.
 
 - A second person able to act: a second director, or an officer given authority by board
   resolution. A sole-director company has no one with authority; that is the main gap to close.
-  Alternatives: a limited power of attorney for defined acts, or a local alternate-director mechanism.
+  Alternatives: a limited power of attorney for defined acts, or an alternate director where the
+  articles allow one (UK). Counterparts: in Germany a second managing director or a Prokura (a
+  registered commercial power of attorney); in a French SAS or SASU a directeur général with
+  representation powers, if the statutes provide for one.
 - Bank: a second authorized user or signatory, with limits.
 - US single-member LLC: name a successor or designee in the operating agreement. Without one, state
   default rules on a sole member's death can leave no one authorized and, in some states, dissolve
@@ -172,9 +175,11 @@ One place that answers how the company works, so the founder does not have to.
   the handbook first, then link.
 - Every page has an owner and a last-reviewed date; review quarterly. Keep history (a wiki with
   versions, or a repository) and announce policy changes.
-- Some written policies and statements are legally required, for example the UK's written statement
-  of employment particulars from day one and disciplinary and grievance procedures; US states
-  require specific notices. Have an employment lawyer review the people policies. In the US, state
+- Some written policies and statements are legally required: the UK's written statement of
+  employment particulars from day one, including disciplinary and grievance rules; in every EU
+  country the main terms in writing within the first week; in France internal rules (règlement
+  intérieur) from 50 employees; specific notices in US states. In Germany a works council
+  co-determines many workplace policies. Have an employment lawyer review the people policies. In the US, state
   that the handbook is not a contract; elsewhere some policies can become contractual terms.
 - GitLab's public handbook is the best-known handbook-first example: borrow the structure, not the size.
 

@@ -59,8 +59,10 @@ The job description is the scorecard rewritten for the candidate:
   then requirements.
 - List only real requirements. Long lists of years and tools make strong candidates rule themselves
   out and add nothing to selection.
-- Publish the pay range. Several US states and cities require it, and the EU pay transparency
-  directive requires pay information before the interview stage as member states implement it.
+- Publish the pay range. Several US states and cities require it in job posts. The EU pay
+  transparency directive requires the starting pay or its range before the interview and bans
+  asking about pay history; its transposition deadline was 7 June 2026 and most member states were
+  late, so check the national law in force.
 - State location, time-zone overlap, process steps and timeline.
 - Cut "rockstar", "ninja", "work hard, play hard", "we are a family", and age-coded phrases such as
   "digital native" or "recent graduate".
@@ -107,9 +109,11 @@ rating scale and independent scoring.
 - Ask only job-related questions: nothing about age, family plans, pregnancy, religion, health or
   national origin; in the US ask whether the candidate is authorized to work, not about citizenship.
   Protected characteristics vary by jurisdiction.
-- Recording or AI summarization needs the candidate's consent; automated screening or scoring tools
-  are regulated in places (New York City requires bias audits; the EU AI Act treats recruitment AI
-  as high-risk). Keep a human deciding → `0x:privacy-compliance`.
+- Recording or AI summarization needs the candidate's consent in many places. Automated screening
+  and scoring tools are regulated: New York City requires bias audits; Illinois requires notice and
+  consent before AI analyzes video interviews; the EU AI Act already bans emotion recognition at
+  work, interviews included, and makes recruitment and screening AI high-risk with obligations from
+  2 December 2027 (as amended in 2026). Keep a human deciding → `0x:privacy-compliance`.
 
 ## References and identity
 
@@ -124,7 +128,8 @@ References:
 - US background checks through a screening company require a standalone disclosure, written
   authorization, and a pre-adverse-action notice before rejecting on the report (FCRA). Many states
   and cities delay criminal-history questions until after a conditional offer. In the EU, criminal
-  record checks are narrowly limited.
+  record checks are lawful only where national law allows them for the role; in the UK, checks
+  beyond a basic one are limited to eligible roles.
 
 Fraudulent remote candidates are a real and growing risk: identity theft, proxy interviewers,
 real-time face and voice swapping, and organized schemes, including state-backed ones US
@@ -172,8 +177,11 @@ and some states are stricter (California's ABC test presumes employment unless, 
 conditions, the work is outside the usual course of the hiring company's business). The UK applies
 employment-status tests plus IR35 for contractors working through their own company, where a small
 client leaves the status decision to the contractor's company and medium and large clients decide
-it themselves. Germany and several other EU countries pursue false self-employment and offer a
-formal status determination.
+it themselves. Germany pursues false self-employment (Scheinselbständigkeit) with back-charged
+social contributions and offers a formal status determination by the pension insurer. France asks
+whether there is subordination (instructions, supervision, sanctions); a worker's self-employed
+registration only creates a rebuttable presumption. Elsewhere, ask a local employment lawyer which
+test applies and whether a formal ruling is available.
 
 | Situation | Default |
 |---|---|
@@ -218,8 +226,12 @@ misclassification risk; the platform moves paperwork, not liability.
 - Close on the candidate's own motivators, learned during the process. Offer a call with a team
   member or an investor.
 - Decide the walk-away before a counteroffer arrives; a bidding war breaks the bands.
-- Make contingencies explicit: signed PIIA, right-to-work verification, a background check if one
-  is used. Then hand over to onboarding → `managing-people.md`.
+- Outside the US the offer leads to a written employment contract: EU law requires the main terms
+  in writing within the first week and the rest within a month, the UK a written statement of
+  particulars by day one; probation, notice and any non-compete compensation follow local law.
+- Make contingencies explicit: signed PIIA (or the IP and confidentiality clauses of the contract),
+  right-to-work verification, a background check if one is used. Then hand over to onboarding →
+  `managing-people.md`.
 - After a decline, ask why and keep in touch; strong candidates often return.
 
 ## The first marketing lead

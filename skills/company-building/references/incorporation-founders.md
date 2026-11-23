@@ -7,7 +7,9 @@ content, buying insurance, weighing a patent, or forming a board.
 This file gives mechanisms and common practice. Company, employment, IP and tax law differ by
 country and, in the US, by state. A startup lawyer in the company's jurisdiction should review
 formation documents, co-founder terms and anything contested. Equity mechanics, option plans and
-the cap table → `0x:startup-finance`.
+the cap table → `0x:startup-finance`. Each mechanism below is labeled with its country; where a US
+or UK one is named, the common EU counterpart follows. A founder elsewhere should put the same
+question to a local lawyer or accountant.
 
 ## Entity and jurisdiction
 
@@ -15,18 +17,31 @@ the cap table → `0x:startup-finance`.
 |---|---|---|
 | Plans to raise from US venture investors | Delaware C corporation | Investors, financing documents and option plans assume it |
 | US, bootstrapped, profits paid to owners | LLC in the home state | Pass-through taxation, less formality, one state to deal with |
-| Outside the US, local customers, no US venture plans | The home country's standard limited company (UK Ltd, German GmbH or UG, French SAS) | Local banking, payroll and tax are simplest |
+| Outside the US, local customers, no US venture plans | The home country's standard limited company: UK Ltd; France SAS, or SASU for a single founder; Germany GmbH, or UG to start with little capital; Netherlands BV | Local banking, payroll and tax are simplest, and local investors know the form |
 | Outside the US, aiming at US venture capital | Home company now; a US parent ("flip") when a US lead investor asks, or Delaware from day one if that is certain | A later flip costs legal fees and can trigger tax at home; get advice before doing it |
 | Testing an idea alone, no hires, no money raised | Simplest local form | Form a company before the first contract with real liability, a co-founder, or outside money |
 
+| Form | What to know |
+|---|---|
+| UK Ltd | Formed online at Companies House within days; founder vesting lives in the articles and a shareholders' agreement |
+| French SAS or SASU | No minimum capital, flexible statutes, filed through the online single window (guichet unique); founder leaver terms go in the shareholders' agreement (pacte d'associés); a paid président joins the employee social-security scheme, with high contributions |
+| German GmbH or UG | Notarized formation; GmbH share capital 25,000 euros, at least 12,500 paid in before registration; a UG starts from 1 euro but must retain a quarter of each year's profit until it converts; every share transfer, and any agreement obliging one (founder buybacks included), needs a notary |
+| An EU-wide form | None yet. The Commission proposed an optional "EU Inc." company form in March 2026; it is still in the legislative process, so check its status before choosing |
+
 Traps:
 
-- An LLC cannot issue standard stock options, and most venture funds cannot invest in one for tax
+- Forming abroad does not move tax residence: a company run from the founder's home country is
+  usually taxable there too (place of effective management or a permanent establishment). Take
+  home-country tax advice before forming a Delaware, UK or Estonian company from elsewhere.
+- US: an LLC cannot issue standard stock options, and most venture funds cannot invest in one for tax
   reasons. Converting later works but costs money. If venture funding is likely within a year or
   two, start as a C corporation.
-- A C corporation pays corporate tax and owners pay again on dividends; for a profitable lifestyle
-  business that double layer matters. US founders of C corporations may qualify for the qualified
-  small business stock exclusion on a sale; its terms changed in 2025, so confirm with a tax advisor.
+- US: a C corporation pays corporate tax and owners pay again on dividends; for a profitable lifestyle
+  business that double layer matters. Its founders may qualify for the qualified small business
+  stock (QSBS) exclusion on a sale. For stock issued after July 4, 2025 the exclusion is 50% after
+  three years, 75% after four and 100% after five, capped per holder at the greater of $15 million
+  or ten times basis, for companies with gross assets up to $75 million when the stock is issued.
+  Some states do not follow it; confirm current figures with a tax advisor.
 - A Delaware company operating elsewhere must also register ("foreign qualification") in each state
   where it has employees or an office, and pays that state's fees and taxes.
 - Paying personal bills from the company account weakens the liability shield. Separate bank
@@ -38,31 +53,48 @@ Formation sequence for a US C corporation (other forms are analogous):
 2. File the charter through a registered agent; adopt bylaws; appoint directors and officers.
 3. Issue founder shares at a nominal price with vesting and a company repurchase right on unvested
    shares. Each founder assigns prior work on the product to the company as part of the purchase.
-4. File the 83(b) election within 30 days of the share issuance when shares vest. The deadline
-   cannot be extended, and missing it can turn each vesting date into taxable income. Keep proof
-   of filing.
+4. File the 83(b) election within 30 days of the share issuance when the shares are subject to
+   vesting. The deadline cannot be extended, and missing it can turn each vesting date into taxable
+   income. The IRS accepts it online (Form 15620, through an IRS online account) or by mail; keep
+   proof of filing and give the company a copy.
 5. Get the tax ID, open the bank account, register in the operating state.
+
+Outside the US: the UK counterpart of the 83(b) is a joint section 431 election signed by founder
+and company within 14 days of acquiring shares subject to forfeiture or transfer restrictions; it is
+kept on file, not sent to HMRC. France and Germany have no matching election; ask a tax advisor how
+founder shares with leaver clauses are taxed before signing the shareholders' agreement.
 
 Keep filings current with a shared compliance calendar, one owner per deadline:
 
-- Annual report and franchise tax in the state of incorporation; for Delaware corporations, due by
-  March 1. Delaware's default calculation produces an alarming bill for companies with many
+- US: annual report and franchise tax in the state of incorporation; for Delaware corporations, due
+  by March 1. Delaware's default calculation produces an alarming bill for companies with many
   authorized shares; recalculating with the assumed par value capital method usually cuts it sharply.
-- Annual reports in each state of registration; registered agent renewal.
-- Income tax returns, even with no revenue.
-- UK: a confirmation statement every year and annual accounts at Companies House; directors and
-  people with significant control must now verify their identity there.
-- Beneficial-ownership reporting (US Corporate Transparency Act, EU registers) has changed recently;
-  check what applies at formation and whenever ownership changes.
+  Annual reports in each state of registration; registered agent renewal.
+- Income tax returns everywhere, even with no revenue.
+- UK: a confirmation statement every year and annual accounts at Companies House. Since 18 November
+  2025 every new director and person with significant control must verify their identity there
+  (existing ones over the following year, tied to the confirmation statement); failing to is an
+  offense.
+- France: approve the annual accounts within six months of year-end and file them with the
+  commercial court registry. Germany: publish annual accounts through the company register
+  (Unternehmensregister).
+- Beneficial ownership: US-formed companies and US persons owe no federal Corporate Transparency Act
+  report (exempt since 2025, made permanent by an August 2026 FinCEN rule); foreign companies
+  registered in a US state still file, and some states have their own rules (New York for LLCs).
+  EU countries keep registers every company files with at formation and on each change (France's
+  RBE, Germany's Transparenzregister); the UK keeps its PSC register. Check what applies at
+  formation and whenever ownership changes.
 
 Missed filings cost good standing. A company not in good standing struggles to close a round, sign
-some contracts or be acquired, and in time can have its charter voided or be struck off the register.
+some contracts or be acquired, and in time can have its charter voided (Delaware) or be struck off
+the register (UK).
 
 ## Co-founder agreement
 
-Sign before significant shared work. The equity documents (stock purchase with vesting in the US; a
-shareholders' agreement with leaver clauses in much of Europe) are the legally operative part; a
-co-founder agreement records the rest and is drafted alongside them.
+Sign before significant shared work. The equity documents are the legally operative part: in the
+US a stock purchase agreement with vesting; in the UK and most of Europe a shareholders' agreement
+with leaver clauses (a pacte d'associés in France; in Germany notarized where it obliges GmbH share
+transfers). A co-founder agreement records the rest and is drafted alongside them.
 
 | Topic | Decide | Default |
 |---|---|---|
@@ -72,7 +104,7 @@ co-founder agreement records the rest and is drafted alongside them.
 | Decision rights | Who decides within a domain; how cross-domain disputes end | Domain owner decides; CEO breaks ties; equity, fundraising, sale or shutdown need all founders |
 | Commitment | Full-time from when; outside work; salary | Full-time from a stated date; equal salaries until the board decides otherwise |
 | Leaving | Vested and unvested shares, titles, board seats | Unvested repurchased at cost; vested kept; departing founder resigns all offices |
-| Bad leaver | Whether cause lets the company buy back vested shares cheaply | Common in Europe, rarer in the US; define cause narrowly (fraud, material breach, competing) |
+| Bad leaver | Whether cause lets the company buy back vested shares cheaply | Common in Europe, rarer in the US; define cause narrowly (fraud, material breach, competing); courts in several European countries strike down buyback prices far below fair value, so a local lawyer sets the price |
 | Acceleration | Vesting on acquisition | Double trigger: acquisition plus termination without cause |
 | Death or disability | Repurchase rights and how they are funded | Company may repurchase at fair value; consider key-person insurance |
 | Disputes | Steps before litigation | Structured conversation, then mediation, then arbitration or court |
@@ -93,10 +125,18 @@ non-compete and non-solicit clauses, and confidentiality.
 - California Labor Code section 2870 limits assignment of inventions made entirely on the
   employee's own time without employer resources, except those relating to the employer's business
   or research or resulting from work for the employer. Several other states have similar statutes.
-  Outside the US, rules on employee inventions and copyright differ and often favor the employer.
+- UK: patentable inventions made in the course of normal duties belong to the employer (Patents Act
+  1977 section 39), and contract terms taking more than that are unenforceable for those inventions
+  (section 42); copyright in work made in the course of employment belongs to the employer.
+  Germany and France: software written in the course of the job belongs to the employer by statute,
+  and German law lets the employer claim an employee's service inventions against compensation.
+  Elsewhere, ask a local lawyer whether side projects are covered.
 - If the idea is adjacent to the employer's business, get a written release first, or leave first.
-- Non-competes: enforceability varies widely (California voids most). Non-solicits of colleagues
-  and customers are enforced more often: do not recruit coworkers while still employed.
+- Non-competes: enforceability varies widely. In the US it is state law (California voids most).
+  Germany and France enforce a post-employment non-compete only if the employer pays compensation
+  for its duration (in Germany at least half of the last pay); UK courts enforce only narrow,
+  reasonable ones. Non-solicits of colleagues and customers are enforced more often: do not recruit
+  coworkers while still employed.
 - Keep a dated record of where and when the work was created. Investor due diligence asks.
 
 ## IP assignment
@@ -107,13 +147,17 @@ round or an acquisition checks every contributor, and a gap found then is expens
 | Contributor | Document | Key point |
 |---|---|---|
 | Founders | IP assignment at the share purchase | Covers work done before incorporation |
-| Employees | Proprietary information and inventions assignment (PIIA), signed before day one | Lists excluded prior inventions; includes confidentiality |
-| Contractors, agencies | Contractor agreement with an explicit assignment | In the US, "work made for hire" generally does not cover software made by contractors |
+| Employees | Proprietary information and inventions assignment (PIIA, the US name), signed before day one; elsewhere the same clauses sit in the employment contract | Lists excluded prior inventions; includes confidentiality |
+| Contractors, agencies | Contractor agreement with an explicit assignment | Without one the contractor keeps copyright: in the US "work made for hire" generally does not cover contractor software; in the UK an assignment must be in writing, signed by the contractor |
 | Advisors | Advisor agreement with assignment of their work product | Most often forgotten |
 | Dependencies | License inventory | → `0x:privacy-compliance` |
 
-- Use present-tense wording ("hereby assigns"). A promise to assign later can lose to a present
+- US: use present-tense wording ("hereby assigns"). A promise to assign later can lose to a present
   assignment someone else holds.
+- Germany: copyright itself cannot be transferred, so the contract grants exclusive usage rights,
+  unlimited in time and place, for every listed use. France: an assignment of author's rights must
+  list each right with its scope, purpose, territory and duration; what is not listed stays with the
+  author. Use a local template, not a translated US one.
 - Where moral rights exist (much of Europe), add a waiver or a covenant not to assert them, as far
   as local law allows.
 - Contractors reusing their own libraries grant a perpetual, irrevocable license to those parts.
@@ -145,10 +189,13 @@ rankings, design work and customer recognition.
    ("Fast Invoice") are hard to register and to defend.
 3. File in the classes that cover the product: usually class 9 (downloadable software) and 42
    (SaaS, hosted software), plus classes for services sold, such as 35 or 41.
-4. In the US, an intent-to-use application can be filed before launch. File in each market where
-   the product sells; a filing abroad within six months can claim the first filing's date, and the
-   Madrid system extends one application to many countries.
-5. Use "TM" until registration; the registered symbol only where registered.
+4. File in each market where the product sells. In the US an intent-to-use application can be filed
+   before launch; EU and UK filings need no prior use. One EU trade mark (EUIPO) covers every member
+   state; the UK needs its own filing. A filing abroad within six months can claim the first
+   filing's date (Paris Convention priority), and the Madrid system extends one application to many
+   countries.
+5. Use "TM" until registration and the registered symbol only where registered; implying a
+   registration that does not exist is an offense in some countries, the UK among them.
 
 Use a trademark attorney for a full search once real money goes into the brand. Examination takes
 many months, and fees are charged per class.
@@ -160,16 +207,18 @@ proof of the original (repository history, publication dates).
 
 | Infringement | Route | Notes |
 |---|---|---|
-| Copied text, images, code or docs | Copyright takedown to the host or platform (in the US, a DMCA notice to the host's designated agent) | A counter-notice can restore the content; then only a lawsuit stops it |
+| Copied text, images, code or docs | Copyright takedown to the host or platform: in the US a DMCA notice to the host's designated agent; in the EU the host's notice-and-action channel | US: a counter-notice restores the content after 10 to 14 business days unless the claimant sues |
 | Name or logo on a site, app or account | Platform trademark complaint; registrar and host abuse reports | Much faster with a registration |
-| Confusingly similar domain | UDRP complaint: identical or confusingly similar, no legitimate interest, registered and used in bad faith; URS for quick suspension on newer TLDs | Transfer or cancellation only, no damages |
+| Confusingly similar domain | UDRP complaint for generic TLDs: identical or confusingly similar, no legitimate interest, registered and used in bad faith; URS for quick suspension on newer TLDs; country-code domains (.uk, .fr, .de) follow their registry's own procedure or the courts | Transfer or cancellation only, no damages |
 | Phishing or payment clone | Abuse reports to host, registrar, CDN and browser safe-browsing services at once | A security incident too → `0x:web-security` |
 | A real business copying | Lawyer's cease-and-desist letter, then litigation if worth it | Overreaching letters that claim rights in ideas can backfire in public |
 
 In the US, register copyright in key works (docs, site content, a code snapshot) early: registration
 is required before suing over a US work, and statutory damages and attorney fees are available only
-if registration came before the infringement or within three months of publication. In the EU, the
-Digital Services Act obliges hosting providers to run a notice-and-action process for illegal content.
+if registration came before the infringement or within three months of publication. The EU and UK
+have no copyright registration; keep dated proof of authorship instead (repository history, a dated
+deposit). In the EU, the Digital Services Act obliges hosting providers to run a notice-and-action
+process for illegal content; use the host's own form so the notice counts.
 
 ## Insurance
 
@@ -179,10 +228,12 @@ Digital Services Act obliges hosting providers to run a notice-and-action proces
 | Cyber | Breach response, forensics, notification, extortion, business interruption, third-party claims | Customer personal data or payment flows; often bundled with tech E&O |
 | Directors and officers (D&O) | Claims against directors and officers over management decisions | Outside investors or independent directors; investors often require it |
 | General liability | Injury, property damage, some advertising claims | Office, events, or a contract lists it |
-| Workers' compensation, employer's liability | Workplace injury | Mandatory with employees in most US states and in the UK |
+| Workers' compensation (US), employer's liability (UK) | Workplace injury | US: mandatory with employees in nearly every state (Texas lets most employers opt out); UK: compulsory with employees; Germany and France: statutory accident insurance through payroll contributions, no separate policy |
 | Employment practices liability | Discrimination, harassment, wrongful-termination claims | First employees |
 
 - Enterprise contracts name minimum limits; buy to match before signing.
+- Names differ by country: tech E&O is professional indemnity in the UK and responsabilité civile
+  professionnelle in France. Ask a local broker which policies are compulsory for the sector.
 - Most of these policies are claims-made: they respond to claims made during the policy period for
   acts after a retroactive date. Keep coverage continuous and notify the insurer of a possible
   claim as soon as it appears.
@@ -197,11 +248,13 @@ exclusions in Europe, and enforcement is beyond a small company's budget. Consid
 genuine technical method (hardware, novel algorithms with a measurable technical effect, deep tech)
 or where investors in the sector expect a portfolio.
 
-- Public disclosure (launch, blog post, demo, open-sourcing) destroys novelty in most countries
-  immediately; the US gives the inventor's own disclosure a one-year grace period. If patents may
-  matter, file first, at least a US provisional application, which holds the date for 12 months.
+- Public disclosure (launch, blog post, demo, open-sourcing) destroys novelty immediately in most
+  countries, including at the European Patent Office; the US gives the inventor's own disclosure a
+  one-year grace period. If patents may matter, file first: a US provisional application, or a first
+  national or European filing, holds the date for 12 months while filing elsewhere.
 - Trade secrets (models, data pipelines, pricing logic, know-how) cost nothing to create but exist
-  only while protected by reasonable measures: access control, confidentiality terms, marking,
+  only while protected by reasonable measures (a condition under both US law and the EU Trade
+  Secrets Directive): access control, confidentiality terms, marking,
   clean offboarding. Code shipped to a browser or app is not secret.
 - Publishing a technical description defensively stops others from patenting it.
 
@@ -209,7 +262,7 @@ or where investors in the sector expect a portfolio.
 
 | Stage | Composition | Practice |
 |---|---|---|
-| Prototype, Launch, no priced round | Founders only, often one or two directors | Written consents for formal acts: share issues, option grants, officers, bank resolutions |
+| Prototype, Launch, no priced round | Founders only, often one or two directors | Written consents (US) or written resolutions (UK) for formal acts: share issues, option grants, officers, bank resolutions |
 | First priced round | Founders plus investor seats set by the financing documents | Quarterly meetings, minutes, D&O insurance |
 | Later | Add an independent director; keep an odd number | Audit and compensation committees at Scale |
 
@@ -221,9 +274,15 @@ or where investors in the sector expect a portfolio.
   consent; record decisions in minutes.
 - At later stages, close with an executive session without management.
 - An advisory board has no authority and no fiduciary duty; it is a set of advisor relationships.
+- Outside the US and UK the organs differ: a French SAS has a président and whatever board its
+  statutes create; a German GmbH has managing directors bound by shareholder instructions, often
+  with an advisory board (Beirat). The pre-read practice carries over; which acts need a formal
+  resolution is set by local law and the statutes.
 
 ## Ask the user
 
+- In which country do you live and run the company day to day? Tax residence and the available
+  forms follow from it; default to forming there, with local advice before forming anywhere else.
 - Do you plan to raise venture capital in the next two years, and from which country? It decides C
   corporation versus LLC or a local company; default to the local standard company unless US
   venture money is likely.

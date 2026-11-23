@@ -14,6 +14,8 @@ Preboarding, finished before day one:
 
 - Signed contract, PIIA, tax and right-to-work forms. In the US, the employee completes their
   part of Form I-9 by the first day and the employer verifies documents within three business days.
+  In the UK, the right-to-work check is done before the first day. In France, the pre-hiring
+  declaration (DPAE) goes to URSSAF before the start.
 - Accounts through SSO with least privilege, password-manager access, equipment delivered.
 - An onboarding page: the strategy page, the handbook, who owns what, the draft 30/60/90 plan,
   and a first task already chosen.
@@ -45,8 +47,10 @@ Agree in writing in week one, derived from the scorecard outcomes (`hiring.md`).
 - Review at each mark in a dedicated conversation: on track, at risk or off track, with evidence,
   then a written summary to the person.
 - Where a probation period exists (common outside the US, often with shorter notice), hold the
-  90-day review before it ends so the decision is deliberate. Some jurisdictions restrict extending
-  probation. In the US at-will setting probation means little legally, and wording that implies
+  90-day review before it ends so the decision is deliberate. EU law caps probation at six months
+  in general; France sets maximum lengths by job category and allows one renewal only where a
+  sector agreement and the contract provide for it; Germany allows up to six months with two weeks'
+  notice. In the US at-will setting probation means little legally, and wording that implies
   "permanent" status after it can undermine at-will employment.
 
 ## One-on-ones
@@ -126,8 +130,9 @@ Resolution path:
 | Setting | What matters (mechanism; confirm current law) |
 |---|---|
 | US, at-will in most states | The reason must not be discriminatory or retaliatory; final-pay timing is set by state law, some requiring payment on the last day; benefits continuation notices; a release of claims needs consideration beyond what is already owed; releases of age claims from workers 40 and older need 21 days to consider and 7 to revoke (longer for group programs) |
-| UK | A fair reason and fair procedure once the employee has the qualifying service, a rule recent legislation is changing; a settlement agreement binds only if the employee received independent legal advice |
-| Germany | Dismissal protection after six months in businesses above a small-business threshold; written notice with a handwritten signature (email is invalid); consult the works council if one exists |
+| UK | A fair reason and fair procedure once the employee has the qualifying service: two years today, six months for dismissals taking effect on or after 1 January 2027 (Employment Rights Act 2025). Discrimination and whistleblowing claims need no qualifying service. A settlement agreement binds only if the employee received independent legal advice |
+| Germany | Dismissal protection after six months in businesses with more than ten employees (part-timers counted pro rata); written notice with a handwritten signature (email is invalid); a works council, if one exists, must be heard first or the dismissal is void; pregnant and severely disabled employees need an authority's prior consent |
+| France | Dismissal for personal reasons follows a fixed procedure: a written invitation to a preliminary meeting at least five working days ahead, the meeting, then a reasoned letter at least two working days later; statutory severance after eight months' service. The negotiated alternative is a mutual termination (rupture conventionnelle) with a 15-day withdrawal period and approval by the labor administration |
 | Other EU countries | Statutory notice, sometimes statutory severance, consultation for collective dismissals |
 | Contractors | Contract notice terms; a contractor who was in practice an employee may claim employee rights |
 
@@ -159,7 +164,8 @@ US, or an EOR abroad), and have the founder check the first run line by line.
 |---|---|
 | US | Federal employer ID; state withholding and unemployment-insurance accounts in every state where an employee works; workers' compensation; state new-hire reporting; Forms I-9 and W-4; quarterly federal payroll returns, annual W-2s |
 | UK | HMRC employer registration before the first payday; payroll reported on or before each payday (RTI); workplace-pension auto-enrolment; employer's liability insurance; right-to-work checks |
-| Germany | Establishment number from the Federal Employment Agency; employee registration with health insurers for social insurance; statutory accident insurance; monthly wage-tax filings |
+| Germany | Establishment number from the Federal Employment Agency; employee registration with health insurers for social insurance; statutory accident insurance; wage-tax filings, monthly for most employers |
+| France | Pre-hiring declaration (DPAE) to URSSAF; monthly payroll filing (DSN); a company health plan (mutuelle) with the employer paying at least half; occupational-health service membership |
 | Elsewhere | Local payroll provider or EOR; the obligations follow the same pattern |
 
 - US benefits: health coverage is the main decision (a small-group plan through a PEO or broker, or

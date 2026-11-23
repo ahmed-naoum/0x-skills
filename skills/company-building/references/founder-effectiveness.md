@@ -60,8 +60,8 @@ Practices that hold over years:
 
 If the user describes hopelessness, being unable to function, or thoughts of self-harm, leave the
 productivity framing. Take it seriously, encourage contact with a doctor or mental-health
-professional, and point to a crisis line (988 in the US; the local emergency number or crisis
-service elsewhere).
+professional, and point to a crisis line (988 in the US; Samaritans on 116 123 in the UK and
+Ireland; 112 for emergencies across the EU; the local crisis service elsewhere).
 
 ## Support network
 
@@ -134,7 +134,7 @@ looks like before the first interview.
 |---|---|
 | Offices and board | Resigns as officer and employee at signing; the board seat depends on who has the right to appoint it, and is negotiated |
 | Equity | Unvested repurchased per the agreement; any acceleration traded for the release; a voting agreement or proxy for retained shares where control matters |
-| Release | Mutual release of claims where possible |
+| Release | Mutual release of claims where possible, in the local form: a release with consideration (US), a settlement agreement with independent legal advice (UK), a written termination agreement (Germany), a settlement agreement called a transaction (France) |
 | IP | Confirmation that all IP is assigned; materials and devices returned |
 | Confidentiality, non-disparagement | Mutual |
 | Transition | Defined handover help, possibly a short paid consulting period |
@@ -147,7 +147,7 @@ looks like before the first interview.
 4. **Access handover**, in a planned window at or before signing: transfer ownership of the domain
    registrar and DNS, cloud organization, code hosting, payment provider, app store accounts, email
    super-admin and social accounts; change bank signatories and payroll access; update officer and
-   director filings; remove them from the password manager and rotate every secret and key they
+   director filings (US state filings, Companies House, the French or German commercial register); remove them from the password manager and rotate every secret and key they
    held; recover devices. Do this cooperatively. A unilateral lockout before agreement only for a
    real security threat, and on legal advice.
 5. **Announcement order**: board and major investors first (they may need to approve); then the team,
