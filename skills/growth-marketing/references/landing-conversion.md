@@ -71,7 +71,12 @@ Quantify first, then watch. Rewriting copy without knowing where people drop was
 4. **Session recordings** of non-converters from the source that matters: watch 20 to 30. Look
    for hesitation on a section, clicks on elements that are not links (they expected one), rage
    clicks, loops between pricing and home, and the form field where people stop. Mask every
-   input; record only after consent wherever consent is required (`0x:privacy-compliance`).
+   input and keep the recorder off pages that show account or payment data. Consent differs
+   by market: in the EU and UK a session recorder is non-essential tracking and runs only after
+   consent (ePrivacy Directive, PECR); in the US, session replay, chat widgets and ad pixels
+   have drawn class actions under California's wiretap statute (CIPA), which a 2026 amendment
+   narrowed but did not end, so disclose recording in the consent banner and privacy policy
+   (`0x:privacy-compliance`).
 5. **Five-second test** of the hero with people who match the target customer.
 6. **Ask.** A one-question on-page or exit poll ("What is stopping you from signing up
    today?"), and an email to recent signups asking what nearly stopped them. A dozen answers
@@ -106,8 +111,14 @@ where its doubt arises:
 
 A quote with full name, role, company and photo carries weight; an anonymous quote carries
 almost none. Use only real, current, permitted proof. Fake counters, invented scarcity ("3 spots
-left"), fake "someone just bought" pop-ups and pre-checked add-ons are dark patterns that US and
-EU consumer regulators act against, and that experienced buyers recognize immediately.
+left"), countdown timers that reset, fake "someone just bought" pop-ups and pre-checked add-ons
+are dark patterns, and experienced buyers recognize them immediately. Where the rules come
+from: in the EU, the Unfair Commercial Practices Directive blacklists falsely claiming an offer
+is available only for a very limited time, and the Consumer Rights Directive bans pre-ticked
+boxes for extra payments; in the UK, the DMCC Act 2024 lets the CMA fine directly for such
+practices; in the US, the FTC treats them as deceptive or unfair under Section 5 of the FTC
+Act, and subscription sign-up and cancellation also fall under ROSCA and state
+automatic-renewal laws (`0x:privacy-compliance`).
 
 ## The demo video
 

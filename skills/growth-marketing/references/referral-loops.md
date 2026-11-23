@@ -98,8 +98,11 @@ Fraud patterns and their controls:
 | Organized rings | Manual review above a reward threshold; alerts on unusual referral volume |
 
 Publish short terms: eligibility, reward, timing, limits, the right to withhold for abuse. Cash
-rewards can have tax reporting consequences, and referrers who promote the program publicly
-must disclose the reward under advertising rules. Store the referral code or link on the
+rewards can create tax reporting duties (in the US, an information return once one person's
+payments in a year pass the IRS threshold; other countries differ: `0x:startup-finance`), and
+referrers who promote the program publicly must disclose the reward (FTC Endorsement Guides in
+the US, CMA and ASA rules in the UK, the Unfair Commercial Practices Directive in the EU).
+Store the referral code or link on the
 account at signup, next to the UTM data. Partners who are not customers (affiliates):
 `community-partnerships.md`.
 
@@ -150,13 +153,14 @@ K = invites (or exposures) per new user × share of invites that become new acti
 
 ```sql
 -- K for users who signed up in one week: activated new users they brought in within 30 days.
--- Assumes invites(inviter_user_id, invitee_user_id, created_at), users(created_at, activated_at).
+-- Assumes invites(inviter_user_id, invitee_user_id, created_at), invitee_user_id set on
+-- acceptance, and users(id, created_at, activated_at).
 with cohort as (
   select id, created_at from users
   where created_at >= date '2026-10-05' and created_at < date '2026-10-12'
 ),
 sent as (
-  select i.id, i.created_at, i.invitee_user_id
+  select i.created_at, i.invitee_user_id
   from invites i
   join cohort c on c.id = i.inviter_user_id
   where i.created_at < c.created_at + interval '30 days'

@@ -85,13 +85,15 @@ everywhere reads as spam and is treated as spam.
 
 Durable rules for the big ones:
 
-- **Product Hunt**: a launch runs for one day on US Pacific time; schedule for the start of that
-  day and be available for all of it. Featuring is decided by Product Hunt's curation, not by
-  votes alone. Its rules forbid asking for upvotes: ask supporters to "check it out and share
-  feedback". Read the current launch guidelines, including those on relaunching, before
-  scheduling.
-- **Show HN**: only for something readers can use or try now, not for sign-up pages,
-  fundraisers or blog posts. Title format `Show HN: Name – what it does`, factual, no
+- **Product Hunt**: a launch day runs from 12:01 a.m. US Pacific time to midnight; schedule for
+  the start of that day and be available for all of it. Homepage featuring is decided by
+  Product Hunt's curation, not by votes alone. Its guidance is not to ask for upvotes, and
+  paid, fake or coordinated votes can get a launch unfeatured or removed: ask supporters to
+  "check it out and share feedback". A relaunch is allowed after a significant update, but an
+  approved relaunch is not guaranteed featuring. Read the current guidelines before scheduling.
+- **Show HN**: only for something readers can use or try now, not for landing or sign-up
+  pages, fundraisers, newsletters or blog posts (submit those as regular posts). Let people
+  try it without signing up where possible. Title format `Show HN: Name – what it does`, factual, no
   superlatives. The text says who built it, what it does, why, how it works, and what feedback
   is wanted. HN detects voting rings and penalizes posts pushed through links asking for votes.
   A post that drew little attention may be reposted after a while; read the current FAQ.
@@ -139,10 +141,14 @@ covers.
 - **Niche newsletters and curators** often accept tips or submissions; one read by the exact
   buyer beats a general tech outlet.
 - **Creators**: offer free access with no control over their opinion. When anything of value is
-  exchanged, they must disclose it, and the agreement should say so. Paid placements are
-  sponsorships (`paid-acquisition.md`).
-- Follow up once after a few days, then stop. Paid press-release wire distribution rarely
-  produces coverage for a startup.
+  exchanged, free access included, they must disclose it clearly in the post itself, and the
+  agreement should say so: in the US under the FTC Endorsement Guides, in the UK under the CAP
+  Code and consumer law (an "Ad" label where the brand pays and controls the content), in the
+  EU under the Unfair Commercial Practices Directive and national influencer rules. Paid
+  placements are sponsorships (`paid-acquisition.md`).
+- Follow up once after a few days, then stop. In practitioners' experience, paid press-release
+  wire distribution rarely produces coverage for a startup; spend the effort on one exclusive
+  or on niche newsletters instead.
 
 ## After the launch
 

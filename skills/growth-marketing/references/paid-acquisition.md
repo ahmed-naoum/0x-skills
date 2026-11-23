@@ -73,15 +73,25 @@ which is usually the wrong user.
   pixels alone lose a large share of events to ad blockers, tracking protection and declined
   consent.
 - **Deduplicate** browser and server events with a shared event ID.
-- **Keep the click ID** (`gclid`, `fbclid` and the like) and UTM parameters on the account at
+- **Keep the click IDs** (`gclid`, plus `gbraid`/`wbraid` that Google sends for some iOS
+  traffic, `fbclid`, `li_fat_id`, `ttclid`) and UTM parameters on the account at
   signup, so a payment weeks later can be sent back as an offline conversion.
 - **Optimize toward the deepest event with enough volume.** Purchases are the truth but may be
   too rare for the platform to learn from; activation is usually the best proxy; optimizing for
   raw signups invites junk signups.
-- **Consent**: in the EEA and UK, tags must follow the visitor's consent, and Google requires
-  consent signals for measurement and audience features with users there; in US states with
-  privacy laws, honor opt-outs of "sharing" for targeted ads, including browser signals such as
-  Global Privacy Control where the law requires it (`0x:privacy-compliance`).
+- **Consent**, by market (`0x:privacy-compliance`):
+  - EU and UK: ad tags and pixels are non-essential tracking and fire only after consent
+    (ePrivacy Directive, PECR). Google's EU user consent policy covers users in the EEA, the UK
+    and Switzerland; its measurement, remarketing and personalization features expect Consent
+    Mode v2 signals (`ad_user_data`, `ad_personalization`) for EEA traffic and stop working for
+    users without them.
+  - US: about a dozen state privacy laws (California, Colorado, Connecticut, Texas, Oregon, New
+    Jersey and others) give an opt-out of "sale", "sharing" or "targeted advertising" and
+    require honoring universal opt-out signals such as Global Privacy Control; regulators have
+    run joint sweeps on it. Most apply only above revenue or consumer-count thresholds, so
+    check which apply. Separately, pixels sending page or video-viewing data to ad platforms
+    have drawn class actions under wiretap and video-privacy statutes (California's CIPA, the
+    federal VPPA).
 - **Check**: complete a signup and a test purchase, then confirm each appears exactly once in
   every platform's event view before any campaign goes live.
 
@@ -95,6 +105,9 @@ confirm them in the current interface):
 - **Location**: target people in or regularly in the locations ("Presence"), not people who are
   merely interested in them.
 - **Auto-applied recommendations**: off; review recommendations by hand.
+- **Automated expansion**: new Search campaigns may come with AI Max features (matching
+  searches beyond the keywords, generated ad text, final URL expansion) switched on; turn them
+  off until conversion tracking is proven and the search-terms report is clean, then test them.
 - **Keywords**: start narrow, with exact and phrase match on high-intent terms (the job plus
   "software", "tool" or "app"; "alternative to [competitor]"). Use broad match only with
   conversion-based bidding and plenty of conversion data.
@@ -105,8 +118,12 @@ confirm them in the current interface):
   target cost per acquisition set from the CAC ceiling.
 - **Brand campaign**: cheap protection for the product's own name. Test whether it is
   incremental by pausing it; many of those clicks would arrive organically.
-- **Competitor terms**: bidding on a competitor's name is generally allowed; using their
-  trademark in the ad text often is not. Send those clicks to an honest alternative page.
+- **Competitor terms**: bidding on a competitor's trademark as a keyword is generally lawful in
+  the US and, after the EU Court of Justice's Google France (2010) and Interflora (2011)
+  rulings, in the EU, provided the ad makes clear it is not from the trademark owner or
+  connected to it. Using the mark in ad text is restricted by Google's trademark policy once
+  the owner complains, and invites a dispute. Send those clicks to an honest alternative page,
+  and expect the competitor to bid on your name in return.
 
 ## Testing creative and audiences
 
@@ -123,15 +140,19 @@ Test in this order, because each level outweighs the ones below it:
 
 - One variable per test, equal budgets, enough spend per variant to reach a meaningful number of
   conversions rather than clicks. A click-through winner often loses on cost per activated user.
-- Platforms need a minimum number of optimization events per ad set each week to leave their
-  learning phase; check the current figure. Consolidate ad sets instead of splitting a small
-  budget many ways, and avoid edits during learning, which restart it.
+- Platforms need a minimum number of optimization events per ad set to leave their learning
+  phase; Meta's help center has long cited about 50 in the seven days after the last
+  significant edit, so check the current figure. Consolidate ad sets instead of splitting a
+  small budget many ways, and avoid significant edits (targeting, optimization event, bid, a
+  large budget jump) during learning, which restart it. On a small budget, optimize for a more
+  frequent event (activation rather than purchase) so the platform can learn at all.
 - **Fatigue**: rising frequency with falling click-through means the audience has seen the ad
   too often. Rotate in new angles before performance collapses.
 - Keep a test log: hypothesis, variants, spend, result, decision. Winning angles feed the
   landing page and the messaging hierarchy (`positioning-messaging.md`).
-- LinkedIn ads cost far more per click than the other platforms; they fit high-price B2B, where
-  job-title and company targeting justifies the price.
+- LinkedIn is usually the most expensive major platform per click; check its forecast in
+  Campaign Manager against the CAC ceiling. It fits high-price B2B, where job-title and company
+  targeting justifies the price.
 
 ## Sponsoring newsletters, podcasts and creators
 
@@ -146,9 +167,11 @@ Test in this order, because each level outweighs the ones below it:
 - **Tracking**: a landing page per publication, an offer code, UTM parameters, and the "how did
   you hear about us" field. Tracked conversions badly undercount sponsorships; estimate the true
   total from the self-reported answers.
-- **Disclosure**: paid placements must be identifiable as advertising in the US, the EU and most
-  markets; put the requirement in the agreement. Agree on usage rights if creator content will
-  be reused in ads.
+- **Disclosure**: paid placements must be identifiable as advertising: in the US under the FTC
+  Act and Endorsement Guides, in the EU under the Unfair Commercial Practices Directive (paid
+  editorial content not clearly labeled is banned outright), in the UK under the CAP Code and
+  consumer law. Put the requirement in the agreement. Agree on usage rights if creator content
+  will be reused in ads.
 
 ## Deciding when to stop or scale a channel
 
@@ -185,10 +208,12 @@ useful size ends where marginal CAC crosses the ceiling.
 
 ## Retargeting within consent and frequency limits
 
-- **Consent first**: in the EU and UK the retargeting pixel needs consent; in US states with
-  privacy laws, cross-context behavioral advertising must honor opt-outs
-  (`0x:privacy-compliance`). Platforms also restrict retargeting in sensitive categories such
-  as health and finance.
+- **Consent first**: in the EU and UK the retargeting pixel fires only after consent
+  (ePrivacy Directive, PECR); in US states with comprehensive privacy laws, retargeting is
+  "sharing" (California) or "targeted advertising" (most others) and must honor opt-outs,
+  including Global Privacy Control signals (`0x:privacy-compliance`). Platforms also restrict
+  retargeting in sensitive categories such as health and finance, and some US states regulate
+  consumer health data separately (Washington's My Health My Data Act).
 - **Audiences**: high-intent visitors only (pricing page, signup started, docs readers) over a
   short window, typically one to four weeks.
 - **Exclusions**: current customers and recent signups, synced from the product or excluded via

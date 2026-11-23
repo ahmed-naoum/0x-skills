@@ -23,7 +23,8 @@ without standing is removed fastest.
   recommendation.
 - **Never astroturf**: no fake accounts praising the product, no undisclosed paid posts, no
   coordinated upvotes. Communities detect it, ban the account and remember the name; undisclosed
-  paid endorsements also break advertising law in the US and EU.
+  paid endorsements also break advertising law in the US (FTC), the EU (Unfair Commercial
+  Practices Directive) and the UK (DMCC Act 2024).
 - **Time-box it**: a fixed daily slot (for example 30 minutes) across two or three communities,
   with a simple log of threads and outcomes.
 
@@ -52,7 +53,7 @@ a few hundred engaged users. Earlier, an empty room signals an unused product.
 | Platform | Strengths | Weaknesses |
 |---|---|---|
 | Discord | Real-time, free, familiar to developers and consumers | Not indexed by search; answers sink in chat; noisy |
-| Slack | Familiar to B2B professionals | The free plan limits visible history; members juggle many workspaces |
+| Slack | Familiar to B2B professionals | The free plan shows only recent history (90 days as of 2026) and deletes content older than a year; members juggle many workspaces |
 | Forum (Discourse or similar) | Searchable and indexable; answers accumulate | Slower; needs seeding to feel alive |
 | GitHub Discussions | Natural for open-source and developer tools | Developers only |
 | Hosted community platform | Courses, events and paid memberships in one place | Cost and lock-in; check data export before committing |
@@ -69,8 +70,14 @@ Discord or Slack when real-time conversation is the point.
   time out, ban) applied consistently; verification or a waiting period before new members can
   post links; automated spam filtering; a private log of moderation actions. Recruit moderators
   from trusted members as it grows.
-- **Legal**: hosting user content brings duties (takedown handling, illegal content, platform
-  rules for intermediaries in the EU). Community terms: `0x:privacy-compliance`.
+- **Legal**: hosting user content on the company's own forum brings duties that a Discord or
+  Slack server mostly leaves with the platform. EU: the Digital Services Act requires hosting
+  services to run notice-and-action for illegal content and give reasons for removals (lighter
+  duties for micro and small companies). UK: the Online Safety Act covers user-to-user services
+  with UK users whatever their size, with a written illegal-content risk assessment kept up to
+  date and reporting and complaints routes; Ofcom enforces it. US: Section 230 shields hosts
+  from most liability for users' posts, but the copyright safe harbor requires a DMCA agent
+  registered with the Copyright Office. Community terms: `0x:privacy-compliance`.
 - **Measure**: share of questions answered by members rather than staff, weekly active members,
   and retention of community members against other customers.
 - **Cost**: founder time. If support moves into the community, set response expectations so
@@ -137,7 +144,8 @@ Affiliate setup:
   create tax reporting obligations that differ by country (`0x:startup-finance`).
 - **Terms that prevent abuse**: no bidding on the product's brand name in search ads, no
   coupon-site listings, no spam, no cookie stuffing, no self-purchases; mandatory disclosure of
-  the affiliate relationship; the right to withhold commission for violations.
+  the affiliate relationship (required by the FTC in the US, the CMA and ASA in the UK and
+  consumer law in the EU); the right to withhold commission for violations.
 - **Fraud checks**: purchases made with the affiliate's own payment details, refund and
   chargeback rates per affiliate, traffic sources that do not match the affiliate's audience.
 - **Activation**: most affiliates never send anyone. Recruit a few who already write about the
@@ -156,10 +164,10 @@ this order, cheapest and most decisive first:
 
 | Step | What | Why in this position |
 |---|---|---|
-| 1 | Local payment methods: SEPA Direct Debit, iDEAL, Bancontact, BLIK, Pix, UPI, convenience-store payment in Japan, others by country | Buyers abandon checkout when their usual method is missing; payment providers and merchants of record enable many by configuration (`0x:payments-billing`) |
-| 2 | Prices in local currency at rounded local price points, tax-inclusive where consumers expect it (as in the EU) | A converted price like 17.63 looks foreign; tax-exclusive consumer prices can breach local price-display rules |
+| 1 | Local payment methods: SEPA Direct Debit (euro payments across the SEPA area), iDEAL (Netherlands, being replaced by Wero through 2026 and 2027), Bancontact (Belgium), BLIK (Poland), Pix (Brazil), UPI (India), convenience-store payment (Japan), others by country | Buyers abandon checkout when their usual method is missing; payment providers and merchants of record enable many by configuration. Many are one-off methods: for subscriptions, check that the provider supports recurring charges with each one (some turn the first payment into a SEPA Direct Debit mandate) (`0x:payments-billing`) |
+| 2 | Prices in local currency at rounded local price points, tax-inclusive for consumers where the law requires it | A converted price like 17.63 looks foreign. Consumer prices must include VAT or GST in the EU (Price Indication Directive), the UK and Australia; US prices are normally shown before sales tax; prices offered only to businesses may exclude VAT if they say so |
 | 3 | Purchasing-power adjustment where the market is price-sensitive | Price levels: `0x:pricing-monetization`. Tie regional prices to billing and card country to limit VPN abuse |
-| 4 | Tax, invoicing and consumer law: VAT or GST registration or a merchant of record, invoice rules, EU withdrawal rights for digital goods | Selling before this is settled creates liabilities (`0x:payments-billing`, `0x:privacy-compliance`) |
+| 4 | Tax, invoicing and consumer law: VAT or GST registration or a merchant of record, invoice rules, consumer withdrawal and cancellation rights | Selling before this is settled creates liabilities. EU consumers buying online have a 14-day right of withdrawal: for digital content it ends once delivery starts with their express consent and acknowledgment; for a service such as SaaS they pay pro rata if they asked to start at once; since June 19, 2026 an online withdrawal function is required wherever the right applies (Directive 2023/2673, as transposed nationally). Germany also requires a cancellation button for online subscriptions (`0x:payments-billing`, `0x:privacy-compliance`) |
 | 5 | Landing pages in the language, with local proof such as a customer from that country | Machine translation edited by a native speaker; never unreviewed machine output for marketing copy |
 | 6 | Product interface in the language | Engineering: `0x:frontend-foundations` |
 | 7 | Support in the language and time zone; local channels, communities and partners | The market's own platforms and communities may differ from the home market's |

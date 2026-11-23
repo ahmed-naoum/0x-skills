@@ -9,7 +9,7 @@ lifecycle messages work.
 | Kind | Examples | Permission | Sent by |
 |---|---|---|---|
 | Transactional | Receipts, password resets, security alerts, invitations | Needed to deliver the service; carries no marketing | The transactional provider (`0x:email-notifications`) |
-| Lifecycle | Welcome, activation nudges, trial ending, milestones, re-engagement | Tied to the account; unsubscribing from non-essential mail is honored | A product-email tool fed by product events |
+| Lifecycle | Welcome, activation nudges, trial ending, milestones, re-engagement | How-to and account mail to the user is usually treated as service mail; anything promoting an upgrade, offer or other product is marketing in the EU and UK and may be "commercial" under US CAN-SPAM. Give every lifecycle email an unsubscribe and honor it | A product-email tool fed by product events |
 | Marketing | Newsletter, announcements, offers | Marketing consent or another lawful basis per country; unsubscribe in every message | The same tool or a newsletter tool |
 
 Keep them apart so newsletter complaints never damage the reputation that delivers password
@@ -42,15 +42,23 @@ People subscribe to a specific promise, not to "our newsletter".
 - Say what they get and how often: "One email every two weeks about [topic]."
 - Capture is consent capture: store the source, timestamp, the wording shown and the IP for
   every subscriber, so consent can be proven later.
-- **Permission rules differ by jurisdiction.** The EU and UK require consent for most marketing
-  email, with a narrow "soft opt-in" for existing customers about similar products when they
-  could refuse at collection; the US allows marketing on an opt-out basis with an unsubscribe
-  link and a postal address; Canada is stricter than the US. Never pre-tick a marketing box.
-  Rules per market: `0x:privacy-compliance`.
+- **Permission rules differ by jurisdiction** and follow where the recipient is, not where the
+  company is. Never pre-tick a marketing box. Summary below; detail and current law:
+  `0x:privacy-compliance`.
+
+| Market | Marketing email | Marketing SMS |
+|---|---|---|
+| EU (ePrivacy Directive, national laws) | Prior consent for individuals. "Soft opt-in" exception: existing customers, about the company's own similar products, with an opt-out offered at collection and in every message. Email to business addresses varies by country: Germany requires consent; France allows opt-out email relevant to the recipient's job | Same as email |
+| UK (PECR) | Consent or soft opt-in for individuals, sole traders and most partnerships; staff at companies (corporate subscribers) may be emailed without consent if the sender is identified and an opt-out offered | Same as email |
+| US (CAN-SPAM; TCPA for texts) | Opt-out model, B2C and B2B alike: accurate sender and subject, identified as an ad, a valid postal address, a working unsubscribe honored within 10 business days | Prior express written consent for marketing texts, naming the sender and not a condition of purchase; statutory damages of $500 per message, up to triple if willful; some states add quiet hours and more; carriers require sender registration (10DLC or toll-free verification) |
+| Canada (CASL) | Express or implied consent, B2B included; implied consent lasts two years from a purchase and six months from an inquiry; identification and an unsubscribe in every message | Same as email |
+| Australia (Spam Act 2003) | Express or inferred consent, identification and a working unsubscribe | Same as email |
+
 - **Double opt-in** (confirm by clicking a link) costs some signups and buys a cleaner list plus
-  proof of consent. It is common practice in Germany and a sound default for EU audiences.
+  proof of consent. German courts put the burden of proving consent on the sender, which is
+  why it is standard there; it is a sound default for all EU audiences.
 - Use inline forms before pop-ups. Full-screen interstitials annoy visitors, and Google's
-  guidance discourages intrusive interstitials on mobile.
+  Search guidance discourages intrusive interstitials, especially on mobile.
 
 ## Welcome and activation sequence, triggered by behavior
 
@@ -185,7 +193,8 @@ product activity.
 - **What is the activation event?** Every sequence aims at it. Default: the first action that
   produces the product's core result for the user.
 - **Which countries make up the audience?** Consent rules follow them. Default: run the list as
-  if EU rules apply: explicit opt-in, double opt-in for EU signups, unsubscribe everywhere.
+  if EU rules apply: explicit opt-in, double opt-in for EU signups, unsubscribe everywhere; no
+  marketing SMS without express written consent.
 - **Who signs the emails and reads the replies?** Default: the founder, by name.
 - **Is a newsletter wanted, and how often can it really be written?** Default: monthly, product
   updates plus one useful insight.

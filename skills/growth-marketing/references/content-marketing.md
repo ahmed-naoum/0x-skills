@@ -78,8 +78,9 @@ Edit pass, in this order:
 6. **Run every code sample and command** shown.
 7. **Byline a real person** with relevant experience who stands behind the piece.
 
-Search engines judge content by quality, not by how it was produced, but Google's spam policies
-treat pages mass-produced mainly to rank as scaled content abuse, which can demote a whole site.
+Google says it judges content by quality, not by how it was produced, but its spam policies
+treat many pages generated mainly to manipulate rankings, by any method, as scaled content
+abuse; violations lead to lower rankings or removal, and a manual action can cover the site.
 Never generate pages in bulk (one per keyword or city) without unique, useful substance on each;
 template-driven pages are their own discipline (`seo-aeo-geo-ultimate`).
 

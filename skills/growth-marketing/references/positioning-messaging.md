@@ -124,8 +124,15 @@ Name the alternatives honestly on the site, including the non-product ones (spre
 agency, a hire). Say when an alternative is the better choice ("If you need on-premise
 deployment, X fits better"). This qualifies traffic, reduces churn from bad-fit customers, and
 makes the rest of the page believable. Comparative claims must be true and verifiable when
-published and kept current: date comparison tables, never imply the competitor endorses
-anything, and expect stricter rules on comparative advertising in the EU than in the US.
+published and kept current: date comparison tables, keep the evidence for each cell, and never
+imply the competitor endorses or is connected to the product. The rules differ by market:
+
+| Market | Comparative advertising rule |
+|---|---|
+| EU (Directive 2006/114/EC, national law) | Allowed only if it compares products meeting the same need on material, relevant, verifiable and representative features (price included), does not denigrate the competitor or its marks, does not exploit its reputation or cause confusion, and does not present the product as an imitation. In some countries competitors enforce this fast (Germany: cease-and-desist letters with costs) |
+| UK (Business Protection from Misleading Marketing Regulations 2008, CAP Code) | Conditions close to the EU's |
+| US (FTC Act, Lanham Act) | Truthful, substantiated comparison is permitted and the FTC encourages it; a false or misleading claim can draw a Lanham Act suit from the competitor as well as FTC action |
+
 Drafting comparison and alternative pages for search: `seo-aeo-geo-ultimate`.
 
 ## Naming
@@ -147,7 +154,11 @@ fast and eliminate most candidates:
    the product (Nice class 9 for downloadable software, 42 for SaaS, 35 for some business
    services) in each target market: the USPTO trademark search, EUIPO's TMview, the WIPO Global
    Brand Database, and national offices of other key markets. A similar-sounding mark in the
-   same class for related goods is a conflict even when spelled differently.
+   same class for related goods is a conflict even when spelled differently. Also search the
+   web, app stores, GitHub and company registers: in the US (and through passing off in the
+   UK) rights come from use, so an unregistered name already used for similar software can
+   block yours; the EU, China and Japan are mainly first-to-file, so an early filing matters
+   more there.
 5. **Handles and listings.** X, LinkedIn, GitHub organization, YouTube and whichever social
    networks the customers use, the package-registry name for developer tools, app store names.
 6. **Secure on the same day**: the domain (and the obvious misspelling) and every handle.
@@ -170,11 +181,25 @@ Questions that produce specific answers:
 - What would you tell someone in your position who is considering it?
 
 Draft the quote from their words, send it for approval, and record written permission for name,
-photo, title, company and logo, with the date. The legal floor in the US and EU: testimonials
-are genuine and reflect the customer's real experience; incentives for reviews or testimonials
-are disclosed and never conditional on a positive opinion; invented testimonials, including
-AI-generated "customers", are unlawful; a quote featuring an exceptional result must not imply
-it is typical.
+photo, title, company and logo, with the date. The common floor in the US, EU and UK:
+testimonials are genuine and reflect the customer's real experience; any incentive (discount,
+credit, gift, free plan) is disclosed next to the testimonial and never conditional on a
+positive opinion; invented testimonials, including AI-generated "customers", are unlawful; a
+quote featuring an exceptional result must not imply it is typical (state what customers
+generally achieve, or leave it out). Where the rules come from:
+
+| Market | Source | What it adds |
+|---|---|---|
+| US | FTC Endorsement Guides (revised 2023); FTC Consumer Reviews and Testimonials Rule (16 CFR Part 465, in force since October 21, 2024) | Bans fake or AI-generated reviews and testimonials, buying reviews conditioned on sentiment, undisclosed reviews by staff or relatives, and suppressing negative reviews; civil penalties per violation |
+| EU | Unfair Commercial Practices Directive, as amended by the 2019 Omnibus Directive | Fake reviews, and claiming reviews come from real users without reasonable checks, are banned outright; a site showing consumer reviews must say whether and how it verifies them |
+| UK | Digital Markets, Competition and Consumers Act 2024; CMA fake-reviews guidance (2025) | Fake reviews and concealed incentivised reviews are banned; a business publishing reviews needs a policy and steps to prevent fakes; the CMA can fine directly |
+| Elsewhere (Canada, Australia and others) | General misleading-advertising law | Fake testimonials are misleading conduct; check locally before using reviews in ads |
+
+For public reviews on third-party sites (G2, Capterra, Google, app stores), invite every
+customer in a group, not only those who scored high on a survey: selective "review gating"
+breaks Google's and most review sites' policies, and presenting a filtered set as
+representative is deceptive under the rules above. Choosing which genuine quotes appear on the
+company's own site is fine. Review-site profiles and responses: `0x:sales-support`.
 
 Case study, one page:
 
@@ -209,8 +234,8 @@ Ads, redesigns and launches multiply whatever the message is. Test the message f
 5. **Paid message-testing panels** of respondents in the target role exist for B2B when
    prospects are hard to reach.
 
-Do not A/B test homepage headlines at low traffic: without several hundred conversions per
-variant the result is noise (sample size: `0x:product-analytics`). Make one bold change, check it
+Do not A/B test homepage headlines at low traffic: as a rule of thumb, below several hundred
+conversions per variant a realistic difference cannot be detected (sample size: `0x:product-analytics`). Make one bold change, check it
 with explain-back, and keep the version prospects repeat correctly.
 
 ## Ask the user

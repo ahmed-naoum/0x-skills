@@ -27,8 +27,8 @@ and paying users. Most of the work is unglamorous repetition done consistently f
 - **Earn standing before asking.** Communities, journalists and partners reward people who gave
   first. Borrowed audiences punish promotion; the email list is the audience the company owns.
 - **Specific proof beats adjectives.** Named customers with numbers and time frames persuade.
-  Invented testimonials, fake scarcity and unverified statistics are unlawful in major markets
-  and destroy trust when found.
+  Invented testimonials, fake scarcity and unsubstantiated claims break consumer law in the US,
+  EU and UK, and destroy trust when found.
 - **Behavior triggers messages.** Lifecycle email and in-app nudges fire on what users did or
   did not do, and stop the moment the goal is reached.
 - **Sustainable beats spectacular.** A cadence the founder can keep for a year (posts, issues,
@@ -61,7 +61,7 @@ exists, work within it. The defaults below are for new decisions.
 | Launch | Beta, waitlist drip, own channels, then one borrowed channel per day | Small feature: changelog, segment email, in-app |
 | Content | Decision- and solution-intent pieces first, drafted from the founder's own explanation, every week or two | No search or discussion of the problem: content is a second channel |
 | Lifecycle email | Event-triggered activation sequence with exit conditions, signed by the founder | |
-| Marketing consent | Explicit opt-in everywhere; double opt-in for EU signups | Counsel confirms a market-specific basis |
+| Marketing consent | Explicit email opt-in everywhere; double opt-in for EU signups; marketing SMS only with express written consent | Counsel confirms a market-specific basis (US opt-out email, UK corporate B2B, EU soft opt-in) |
 | Paid ads | None at Prototype; at Launch only with server-side conversions and a CAC ceiling | |
 | Search vs social ads | Search when people search for the problem; social or sponsorships when they do not | |
 | Loops | Invite at the moment of need, before any incentive program | No collaboration in the workflow: double-sided referral credit |
@@ -86,7 +86,8 @@ By stage:
 1. The positioning statement has every slot filled specifically, and at least four of five
    target-like people describe the homepage correctly after five seconds.
 2. Every claim, number, logo and testimonial on the site is real, sourced, current and
-   permitted in writing.
+   permitted in writing; any incentive behind a testimonial is disclosed beside it, and
+   public-review requests go to all customers in a group, not only happy ones.
 3. Each landing page has one primary CTA visible without scrolling on a phone, and its headline
    repeats the promise of the ad or link that sends traffic to it.
 4. Signup stores first-touch UTM parameters, ad click IDs, referral or affiliate code and a
@@ -97,8 +98,8 @@ By stage:
    before it started.
 7. Lifecycle messages trigger on events with exit conditions; a test account that activates
    receives no further activation nudges, and no user gets more than one lifecycle email a day.
-8. Marketing email has stored consent records and an unsubscribe in every message, and is sent
-   separately from transactional mail.
+8. Marketing email and SMS have stored consent records per recipient (source, time, wording,
+   country), an unsubscribe in every message, and are sent separately from transactional mail.
 9. Launch posts are written per community and follow each community's rules; nothing anywhere
    asks for upvotes.
 10. Public launch gates passed: drip cohorts activate unaided, marketing pages cached, alerts
@@ -120,3 +121,4 @@ By stage:
 - Price points, plan packaging and discount policy → `0x:pricing-monetization`
 - Validating the problem before there is a product → `0x:product-discovery`
 - Consent banners, cookie rules and marketing-permission law → `0x:privacy-compliance`
+- Review-site profiles, complaints and reputation → `0x:sales-support`
