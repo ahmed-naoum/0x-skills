@@ -1,6 +1,6 @@
 ---
 name: accessibility
-description: Makes web interfaces usable by people with disabilities and conformant with WCAG 2.2 AA, covering accessible names and ARIA, keyboard and focus, forms and sign-in, contrast, zoom and media, and testing. Use when asked to make a page or component accessible, audit for WCAG, fix axe or Lighthouse accessibility errors, fix screen reader or keyboard problems, build an accessible modal, menu or combobox, or prepare a VPAT.
+description: Makes web interfaces usable by people with disabilities and conformant with WCAG 2.2 AA, covering names and ARIA, keyboard and focus, forms and sign-in, contrast, zoom and media, and testing. Use when asked to make a page or component accessible, audit for WCAG, fix axe or Lighthouse accessibility errors, fix screen reader, keyboard or contrast problems, build an accessible modal, menu or combobox, or prepare a VPAT.
 ---
 
 # Accessibility
@@ -24,8 +24,8 @@ finish the product's core tasks.
 - **Focus is state the application owns.** After a route change, a dialog, a delete or a step
   change, decide where focus goes. Focus falling back to `body` is a bug, like a lost scroll
   position but worse.
-- **Automated checks are a floor.** They find a minority of failures and none of the ones about
-  order, operability or meaning. Passing axe means "nothing obviously broken", so pair it with a
+- **Automated checks are a floor.** They can test a minority of the criteria and none of the
+  ones about order, operability or meaning. Passing axe means "nothing obviously broken", so pair it with a
   keyboard pass and a screen-reader pass.
 - **Fix at the source: component and token, not page.** One repaired `Button`, `Field`, `Dialog`
   or color pair fixes every screen and stays fixed; per-page patches regress.
@@ -53,7 +53,7 @@ names (first two files), then forms if any, then the visual checks, then add the
 
 | Decision | Default | Flips when |
 |---|---|---|
-| Conformance target | WCAG 2.2 AA | A contract or regulator names another version or level |
+| Conformance target | WCAG 2.2 AA | A contract or regulator names another version or level (2.2 AA content also meets 2.1 and 2.0 AA; report against the version they cite) |
 | Interactive elements | `<button>`, `<a href>`, native inputs | No native element exists for the pattern |
 | Overlays and composites | Native `<dialog>`, or Radix-style headless primitives | The project already has a component library with its own |
 | Naming | Visible text, then `<label>`, then `aria-labelledby`, then `aria-label` | Icon-only control: `aria-label` or hidden text |

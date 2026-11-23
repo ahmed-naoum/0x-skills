@@ -7,6 +7,11 @@ and navigation easier to read and follow for users with cognitive disabilities.
 Choosing a palette and type scale belongs to `0x:ui-ux-design`; chart colors to `dataviz`. This
 file is the set of thresholds those choices must clear and how to verify them.
 
+By stage: at Prototype, choose token pairs that pass and never disable zoom; the rest can wait.
+At Launch run the zoom, reflow, forced-colors and reduced-motion checks on core flows and caption
+every published video. Live captioning and a plain-language review of help content are Scale
+work unless a contract asks sooner.
+
 ## Contrast
 
 | What | Minimum ratio | Criterion |
@@ -87,8 +92,9 @@ Build rules that prevent most failures:
 
 ## Never color alone
 
-Color may reinforce meaning; it may not be the only carrier (1.4.1, A). About one man in twelve
-has a color-vision deficiency, and forced-colors modes replace author colors entirely.
+Color may reinforce meaning; it may not be the only carrier (1.4.1, A). Color-vision deficiency
+is common (a widely cited estimate is about 1 in 12 men and 1 in 200 women, varying by
+population), and forced-colors modes replace author colors entirely.
 
 | Pattern | Non-color cue to add |
 |---|---|
@@ -105,7 +111,8 @@ Checks: view the page in grayscale (DevTools vision-deficiency emulation offers 
 and confirm every state is still distinguishable; then emulate forced colors.
 
 Forced-colors mode (Windows contrast themes) rules: backgrounds, text and borders are replaced
-with system colors; box shadows and most background images are dropped. So: convey boundaries
+with system colors; box shadows and gradient backgrounds are removed, while `url()` background
+images stay. So: convey boundaries
 with borders (a `border: 1px solid transparent` becomes visible), draw focus with `outline`, use
 `currentColor` for SVG icon fills, and adjust the rare breakage inside
 `@media (forced-colors: active)` using system color keywords such as `CanvasText`, `Canvas`,
@@ -260,6 +267,7 @@ Beyond the criteria, the defaults that reduce load most:
 - **What reading level is the audience?** It sets how hard to push on plain language. Default:
   write for a general adult audience, roughly lower-secondary reading level, for interface and
   help text.
-- **Are urgency devices (countdowns, scarcity banners) part of the marketing plan?** They
-  conflict with cognitive accessibility and consumer rules. Default: none unless the deadline is
-  real, and then with the limit stated in text.
+- **Are urgency devices (countdowns, scarcity banners) part of the marketing plan?** They work
+  against cognitive accessibility, and fake urgency can breach consumer-protection rules in many
+  jurisdictions (`0x:privacy-compliance`). Default: none unless the deadline is real, and then
+  with the limit stated in text.

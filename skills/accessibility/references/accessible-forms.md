@@ -9,6 +9,11 @@ General form mechanics (native validation attributes, submission, input types) l
 `0x:frontend-foundations` (`forms.md`). This file covers what assistive-technology users need on
 top.
 
+By stage: labels, autocomplete tokens, working paste and the error sequence are Prototype work,
+because they live in one shared field component. The timeout warning, the review step and a
+screen-reader run of sign-up and checkout are Launch work. A second sign-in method can wait
+until Launch if password managers and paste work from the first day.
+
 ## Labels, hints and grouping
 
 Every field needs a visible label that is programmatically tied to it (WCAG 1.3.1, 3.3.2, 4.1.2).
@@ -48,7 +53,7 @@ Further defaults:
   `cc-exp`, `cc-csc`. Correct tokens are also what makes autofill work, which is the largest
   single help for motor and cognitive disabilities.
 - Do not disable the submit button until the form is valid. A disabled button is skipped by Tab,
-  explains nothing, and usually fails contrast. Leave it enabled and report errors on submit.
+  explains nothing, and is low-contrast by design. Leave it enabled and report errors on submit.
 - Use native `<select>`, checkbox and radio unless a tested primitive replaces them. A custom
   select that is a `div` list is the most common unlabelled control in audits.
 - Dates the user knows (birth date, card expiry): text fields, not a calendar. Dates the user
@@ -127,14 +132,14 @@ mechanisms, so the rule in practice is: nothing may get in their way.
 
 | Do | Why |
 |---|---|
-| Allow paste in every field, including password, confirm-email and code fields | Blocking paste fails 3.3.8 outright |
+| Allow paste in every field, including password and code fields | Blocking paste or autofill on the only sign-in method fails 3.3.8; block it nowhere |
 | `autoComplete="username"` and `"current-password"` on sign-in; `"new-password"` on sign-up and reset | Lets managers fill and generate |
 | Keep username and password as real `<input>`s in one `<form>`, visible at the same time or in a standard two-step | Managers fail on custom or lazily mounted fields |
 | One-time code as a single input with `autoComplete="one-time-code"` and `inputMode="numeric"` | Platform autofill from SMS and paste both work; six separate boxes break paste, announce six unlabeled fields, and fight screen readers |
 | Offer a method with no memory or transcription: passkey, magic link, or OAuth | Satisfies the criterion by alternative |
 | Show-password toggle: a `<button aria-pressed>` named "Show password" | Reduces errors for motor and cognitive disabilities |
 | State password rules before the field, tied with `aria-describedby` | Not only after failure |
-| Report sign-in failure in text, keep the username, focus the first field | |
+| Report sign-in failure in text, keep the username, focus the first field | One generic message ("Email or password is incorrect"): saying which was wrong reveals which accounts exist |
 
 Traps:
 
@@ -149,7 +154,9 @@ Traps:
 - Security questions ("first pet's name") are memory tests with no manager support. Do not add
   them.
 - Short code lifetimes and lockouts after few attempts punish slow typists and screen-reader
-  users. Give codes minutes, not seconds, and make "send a new code" obvious.
+  users. Give codes minutes, not seconds, and make "send a new code" obvious. Keep the attempt
+  limit itself (it is a security control, see `0x:auth-identity`); say in text when it triggers
+  and how to recover.
 - Email verification links must not expire before a user who switches devices with assistive
   technology can reasonably act.
 
@@ -170,12 +177,16 @@ Implementation default at Launch:
    intervals; do not announce every second.
 4. Extending is one activation: no password re-entry for a simple extension.
 5. If the session does expire, preserve the work: keep form state (local draft or server-side
-   draft) and restore it after re-authentication. Losing a long form to a timeout is the failure
-   users report most.
+   draft) and restore it after re-authentication. Never put passwords, card data or other
+   secrets in a browser-stored draft, and clear the draft on sign-out.
 6. Say up front when a flow has a limit (ticket holds, payment windows), and how long it is.
 
 Banking-grade short timeouts are a risk decision; they are allowed, with the warning and
-extension in place.
+extension in place. Idle-timeout length and any absolute session cap are security settings owned
+by `0x:auth-identity`; this file adds only the warning, the extension and the preserved work. A
+forced re-authentication (absolute cap, step-up before a sensitive action) must still preserve
+the user's work, and a cap shorter than 20 hours that cannot be extended leans on the
+"essential" exception, so write the security reason down.
 
 ## Multi-step and payment flows
 
@@ -196,22 +207,27 @@ with no view of the whole.
   before payment is both an accessibility and a trust failure.
 - The submit button during processing: keep it focusable (`aria-disabled="true"`, handler guards
   against double submit), change its text to "Processing...", and announce completion or failure.
+  The client guard is a courtesy; a server-side idempotency key is what prevents a double charge
+  (`0x:payments-billing`).
   On success, navigate to a confirmation page whose heading takes focus.
 
 Payment specifics:
 
 - Default to the provider's hosted checkout page or embedded payment element. The vendor
-  maintains its accessibility and tests it with assistive technology; a hand-built card form
-  does not get that. Ask the vendor for its conformance report when an enterprise buyer asks for
-  the product's.
+  maintains it across browsers and assistive technology, and the large providers publish a
+  conformance report; a hand-built card form gets neither. Still run the keyboard and
+  screen-reader pass on it, and get the vendor's current report when an enterprise buyer asks
+  for the product's.
 - Embedded fields are iframes: the surrounding page still owns the heading, the visible labels
   or group label around the element, the error text returned by the SDK (render it in an
   associated, announced element), and focus after failure.
 - Hand-built card fields, if unavoidable: one input per datum with labels and `cc-*`
   autocomplete tokens, no auto-tab between number, expiry and CVC, formatting that still accepts
   pasted digits with or without spaces, and no card-brand information conveyed by a logo alone.
-- Bank authentication challenges (3-D Secure) open third-party frames. Give the iframe a `title`,
-  move focus into it, and return focus to the result message when it closes.
+- Bank authentication challenges (3-D Secure) open a frame or redirect whose content the issuing
+  bank controls. The payment SDK usually mounts it; if the integration mounts it, give the
+  iframe a `title` and move focus into it. Either way, return focus to the result message when
+  it closes, and list the challenge as third-party content in any conformance report.
 - Wallet buttons need accessible names ("Pay with ...") and keyboard operation; test the ones
   rendered by SDKs instead of assuming.
 
@@ -225,7 +241,7 @@ essential, needed for security, or data that is no longer valid.
 |---|---|
 | Billing address after shipping address | "Same as shipping" checked by default |
 | Email asked at step 1 and again at account creation | Prefill, editable |
-| "Confirm email" field | Remove it; show the address for review instead. A confirm field with paste blocked fails twice |
+| "Confirm email" field | Remove it; show the address for review instead. A confirm field asks for the same data twice, and blocking paste on it only adds typing errors |
 | Returning after an error or timeout | Restore every field |
 | Search or filter values lost between pages of results | Carry them in the URL |
 
@@ -250,7 +266,7 @@ is checked and the user can correct it, or a review-and-confirm step precedes th
   each radio or checkbox group has a group name.
 - Submit the empty form with a screen reader running: the failure is announced, focus lands on
   the first error or the summary, and each field reads label, required state and error.
-- Fix one field: its error disappears and `aria-invalid` is removed.
+- Fix one field: its error disappears and `aria-invalid` is removed or `false`.
 - A password manager fills sign-in and offers to save on sign-up; paste works in every field,
   including the one-time code.
 - Browser autofill completes name, email, address and card fields correctly.

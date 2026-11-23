@@ -23,6 +23,11 @@ visible (2.4.7) and not hidden behind other content (2.4.11).
 Tab moves between widgets, arrows move within them. Putting every menu item, tab or grid cell in
 the tab order is the usual error; it turns a 10-stop page into a 60-stop page.
 
+By stage: at Prototype, native elements, primitives and an untouched focus ring give most of this
+for free. At Launch add the skip link, route-change focus, target sizes, drag and hover
+alternatives, and a keyboard-only run of every core flow. Per-component keyboard tests are Scale
+work.
+
 Native elements implement this already. A `div` made clickable needs `role`, `tabindex="0"`, an
 Enter handler, a Space handler with `preventDefault()` to stop page scroll, disabled handling and
 focus styling. Use `<button type="button">` for actions and `<a href>` for navigation; the choice
@@ -111,8 +116,8 @@ results") but one is the requirement.
 | Platform guidance | About 44 pt (iOS) and 48 dp (Android) | What mobile users are used to |
 
 Default: primary and touch-reachable controls 44 by 44 CSS px; dense desktop UI (table row
-actions, toolbars) no smaller than 24 by 24 with spacing. In Tailwind's default scale that is
-`min-h-11 min-w-11` and `min-h-6 min-w-6`.
+actions, toolbars) no smaller than 24 by 24 with spacing. In Tailwind's default spacing scale
+that is `min-h-11 min-w-11` and `min-h-6 min-w-6` (old Tailwind versions lack these utilities).
 
 How 2.5.8 is measured, since audits argue about it:
 
@@ -150,10 +155,11 @@ On every client-side navigation, three things must happen:
 3. Focus lands somewhere sensible at the top of the new content, so the next Tab goes into the
    new page, not the old navigation's remains.
 
-Frameworks differ in how much they do. Next.js ships a route announcer and manages focus and
-scroll for the changed segment; do not assume, test it: navigate by keyboard with a screen reader
-on, confirm the page is announced once, and that the next Tab lands in the new content. If the
-framework does not handle it, the default is to focus the page's `<h1 tabIndex={-1}>` after
+Frameworks differ in how much they do. Next.js ships a route announcer (it reads the title, then
+the `<h1>`) and resets scroll, but where focus ends up has varied by router and version. Do not
+assume, test it: navigate by keyboard with a screen reader on, confirm the page is announced
+once, and that the next Tab lands in the new content. If the framework does not handle it, the
+default is to focus the page's `<h1 tabIndex={-1}>` after
 navigation (a heading announces the page name and puts the reading position at the start of
 content). Do not focus the `body` or the first link.
 
@@ -170,8 +176,9 @@ For content inserted or removed without navigation:
 | Background update (toast, new message) | Does not move; announce with a live region |
 | Filter or sort applied | Stays on the control; announce the result count |
 
-When the focused element is removed from the DOM or disabled, browsers reset focus to `body`:
-the next Tab starts from the top of the page, and a screen-reader user is lost. This is the
+When the focused element is removed from the DOM, hidden or disabled, focus is lost: browsers
+reset it to `body` (some leave it on the dead element), the next Tab starts from the top of the
+page, and a screen-reader user is lost. This is the
 most common focus bug in React applications, typically after delete, after a button swaps for a
 spinner, or when a list re-renders with new keys. Detect it while reproducing:
 
@@ -269,7 +276,7 @@ reader is fine and voice control stops working.
 
 - **May focus rings be restyled but not removed?** Designers often ask to remove them. Default:
   keep a 2 px ring with 3:1 contrast, shown with `:focus-visible` so mouse clicks stay clean.
-- **Is 44 px the target size for touch, or only the 24 px legal floor?** Larger targets cost
+- **Is 44 px the target size for touch, or only the 24 px WCAG AA floor?** Larger targets cost
   density. Default: 44 for primary and mobile controls, 24 with spacing in dense desktop tables.
 - **Are keyboard shortcuts wanted?** They help power users and can hurt voice users. Default:
   none with a single character; modifier-based shortcuts with a visible list when added.

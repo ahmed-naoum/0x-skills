@@ -16,10 +16,11 @@ or producing a VPAT or conformance report for a buyer.
 | Audit against every criterion | Conformance gaps, systematically | Real-world usability | Days |
 | Sessions with disabled users | Whether people can actually finish tasks | Coverage of every criterion | Recruiting plus sessions |
 
-Automated tools detect only a minority of WCAG failures; a rule of thumb is a third to a half of
-the issues on a typical page, concentrated in a few criteria. A clean axe run or a Lighthouse
-accessibility score of 100 means "no machine-detectable failures", never "accessible" and never
-"conforms". Lighthouse runs a subset of axe rules; use axe directly for full coverage.
+Automated tools can fully test only a minority of the success criteria. By issue count they
+find more (around half in one tool vendor's own data), because a few detectable failures such as
+low contrast are very frequent. A clean axe run or a Lighthouse accessibility score of 100 means
+"no machine-detectable failures", never "accessible" and never "conforms". Lighthouse runs a
+subset of axe rules; use axe directly for full coverage.
 
 Accessibility overlay widgets (a script that claims to make a site compliant) do not produce
 conformance, frequently interfere with users' own assistive technology, and have not protected
@@ -54,8 +55,10 @@ What makes the difference between a check that runs and one that protects:
   failures are theme-specific.
 - **Wait for the page to settle** (assert on a visible heading first). Scanning mid-transition
   yields flaky contrast results because of animated opacity.
-- **Tags.** The list above is WCAG 2.2 A and AA. Add `"best-practice"` for rules such as
-  landmark and heading structure once the baseline is clean; they are advice, not conformance.
+- **Tags.** The list above is WCAG 2.2 A and AA. Keep `"wcag22aa"` in it: axe-core leaves its
+  WCAG 2.2 rules, target size among them, off unless that tag or the rule is requested. Confirm
+  once that `target-size` appears somewhere in the results object. Add `"best-practice"` (landmark
+  and heading structure) once the baseline is clean; those rules are advice, not conformance.
 - **Adopting on an existing product.** Do not start with hundreds of red tests or a blanket
   disable. Sequence: run across key pages, fix the rules that fail in shared components first,
   then for what remains use `.disableRules([...])` or `.exclude(selector)` with a tracked issue
@@ -63,11 +66,8 @@ What makes the difference between a check that runs and one that protects:
 - **Third-party embeds** (chat, payment iframes, video) can be excluded from the gating scan
   with `.exclude()`, but that hides the problem from CI only. The product is still responsible
   for the embed; record it in the audit and the vendor review.
-- **Report usefully.** On failure, attach `results.violations` to the test output; each entry
-  has the rule id, impact, help URL and the failing nodes' selectors.
-- **Component level.** Running axe in a jsdom-based unit test catches missing names and invalid
-  ARIA in isolation, but jsdom does no layout, so contrast and anything visibility-dependent is
-  not evaluated. Treat it as a supplement to the browser run, not a replacement.
+- **Component level.** axe in a jsdom unit test catches missing names and invalid ARIA, but jsdom
+  does no layout, so contrast and visibility-dependent rules do not run. A supplement only.
 - **Assert behavior too.** Keyboard and focus are testable in Playwright: press `Tab`, `Enter`
   and `Escape` with `page.keyboard.press()` and assert with `expect(locator).toBeFocused()`.
   Locating elements with `getByRole(role, { name })` makes every functional test also check role
@@ -99,7 +99,7 @@ Enough commands to run a pass:
 
 | Action | VoiceOver (macOS); VO is Control+Option | NVDA; the NVDA key is Insert |
 |---|---|---|
-| Start or stop | Command+F5 | Control+Alt+N to start, NVDA+Q to quit |
+| Start or stop | Command+F5, or hold Command and triple-press Touch ID | Control+Alt+N to start, NVDA+Q to quit |
 | Next / previous item | VO+Right / VO+Left | Down / Up arrow |
 | Activate | VO+Space | Enter or Space |
 | Lists of headings, links, landmarks | VO+U (rotor) | NVDA+F7 |
@@ -125,9 +125,8 @@ Script for one flow, with the screen off or eyes away from it where possible:
    change. Is each announced once, and does focus land somewhere sensible?
 7. Complete the task and confirm the success state is announced.
 
-Common finding: testing only with Tab. Screen-reader users read with browse commands, so
-non-interactive content (static text, headings, table cells) must be checked with next-item
-navigation, and nothing non-interactive should be given `tabindex="0"` to "make it readable".
+Do not test only with Tab. Screen-reader users read with browse commands: check static text,
+headings and cells with next-item navigation, and never give text `tabindex="0"` to "make it read".
 
 ## The manual pass for every feature
 
@@ -145,14 +144,15 @@ automation cannot.
 | Reduced motion | OS setting or DevTools emulation | Large movement removed |
 | Pointer | Touch emulation at phone width | Targets large enough, nothing hover-only |
 
-Several of these can be asserted in Playwright with
-`page.emulateMedia({ forcedColors: "active" })` and `{ reducedMotion: "reduce" }` plus
-screenshots, once a feature has regressed twice.
+Once a feature has regressed twice, assert these in Playwright with screenshots under
+`page.emulateMedia({ forcedColors: "active" })` and `{ reducedMotion: "reduce" }`.
 
 ## Running a WCAG 2.2 AA audit
 
 WCAG 2.2 at level AA is 55 success criteria (levels A and AA together). An audit states, for a
-defined scope, whether each is met.
+defined scope, whether each is met. Laws and contracts cite different versions (2.0, 2.1 or 2.2,
+often through Section 508 or EN 301 549). Content that meets 2.2 AA also meets 2.1 and 2.0 AA,
+so audit against 2.2 and state the result against the version the buyer or regulator names.
 
 1. **Scope.** List every page template, every shared component, and the key flows end to end:
    sign-up, sign-in and recovery, the core task, settings, billing or checkout, help. Add states
@@ -195,14 +195,12 @@ Priority is severity times reach, with shared code first:
 5. Structure and content: headings, landmarks, alt text, link text, captions.
 6. Everything else, by frequency of the page.
 
-The failures that dominate large-scale scans of the public web are few: low-contrast text,
-missing alt text, missing form labels, empty links, empty buttons and missing page language.
-Clearing these six is the right first day's work on any untested product, but it is not the
-definition of fixed.
+Large-scale scans of the public web are dominated by six failures: low-contrast text, missing
+alt text, missing form labels, empty links, empty buttons and missing page language. Clearing
+them is the right first day's work on an untested product, not the definition of fixed.
 
-Fix causes, not symptoms: replace a hand-built widget with a primitive instead of adding ARIA to
-it, repair a token instead of overriding a color in one place. Add a regression test with each
-fix (an axe scan of that state, or a keyboard assertion) so that it stays fixed.
+Fix the component or token, not the instance, and add a regression test with each fix (an axe
+scan of that state, or a keyboard assertion) so that it stays fixed.
 
 ## Definition of done and the component library
 
@@ -212,8 +210,7 @@ fix (an axe scan of that state, or a keyboard assertion) so that it stays fixed.
 | Launch | axe in CI on key flows and their states, the manual pass on each feature, a screen-reader pass on sign-up, sign-in, core task and payment, contrast-tested tokens |
 | Scale | A full audit on a schedule and after redesigns, a conformance report, sessions with disabled users, an accessibility contact and a triage rule for reported barriers |
 
-Make the library carry the load, since guidance that depends on each feature author remembering
-does not hold:
+Make the library carry the load; rules that rely on each author remembering do not hold:
 
 - Components make the wrong thing hard to write. An `IconButton` whose TypeScript props require
   `label`; a `Dialog` that requires a title; a `Field` that renders label, hint and error and
@@ -226,8 +223,6 @@ does not hold:
   checked, names and states verified, automated scan green.
 - Acceptance criteria for a feature name the accessible behavior ("focus moves to the dialog
   heading on open, returns to the Edit button on close") so that it is built, not retrofitted.
-- Accessibility bugs are triaged with the same severity scale as other bugs; a blocker in a core
-  flow is a production incident for the users affected.
 
 ## Testing with disabled users
 
@@ -242,11 +237,9 @@ alongside ordinary usability testing (method in `0x:ui-ux-design`, `usability-te
   keyboard or switch, voice control, cognitive and learning disabilities, Deaf users for media.
   Three to five sessions per round is a workable rule of thumb. Sources: specialist recruiting
   panels, disability organizations, existing customers.
-- Participants use their own device, assistive technology and settings; that configuration is
-  the thing being tested, and a lab machine removes it. Remote sessions with screen and audio
-  sharing work well.
-- Give tasks ("change the billing email"), not an audit request. Participants are users, not
-  auditors; expertise in their technology is not a duty to explain WCAG.
+- Participants use their own device, assistive technology and settings, since that setup is
+  what is being tested. Remote sessions with screen and audio sharing work well.
+- Give tasks ("change the billing email"), not an audit request: participants are users, not auditors.
 - Pay at least the rate of any other research participant, allow longer sessions, and make the
   recruitment form, consent form and scheduling tool themselves accessible.
 - Record the barrier and the workaround observed, then map each to a fix; individual preference
@@ -261,7 +254,9 @@ Information Technology Industry Council, filled in for a specific product versio
 - **Edition.** The template comes in editions: WCAG, Section 508 (US federal), EU (EN 301 549)
   and INT (all of them). Ask the buyer which they need; default to the WCAG edition, the 508
   edition for US public sector, INT when selling on both sides of the Atlantic. Download the
-  current template version; do not reuse an old file.
+  current template from ITI instead of reusing an old file: the template and the standards
+  behind it are revised (EN 301 549's 2026 revision moves its web baseline from WCAG 2.1 to 2.2,
+  and legal recognition of a new version lags its publication).
 - **Basis.** The report must rest on an actual audit as described above. It lists evaluation
   methods, product version, date and a contact.
 - **Terms.** For each criterion: Supports, Partially Supports, Does Not Support, Not Applicable.

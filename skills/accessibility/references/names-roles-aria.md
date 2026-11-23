@@ -20,6 +20,11 @@ Hand-written ARIA is a promise about keyboard behavior that the code must then k
 `role="button"` on a `div` announces "button" and does nothing on Enter or Space until both are
 coded.
 
+By stage: at Prototype, native elements, primitives and correct names are the whole job. At
+Launch add live regions for every asynchronous status, the ARIA sweep below and a required alt
+field wherever images are uploaded. Hand-built patterns that no primitive covers wait for Scale,
+when testing on two screen-reader engines is affordable.
+
 ### How the name is computed
 
 The first source that yields text wins, so a later source is silently ignored:
@@ -83,7 +88,7 @@ Write the alt by what the image does in context, not by what it shows:
 
 Rules that differ from generalist habit:
 
-- A missing `alt` makes screen readers read the file name or URL; `alt=""` makes them skip the
+- A missing `alt` can make screen readers read the file name or URL; `alt=""` makes them skip the
   image. Both are deliberate choices; only the missing attribute is always wrong.
 - Do not start with "Image of" or "Picture of"; the role is already announced.
 - An image link whose image has `alt=""` and no text is an empty link, one of the most common
@@ -113,7 +118,7 @@ Bad ARIA is worse than none because it overrides correct native semantics. Sweep
 | `role="menu"` on site navigation | Promises arrow-key menu behavior, puts screen readers in a mode where links misbehave | Plain list of links in `<nav>`; disclosure button for dropdowns |
 | `aria-labelledby`/`aria-describedby`/`aria-controls` pointing at ids that do not exist or repeat | Silent failure | Generate ids with `useId`; check they render |
 | Interactive inside interactive (`<a><button>`, clickable card containing links) | Role and focus are undefined | One control per element; stretch a link with a pseudo-element for card clicks |
-| Children without the required parent (`role="tab"` outside `tablist`, `option` outside `listbox`) | Role is dropped | Complete the pattern or remove it |
+| Children without the required parent (`role="tab"` outside `tablist`, `option` outside `listbox`) | Browsers ignore the role or expose it without its set, so announcements break | Complete the pattern or remove it |
 | `role="application"` | Turns off screen-reader browse commands | Remove unless the region is a true canvas-style app |
 | `aria-live` on large or many containers | Constant chatter | One or two dedicated regions |
 | `title` as the only name or as a tooltip | Not shown on touch or keyboard | Visible text or a real tooltip |
@@ -149,7 +154,8 @@ Decision rules:
   scroll it.
 - A dropdown of links is a disclosure. Reserve `menu` for commands such as a row's "..." actions.
 - Native `<dialog>` with `showModal()` supplies the top layer, background inertness, Esc and
-  focus return. Use it or a primitive; a `div` with `role="dialog"` supplies none of that.
+  focus return. Use it or a primitive; a `div` with `role="dialog"` supplies none of that, and
+  neither does a `<dialog>` opened with `show()` or the `open` attribute, which is non-modal.
 - Native `<details>/<summary>` covers simple disclosures; the `popover` attribute covers
   non-modal overlays with light dismiss. Popover sets no role: add one that fits the content.
 
