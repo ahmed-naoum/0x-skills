@@ -22,9 +22,9 @@ shutil.rmtree(dst, ignore_errors=True)
 shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__", ".*"))
 PY
 git add -A -- "skills/$name"
-git commit -q --allow-empty -m "$msg" -m "Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+git commit -q --allow-empty -m "$msg" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_016EmRLzsdtiYnUpwku8fD9P" -- "skills/$name" 2>/dev/null \
-  || git commit -q --allow-empty -m "$msg" -m "Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+  || git commit -q --allow-empty -m "$msg" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_016EmRLzsdtiYnUpwku8fD9P" || { echo "commit failed"; exit 1; }
 echo "committed: $msg"
 for wait in 0 2 4 8 16; do
