@@ -130,9 +130,10 @@ Rules: one source of truth per metric, named in the entry. Money comes from the 
 never from analytics events. Counts of entities (accounts, subscriptions) come from the
 database. Behavior comes from analytics. Mark one saved insight or query per metric as official
 and derive every other chart from it. When a definition changes, restate history and record
-the date; never leave a silent break in a series. Two tools will not match exactly: agree on an
-acceptable gap (a few percent between analytics and the database is normal for client events)
-and investigate only beyond it.
+the date; never leave a silent break in a series. Two tools will not match exactly: measure
+the usual gap once, write it in the entry, and investigate only when it changes. Server-side
+events should match the database almost exactly; client-side events run lower by the share of
+the audience that blocks tracking, from a few percent to far more for technical audiences.
 
 ## Guardrails and counter-metrics
 
@@ -158,7 +159,8 @@ denominator shrinks. Experiments carry the same guardrails (`references/experime
 
 ## The weekly scorecard
 
-One page, the same every week, readable in two minutes. It is a table, not a dashboard:
+One page, the same every week, readable in two minutes, starting at Launch (at Prototype there
+is nothing to put on it). It is a table, not a dashboard:
 
 | Metric | Owner | This week | Last week | 4-week avg | Target | Status |
 |---|---|---|---|---|---|---|
@@ -173,7 +175,7 @@ One page, the same every week, readable in two minutes. It is a table, not a das
 
 Specification rules:
 
-- **5 to 9 rows.** The NSM, one row per input being worked on, revenue, and the guardrails.
+- **5 to 9 rows** (rule of thumb): the NSM, a row per input being worked on, revenue, guardrails.
   A metric nobody would act on does not get a row.
 - **One named owner per row**, even when the company is one person and every name is the same:
   the column forces the question "who notices when this moves".
@@ -187,7 +189,7 @@ Specification rules:
 - **Counts instead of rates when numbers are small.** "3 of 41 churned" with names is more
   honest than "7.3%" at Launch.
 - Generate it automatically from the official queries (a scheduled job writing to a document
-  or channel). A scorecard assembled by hand is abandoned within two months. Building the
+  or channel). A scorecard assembled by hand tends to be abandoned. Building the
   queries and charts belongs to the `data` and `dataviz` skills.
 
 ## The weekly review
@@ -209,8 +211,8 @@ Format, 30 minutes, same slot every week, also for a solo founder (as a written 
 5. **After**: write the decisions in a running log with the date. Open next week's review by
    reading last week's actions.
 
-Rules that keep it useful: do not react to one data point; require a move beyond the usual
-range of the last 8 weeks or two consecutive weeks in one direction. Do not debug data in the
+Rules that keep it useful: do not react to one data point; as a rule of thumb, require a move
+beyond the range of the last 8 weeks, or three or more weeks running in one direction. Do not debug data in the
 meeting; assign it. Once a quarter, review the scorecard itself: remove rows that never led to
 a decision, and check the tree still explains revenue.
 

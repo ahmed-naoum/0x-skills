@@ -36,6 +36,9 @@ Rules:
 
 ## Cohort retention curves
 
+Stage: at Prototype, list who came back, by name. Curves start at Launch, with monthly cohorts
+while weekly ones are too small to read.
+
 A cohort is the set of units that started in the same period (signup week or month, or first
 payment month for revenue). The curve plots the share of the cohort active in each later
 period. Three variants give different numbers from the same data, so name the one in use:
@@ -49,6 +52,7 @@ period. Three variants give different numbers from the same data, so name the on
 A minimal classic weekly table in SQL (analysis at depth belongs to the `data` skill):
 
 ```sql
+-- date_trunc on timestamptz uses the session time zone: run with SET TIME ZONE 'UTC'.
 with cohort as (
   select id as user_id, date_trunc('week', created_at)::date as cohort_week
   from users
@@ -59,7 +63,7 @@ activity as (
   where name = 'report_published'
 )
 select c.cohort_week,
-       (a.active_week - c.cohort_week) / 7 as week_n,
+       (a.active_week - c.cohort_week) / 7 as week_n,  -- date minus date is integer days
        count(*) as active_users
 from cohort c
 join activity a using (user_id)
@@ -69,7 +73,7 @@ order by 1, 2;
 ```
 
 Divide by cohort size (count from `cohort`, not from the join, so cohorts with zero activity
-keep their denominator).
+keep their denominator). For B2B, key both CTEs on the account ID instead of the user ID.
 
 Reading the curve:
 
@@ -111,6 +115,13 @@ Track both, by cohort of first payment month.
 | Gross revenue retention (GRR) | (starting MRR − contraction − churned MRR) ÷ starting MRR | cannot exceed 100% |
 | Net revenue retention (NRR) | (starting MRR + expansion − contraction − churned MRR) ÷ starting MRR | can exceed 100%; excludes new customers |
 
+Cohort view: for customers whose first payment fell in month M, logo retention at month M+n
+is the share still paying, cohort NRR is that cohort's MRR at M+n ÷ its MRR at M, and cohort
+GRR is the same with each customer's MRR capped at its starting value. A cohort NRR line that
+bends back up means expansion outruns churn; newer cohorts' lines sitting above older ones at
+the same age mean the product or the customer mix improved. Pool months into quarters while a
+monthly cohort holds only a handful of customers.
+
 Traps:
 
 - **Monthly churn compounds.** 3% monthly logo churn loses about 31% of customers in a year;
@@ -130,8 +141,8 @@ Traps:
 - MRR itself, and anything reported to investors, comes from the billing system and is owned by
   `0x:startup-finance`; this file covers the cohort view.
 
-Small numbers: with fewer than about 50 paying customers, a monthly churn percentage is not
-a statistic. Keep a list of every churned customer with the reason, tenure, plan and channel,
+Small numbers: with fewer than about 50 paying customers (rule of thumb), a monthly churn
+percentage is not a statistic. Keep a list of every churned customer with the reason, tenure, plan and channel,
 and read the list.
 
 ## Segment retention
@@ -166,8 +177,8 @@ that is embedded.
   meaningful for products with daily natural frequency; for weekly products use WAU ÷ MAU.
   Do not set a target on a ratio whose denominator can be shrunk by losing casual users.
 - **Breadth**: number of distinct core features or use cases an account uses, and in B2B the
-  share of seats active. Accounts using several features or integrated with other systems
-  churn less, mostly because of switching cost; treat that as a hypothesis to test, not a
+  share of seats active. Accounts using several features or integrations usually churn less,
+  but that can be switching cost or simply a marker of fit: a hypothesis to test, not a
   proven lever.
 - **Intensity**: volume of the value unit per active account (documents, API calls, minutes).
   This is also the input to usage pricing.

@@ -14,10 +14,15 @@ n per arm ≈ 16 × p × (1 − p) / δ²
 p = baseline conversion rate, δ = absolute difference to detect (p × relative lift)
 ```
 
-For small p this reduces to a number worth memorizing: **conversions needed per arm ≈ 16 / r²**,
-where r is the relative lift to detect.
+In conversions: **conversions needed per arm ≈ 16 × (1 − p) / r²**, where r is the relative lift
+to detect; for small baseline rates that is about 16 / r², the number worth memorizing. The
+rule decides whether a test is feasible; take the final sample size from the experiment
+tool's calculator. For a continuous metric (revenue or actions per unit) the same rule reads
+n per arm ≈ 16 × σ² / δ², with σ the metric's standard deviation. Revenue is skewed enough
+that it usually needs several times the sample of a conversion metric, one more reason to
+make the primary metric a conversion.
 
-| Relative lift to detect | Conversions per arm | Units per arm at 5% baseline | At 20% baseline |
+| Relative lift to detect | Conversions per arm (16 / r²) | Units per arm at 5% baseline | Units per arm at 20% baseline |
 |---|---|---|---|
 | 5% | ~6,400 | ~122,000 | ~26,000 |
 | 10% | ~1,600 | ~30,000 | ~6,400 |
@@ -33,8 +38,8 @@ Decision:
    under it, and the opportunity cost of the slot is too high.
 3. If that lift is larger than the change could plausibly produce, do not run the test.
 
-Typical consequence: a product with a few hundred signups a week can only detect lifts of
-30–50% or more on signup-to-activation, and cannot test anything on paid conversion. Most
+Worked example: 300 signups a week for 4 weeks is 600 per arm, which detects about a 25%
+relative lift on a 30% activation rate and only about a 70% lift on a 5% paid conversion. Most
 Prototype and early Launch products are below the threshold for almost every test, and should
 say so instead of running underpowered tests whose "winners" are noise. An underpowered test
 that reaches significance overstates the effect and may have the sign wrong.
@@ -83,8 +88,8 @@ another name.
 
 Variance reduction worth knowing at Scale: adjusting the metric by each unit's pre-experiment
 value of the same metric (CUPED) shortens tests for metrics with history, such as engagement
-or revenue per existing user. It does nothing for new-user conversion, where there is no
-pre-period.
+or revenue per existing user. It does little for new-user conversion, where there is no
+pre-period value to adjust by.
 
 ## Assignment and sample-ratio mismatch
 
@@ -134,7 +139,7 @@ the cause and rerun. Do not "correct" the data.
 
 | Trap | What happens | Defense |
 |---|---|---|
-| Peeking | checking a fixed-horizon test daily and stopping at the first p < 0.05 raises the false-positive rate to several times the nominal 5% | fixed horizon, or a sequential method by design |
+| Peeking | checking a fixed-horizon test daily and stopping at the first p < 0.05 raises the false-positive rate to several times the nominal 5% (roughly 25–30% with a daily look for four weeks) | fixed horizon, or a sequential method by design |
 | Multiple metrics | with 20 metrics at 5%, one "significant" result is expected by chance | one primary metric; correct the rest (Bonferroni: α ÷ number of comparisons) or treat as exploratory |
 | Multiple variants | each extra arm is another chance of a false win and needs its own sample | A/B, not A/B/C/D, unless traffic is abundant |
 | Segment mining | "it won for mobile users in Germany" found after the fact | segments declared in advance; a post-hoc segment is a hypothesis for the next test |
@@ -197,7 +202,7 @@ new accounts will raise 7-day activation by >= 20% relative.
 Evidence: funnel 2026-10; 12 replays; 4 interviews.
 Unit: account. Population: new self-serve signups. Exposure: first project page view.
 Primary: activation within 7 days. MDE: 20% relative. Baseline: 31%.
-Sample: 900 accounts per arm (~5 weeks at current signups). Split 50/50.
+Sample: 900 accounts per arm (~4 weeks at current signups). Split 50/50.
 Guardrails: week-4 retention not down > 2 pts; support contacts per account not up > 15%.
 Stopping: fixed horizon; early stop only on guardrail breach or bug.
 Decision rule: ship if primary interval excludes 0 and guardrails hold; if flat, do not ship.

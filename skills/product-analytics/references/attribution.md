@@ -32,7 +32,7 @@ hand-typed URLs):
 | `utm_content` | creative or placement | optional: `hero_video_a` |
 | `utm_term` | keyword or audience | optional, paid search |
 
-- **Lowercase, snake_case, no spaces.** Values are case-sensitive in every tool, so `LinkedIn`,
+- **Lowercase, snake_case, no spaces.** Values are case-sensitive in most tools, so `LinkedIn`,
   `linkedin` and `linked-in` become three channels. Normalize to lowercase at ingestion as well.
 - **Never put UTMs on internal links.** A UTM on a link inside the site or product overwrites
   the real source and starts a new session in some tools.
@@ -47,19 +47,19 @@ Capture on the first landing, persist until signup, and store on the user and ac
 
 ```ts
 const KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term",
-  "gclid", "fbclid", "msclkid"];
+  "gclid", "gbraid", "wbraid", "fbclid", "msclkid"];
 
 export function captureFirstTouch() {
-  if (document.cookie.includes("first_touch=")) return; // first touch is written once
+  if (/(?:^|; )first_touch=/.test(document.cookie)) return; // first touch is written once
   const q = new URLSearchParams(location.search);
   const ft: Record<string, string> = {
-    landing_path: location.pathname,
-    referrer: document.referrer,
+    landing_path: location.pathname.slice(0, 200),
+    referrer: document.referrer.slice(0, 300), // a cookie over about 4 KB is silently dropped
     ts: new Date().toISOString(),
   };
   for (const k of KEYS) {
     const v = q.get(k);
-    if (v) ft[k] = k.startsWith("utm_") ? v.slice(0, 200).toLowerCase() : v.slice(0, 500);
+    if (v) ft[k] = k.startsWith("utm_") ? v.slice(0, 100).toLowerCase() : v.slice(0, 300);
   }
   document.cookie = `first_touch=${encodeURIComponent(JSON.stringify(ft))}` +
     "; Max-Age=7776000; Path=/; Domain=.example.com; SameSite=Lax; Secure";
@@ -73,7 +73,15 @@ Further rules:
   marketing site and app on different registrable domains need the values passed in the signup
   link.
 - At signup, the server reads the cookie and writes `first_touch_*` columns once. The database
-  row is the durable record: cookies expire and analytics tools get replaced.
+  row is the durable record: cookies expire and analytics tools get replaced. The cookie is
+  input anyone can forge: parse it with a schema, cap lengths, use it for attribution only.
+- Safari caps script-set cookies at about a week, and at about a day when the visit arrives
+  with a decorated URL (query string or click ID) from a domain it classifies as a tracker,
+  which is the paid-click case; the 90 days will not hold there. On a server-rendered stack,
+  set the same cookie from the server response instead (middleware reading the query string
+  and `Referer`): cookies set over HTTP by the site's own server are outside those caps,
+  unless the responding host is a third party behind a CNAME or on an IP range unrelated to
+  the main site's. Check WebKit's current tracking-prevention rules before relying on either.
 - Also record **last touch before signup** (same fields, overwritten on each new external
   landing). First touch says what created awareness; last touch says what closed.
 - Derive a `channel` from source, medium and referrer with one function in code (`paid_search`,
@@ -93,7 +101,7 @@ Self-reported attribution sees what tracking cannot: podcasts, word of mouth, co
 events, AI assistants, a colleague's recommendation.
 
 - Place it **right after signup**, on the first onboarding screen, as one optional question.
-  On the signup form itself it costs conversions; weeks later nobody remembers.
+  On the signup form itself it can cost conversions; weeks later nobody remembers.
 - Use a **free-text field** at Launch volume, and categorize answers by hand or with a model
   weekly. Free text returns names ("the X podcast", "my coworker", "asked ChatGPT") that a
   dropdown cannot. At Scale switch to a short option list in random order with "Other" plus
@@ -155,16 +163,19 @@ Rules: default to first touch and last touch side by side, plus self-report. Do 
 multi-touch attribution before Scale: it needs volume, an identity graph and maintenance, and
 its output is no more causal than last touch. No rule-based or modeled attribution answers
 "what happens if this budget is cut"; only an experiment does. Ad platforms' own dashboards
-include view-through conversions and long windows by default; compare platforms using the
-product's own numbers, and record the windows used.
+use their own attribution windows and often count view-through conversions; compare platforms
+using the product's own numbers, and record the windows used.
 
 ## Server-side conversions to ad platforms
 
 Ad platforms optimize toward the conversions they are told about. Browser pixels lose events
 to blockers, browser privacy limits and consent refusals, and can only see what happens in the
-browser. Sending conversions from the server (Meta Conversions API, Google Ads enhanced or
-offline conversion upload, and equivalents) recovers part of that and lets the platform
-optimize for the event that matters.
+browser. Sending conversions from the server (Meta's Conversions API, Google's conversion
+upload, and equivalents) recovers part of that and lets the platform optimize for the event
+that matters. These APIs are renamed and replaced often: Google now directs offline and
+enhanced-conversion uploads to its Data Manager API and in 2026 closed the older Google Ads
+API upload path to new adopters, so many examples found online target an API a new project
+cannot use. Write the integration from the platform's current documentation, not from memory.
 
 - **Send the business event, not the pixel event.** Report `subscription_started` (with
   value) or a qualified signup, from the same server code that records it. Optimizing ads
@@ -175,14 +186,18 @@ optimize for the event that matters.
 - **Match keys**: the click ID captured at landing and stored on the user row, and hashed
   identifiers in the format the platform specifies (normalized, lowercased email hashed with
   SHA-256).
-- **Deduplicate** when both pixel and server send the same conversion: send the same event ID
-  on both, as the platform's deduplication requires.
+- **Deduplicate** when both pixel and server send the same conversion: send the same event
+  name and the same event ID on both (Meta matches on that pair within a limited window, 48
+  hours at the time of writing, so a late retry or backfill counts again). Without it each
+  conversion counts twice and the platform optimizes on inflated numbers.
 - **Consent applies to the server path exactly as to the pixel.** Sending hashed emails to an
   ad platform is sharing personal data for advertising. Store the user's advertising consent
   at the time of the click or signup and send only for users who granted it; pass the
-  platform's consent signals where it requires them (for Google in the EEA, the consent-mode
-  parameters). In some US states this sharing counts as "sale" or "sharing" and needs an
-  opt-out. The rules are in `0x:privacy-compliance`.
+  platform's consent signals where it requires them (Google requires them for users in the
+  EEA and any other region its consent policy covers; check the current list). Under several
+  US state privacy laws this sharing can count as "sale" or "sharing" and require an opt-out,
+  where the law applies to the business at all; thresholds and definitions differ by state.
+  The rules are in `0x:privacy-compliance`.
 - Send within the platform's upload window and with the original conversion time. Check the
   platform's event-quality or match-rate diagnostic after launch.
 - Send from a job with retries, keyed on the conversion's ID so a retry cannot double-count.
@@ -202,15 +217,18 @@ Reasons tracked attribution undercounts or mislabels, and what to do about each:
 | AI assistants and AI search | see below | referrer classification plus self-report |
 
 AI-referral traffic: assistants send visits in three ways. Some clicks carry a referrer from
-the assistant's domain or a `utm_source` the assistant appends; classify those domains and
+the assistant's domain or a `utm_source` the assistant appends (ChatGPT has used
+`utm_source=chatgpt.com`); classify those domains and
 values into an `ai_assistant` channel in the channel function, and maintain the list, since
 the products and domains change. Many clicks, especially from native apps, carry no referrer
 and land as direct. And the largest effect leaves no click at all: the user reads a
 recommendation, then types the brand into a browser or search engine later. So measure AI
 influence with the self-report question (add the category), with direct landings on deep
 pages that nobody types by hand, and with the trend in branded search, and do not expect
-click attribution to size it. AI-generated answers inside a search engine's results page
-arrive as ordinary organic search.
+click attribution to size it. Clicks from AI answers inside a search engine's results page
+arrive as ordinary organic search, or with no referrer, and click data cannot separate them.
+Assistants have added and dropped these parameters without notice: treat a sudden change in
+this channel as an instrument change first.
 
 Read the `direct` bucket as "unknown", never as "typed the URL". A rising share of direct
 alongside growing signups usually means untracked channels are working.
@@ -234,7 +252,7 @@ and metric before starting; match regions on pre-period trend, not on size alone
 two full weeks plus the typical conversion lag. A result of "no detectable drop" when the
 channel is off is a finding worth acting on. At Launch-level spend, the practical version is:
 pause brand-keyword ads for two weeks and see whether organic and direct absorb the signups.
-Media-mix modeling needs years of varied spend data and is not a small-team tool.
+Media-mix modeling needs a long history of varied spend and is not a small-team tool.
 
 ## Ask the user
 

@@ -21,8 +21,9 @@ projects and invited 1 teammate within 7 days". All four parts are choices:
 | N | The smallest count that separates retained from churned; often 1–3 |
 | T | Short enough to act on: within the first session for simple tools, 7 days as a common ceiling, the trial length at most |
 
-Procedure when there is history (roughly 200+ signups old enough to judge retention; below
-that, see the next paragraph):
+Procedure when there is history (rule of thumb: 200 or more signups old enough to judge
+retention, so each cell of the table in step 3 holds tens of accounts; with less, see the
+paragraph after the list):
 
 1. Define "retained" first, for example active in week 4 or 8, or still paying at month 3
    (`references/retention-cohorts.md`).
@@ -30,8 +31,8 @@ that, see the next paragraph):
 3. For each candidate compute a 2×2 table: did it or not, retained or not.
 4. Prefer the candidate that is both **predictive** (retention among those who did it is
    several times retention among those who did not) and **reachable but not universal**
-   (roughly 20–60% of signups do it). A behavior 95% of users perform cannot discriminate; one
-   that 2% perform identifies fans, not a lever.
+   (rule of thumb: 20–60% of signups do it). A behavior 95% of users perform cannot
+   discriminate; one that 2% perform identifies fans, not a lever.
 5. Check the candidate holds within the main segments (plan, channel). If it only works because
    one segment dominates, it is a segment marker, not an activation event.
 6. Fix the definition in the metric dictionary (`references/north-star-metrics.md`) and emit
@@ -50,6 +51,9 @@ edge of every chart.
 
 ## Find the biggest drop in signup-to-paid
 
+Stage: at Prototype, with tens of signups, write the funnel as names per step and talk to the
+people who stopped; rates start to mean something at Launch volume.
+
 Lay the whole path out as ordered, unambiguous steps before looking at any number:
 
 `landing_page_viewed → signup_started → signed_up → email_verified → first core action →
@@ -63,8 +67,9 @@ Then:
 2. **Compute both step conversion and absolute loss.** The biggest percentage drop is not
    always the biggest opportunity. Rank steps by "units lost × plausible recovery". A step
    losing 70% of 1,000 units matters more than one losing 90% of 40.
-3. **Compare to what is normal for the step.** Visitor-to-signup in single-digit percent is
-   normal and mostly a traffic-quality matter (`0x:growth-marketing`); a large loss between
+3. **Judge each step by its kind.** Visitor-to-signup is low for almost every product (often
+   single-digit percent, depending on the traffic source) and is mostly a traffic-quality
+   matter (`0x:growth-marketing`); a large loss between
    `signed_up` and the first core action is almost always the product's fault and usually the
    highest-leverage fix at Launch.
 4. **Look at the losers, not only the count.** Watch 10–20 session replays of users who
@@ -107,8 +112,8 @@ Rules:
 
 - Segment by **pre-funnel attributes** only. Segmenting by something that happens inside the
   funnel ("users who used feature X convert better") is a selection effect, covered below.
-- **Minimum size**: do not read a segment with fewer than roughly 100 units at the step being
-  compared, or about 30 conversions. With 20 users, one person is 5 points.
+- **Minimum size** (rule of thumb): do not read a segment with fewer than about 100 units at
+  the step being compared, or about 30 conversions. With 20 users, one person is 5 points.
 - **Mix shift**: when the overall rate moves, check whether each segment moved or only the mix
   did. A campaign that doubles low-intent traffic lowers overall conversion while every
   segment is unchanged, and rates can even move in opposite directions in aggregate and within

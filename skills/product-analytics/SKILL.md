@@ -1,6 +1,6 @@
 ---
 name: product-analytics
-description: "Instruments a product and decides what to measure: event tracking plans, analytics tool setup, activation and funnels, cohort retention, north-star metrics and scorecards, A/B test design, and attribution. Use when the user asks what events to track, how to set up PostHog, where users drop off, whether retention is good, whether traffic allows an A/B test, or which channel signups come from."
+description: "Instruments a product and decides what to measure: event tracking plans, analytics tool setup, activation and funnels, cohort retention, north-star metrics and scorecards, A/B test design, and attribution. Use when the user asks what events to track, how to set up PostHog, where users drop off, whether retention is good, whether traffic allows an A/B test, which channel signups come from, or why metrics disagree."
 ---
 
 # Product analytics and experimentation
@@ -73,7 +73,8 @@ Other defaults:
 - Time zone UTC, ISO weeks, incomplete periods masked.
 - Funnel unit and randomization unit: account for B2B, user for consumer.
 - Funnel window: trial length plus 7 days.
-- Planning formula for a conversion test: about 16 ÷ (relative lift)² conversions per arm.
+- Planning formula for a conversion test: about 16 ÷ (relative lift)² conversions per arm at
+  low baseline rates; if 4 weeks of traffic cannot supply that, do not run the test.
 - Internal and test accounts excluded by property in every official insight.
 - Separate analytics projects for development, staging and production.
 
@@ -82,20 +83,23 @@ Other defaults:
 1. Every new event is in the tracking plan with an exact trigger, source, properties and the
    question it answers, and follows the naming convention.
 2. Signup, activation and billing events are emitted server-side after commit, once per
-   occurrence, including when the webhook is replayed.
-3. Daily counts of a fact event match the database within the agreed tolerance, and an alert
-   exists for the count falling to zero.
+   occurrence, including when the webhook is replayed; serverless handlers flush the analytics
+   client before returning.
+3. Daily counts of a fact event match the database rows (rule of thumb for a server-side
+   event: events ÷ rows between 0.95 and 1.0), and an alert exists for the count falling to
+   zero.
 4. `identify` uses the database ID, is guarded against empty or placeholder values, and
    `reset` runs on logout; B2B events carry the account group.
 5. No emails, names, free text or tokenized URLs appear in event properties; replay masks
-   inputs; the SDK stores nothing before consent where consent is required.
+   inputs; the SDK stores nothing before consent where consent is required; only the public
+   capture key, never a personal or admin analytics API key, is in client code.
 6. All analytics calls go through the typed wrapper, and a test asserts the critical funnel
    events fire once with valid payloads.
 7. Each metric shown has an entry in the metric dictionary stating unit, window, filters and
    source of truth, and the chart states them too.
 8. Rates are computed on closed cohorts; the current incomplete period is masked or labeled.
-9. Any segment or cohort being compared has enough units to mean something, or is reported as
-   counts.
+9. Any segment or cohort compared as a rate has about 100 units or more (rule of thumb);
+   smaller groups are reported as counts with names.
 10. Causal language is used only for experiment results; other findings are stated as
     associations with the next test named.
 11. An experiment has a written brief with one primary metric, a sample size, guardrails, and
