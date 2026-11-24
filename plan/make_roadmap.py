@@ -180,7 +180,7 @@ readme += [
     "",
     "Advice is tagged by stage: **Prototype** (no real users yet), **Launch** (real users and first revenue), "
     "**Scale** (meaningful traffic or revenue, and a team). The default stack the skills assume when you have not chosen one is "
-    "TypeScript, Next.js, PostgreSQL, Stripe and a PaaS; every skill follows what your project already uses first.",
+    "Rust end to end (Axum and Tokio on the server, Leptos for the interface), PostgreSQL through SQLx, Stripe and a PaaS; every skill follows what your project already uses first.",
     "",
     "## How the set is built and extended",
     "",

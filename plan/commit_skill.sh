@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
 # Publish one skill from the build folder into the repo, commit and push it.
-# Usage: plan/commit_skill.sh <skill-name> draft|review
+# Usage: plan/commit_skill.sh <skill-name> draft|review|rust|rust-review
 # Safe to run from several processes at once: a lock file serializes git access.
 set -u
 name="${1:?skill name}"
 stage="${2:?draft or review}"
 case "$name" in *[!a-z0-9-]*|"") echo "bad skill name"; exit 1;; esac
-case "$stage" in draft) msg="Draft the $name skill";; review) msg="Review the $name skill";; *) echo "stage must be draft or review"; exit 1;; esac
+case "$stage" in
+  draft) msg="Draft the $name skill";;
+  review) msg="Review the $name skill";;
+  rust) msg="Move the $name skill to Rust";;
+  rust-review) msg="Review the $name skill on Rust";;
+  *) echo "stage must be draft, review, rust or rust-review"; exit 1;;
+esac
 repo="$(cd "$(dirname "$0")/.." && pwd)"
 build="${OX_BUILD:-/home/user/0x-build}"
 src="$build/skills/$name"
