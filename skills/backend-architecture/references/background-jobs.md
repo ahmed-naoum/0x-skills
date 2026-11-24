@@ -40,7 +40,7 @@ job, when a timed-out attempt had in fact succeeded, and when the same job was e
 | Effect | Make it idempotent with |
 |---|---|
 | Database change | Guarded state transition, upsert, or a unique constraint on the business key |
-| Third-party API call | The provider's idempotency key, derived from the business entity: `charge:{orderId}` |
+| Third-party API call | The provider's idempotency key, taken from the persisted intent or attempt row (`charge:{paymentAttemptId}`) and reused on every retry of that attempt; a new attempt after a definitive failure gets a new row and a new key (`0x:payments-billing`) |
 | Email, SMS, push | A sent-log row with a unique key (`receipt:{orderId}`) claimed before sending and marked sent after, plus the provider's idempotency key where it has one. Without that key, a crash between the two steps forces the lost-or-repeated choice below |
 | Duplicate enqueue | A deterministic job key so the queue collapses duplicates |
 | Several effects in one job | Split into one job per effect, or checkpoint after each step |

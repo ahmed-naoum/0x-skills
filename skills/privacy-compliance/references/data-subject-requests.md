@@ -29,7 +29,8 @@ Train whoever reads the inboxes to route them to `privacy@` the same day.
 | CCPA opt-out of sale or sharing, limit sensitive data | None | As soon as feasible, at most 15 business days | None |
 | Other US states | Varies | Commonly 45 days | Commonly 45 more, plus an appeal process the business must offer |
 
-Work to an internal target of 14 days so that one missed handoff does not breach. Requests are
+Work to an internal target of 14 days so that one missed handoff does not breach. For self-serve
+account deletion, the grace period plus the purge job must finish inside the one-month deadline. Requests are
 free. A fee or refusal is allowed only for manifestly unfounded or excessive requests, and the
 burden of showing that is on the business; the refusal must still be sent on deadline with
 reasons and the right to complain. Under GDPR the period generally runs from receipt; the UK regulator, and
@@ -134,7 +135,8 @@ re-attached to the person. A hashed email is not anonymous.
   re-applied after any restore. That last step needs a durable deletion ledger of user IDs and
   dates, stored outside the database being restored, and a restore procedure that replays it.
   Keep backup retention short enough to state a number in the reply: about 30 days is common
-  for rolling backups; long-lived archives need a justification.
+  for rolling backups; long-lived archives need a justification. If such archives exist, the
+  retention stated in the reply is that of the longest copy, not the rolling backups.
 - **Logs.** Keep personal data out of logs as a design rule, and set log retention to a short
   fixed period (30 to 90 days is typical for application logs; security and audit logs longer,
   with restricted access). Expiry then does the deleting, and the reply can say so.
@@ -155,7 +157,7 @@ necessary" is not a period. A starting schedule for a SaaS product, to adjust wi
 
 | Data | Period | Basis |
 |---|---|---|
-| Account and content | Life of the account, then 30 days grace | Contract |
+| Account and content | Life of the account; after a deletion request, a 14-day grace period (`0x:auth-identity`), with grace plus purge inside the one-month deadline | Contract |
 | Inactive free accounts | Warn, then delete after 24 months inactivity | Minimization |
 | Customer workspace data after cancellation | 30 to 90 days, then delete; per the DPA | Contract |
 | Invoices and tax records | Statutory period of the company's and customers' countries | Legal obligation |

@@ -51,8 +51,9 @@ Rules for all of it:
 - **Restore is the test.** A backup is proven only by restoring it and using the result. Put a
   heartbeat on every backup job and a calendar entry on every restore drill.
 - **Retention covers slow discovery.** Corruption is often noticed weeks later; keep dailies for
-  weeks and monthlies for months, within the retention limits and deletion duties set by privacy law
-  and contracts (`0x:data-stores`, `0x:privacy-compliance`).
+  about 30 days by default, and add longer archives (monthlies) only where a contract, regulation
+  or known late-discovery risk justifies it. The longest copy's age is the backup retention the
+  privacy documentation states (`0x:data-stores`, `0x:privacy-compliance`).
 
 ## RPO and RTO from business impact
 

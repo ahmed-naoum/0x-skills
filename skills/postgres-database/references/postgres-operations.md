@@ -145,10 +145,10 @@ ALTER ROLE app_ro SET statement_timeout = '60s';
 
 | Signal | Source | Alert at |
 |---|---|---|
-| Connections used | `count(*)` from `pg_stat_activity` against `max_connections` | 80 percent |
+| Connections used | `count(*)` from `pg_stat_activity` against `max_connections` | Ticket at 70 percent; page at 90 percent or when requests wait on the pool (`0x:site-reliability`) |
 | Oldest transaction; idle in transaction | `xact_start`, `state` in `pg_stat_activity` | 5 minutes; 1 minute |
 | Sessions waiting on locks | `wait_event_type = 'Lock'` | Any for more than 30 seconds |
-| Disk free | Provider metric | Warn at 20 percent, page at 10. A full disk stops the database |
+| Disk free | Provider metric | Ticket at 20 percent free; page when predicted full within 4 hours (`0x:site-reliability`). A full disk stops the database |
 | CPU, I/O credits, IOPS saturation | Provider metrics | Sustained above 80 percent |
 | Cache hit ratio | `blks_hit / (blks_hit + blks_read)` in `pg_stat_database` | A falling trend; healthy transactional workloads sit near 99 percent |
 | Replication lag; WAL retained by slots | `replication-scaling.md` | Seconds of lag; any inactive slot |

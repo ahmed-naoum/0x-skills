@@ -58,11 +58,13 @@ A second instance is useless, or harmful, until the app is stateless. Check befo
 
 Health checks:
 
-- The load balancer's check is **shallow**: the process is up and can answer. If it queries the
-  database, a database blip removes every instance at once and the load balancer serves errors
-  where a slow page would have done. Deep checks belong to external monitoring.
-- Separate **readiness** (send me traffic) from **liveness** (restart me). Failing liveness on a
-  dependency problem produces restart loops that add load to the struggling dependency.
+- Readiness includes only what every request needs: the primary database, through a cheap query
+  with a short timeout, and never the cache or third parties, whose blip would otherwise remove
+  every instance at once. Details and starting values: `0x:web-networking`
+  (`proxies-load-balancers.md`). Deep checks belong to external monitoring.
+- Separate **readiness** (send me traffic) from **liveness** (restart me). Liveness checks nothing
+  external: failing it on a dependency problem produces restart loops that add load to the
+  struggling dependency.
 - Typical settings: check every 5 to 10 seconds, 2 to 3 failures to remove, 2 successes to add.
 
 Shutdown and connection handling, which cause most of the 502s seen during deploys:

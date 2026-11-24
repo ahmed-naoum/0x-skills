@@ -158,7 +158,7 @@ redirect the queue afterwards, or the loop resumes when the cap is lifted.
 ## Ask the user
 
 - **What should users see when the concurrency cap is hit: an error, a queue, or slower responses?** Caps are mandatory; the behavior at the cap is a product decision. Default: 503 with `Retry-After` for interactive requests, queueing for webhooks and background work.
-- **What monthly spend on functions and metered APIs would be alarming, and should the project pause automatically when reached?** Sets caps and whether a hard stop is acceptable for the business. Default: alert at 50 and 100 percent of a stated budget; hard pause only at Prototype.
+- **What monthly spend on functions and metered APIs would be alarming, and should the project pause automatically when reached?** Sets caps and whether a hard stop is acceptable for the business. Default: alert at 50, 80 and 100 percent of a stated budget plus a forecast alert (`cost-control.md`); hard pause only at Prototype.
 - **Is occasional loss of post-response work (analytics events, non-critical emails) acceptable?** Decides `waitUntil` versus a queue. Default: acceptable for analytics, not for anything the user was told would happen.
 - **Is first-request latency on rarely used paths a problem worth paying for?** Decides provisioned warmth. Default: pay only for sign-in, checkout and the main app shell, and only after measuring.
 - **Where are most users, and where is the database?** Decides the function region and whether anything belongs at the edge. Default: one region, the database's.

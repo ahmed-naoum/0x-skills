@@ -217,7 +217,8 @@ then there is none. Production percentile alerts per endpoint (`backend-latency.
 - **What counts as failure?** A latency target and an acceptable error rate. Default: p95 under
   500 ms and under 1% errors at expected peak.
 - **Which environment may be loaded, and may production be tested off-peak?** Risk decision.
-  Default: a production-shaped staging environment with seeded data; production only read-only
+  Default: a short-lived production-shaped environment with seeded data (or staging where one
+  exists, `0x:ci-cd-release`); production only read-only
   and with an owner present.
 - **What is the budget for the test itself?** Environment, generator and usage costs. Default:
   a few hours of a production-sized environment, torn down afterward.

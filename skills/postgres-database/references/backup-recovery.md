@@ -122,9 +122,11 @@ when a contract demands it.
 - A different region from the primary database.
 - Encrypted before upload or with a managed key, and the key stored outside the production
   account. A backup whose key was lost with the account is not a backup.
-- Expiry by lifecycle rule; a common scheme keeps dailies for 30 days, weeklies for 12 weeks and
-  monthlies for a year. Bounded retention is also what makes deletion requests answerable
-  (`0x:privacy-compliance`).
+- Expiry by lifecycle rule. Default: dailies for 30 days. Weeklies and monthlies (for example
+  12 weeks and a year) only when a contract, a regulation or a documented risk of
+  late-discovered corruption justifies them; the longest copy is then the backup retention the
+  privacy documentation states. Bounded retention is also what makes deletion requests
+  answerable (`0x:privacy-compliance`).
 - Restore drills must include this copy, using only the second account's credentials.
 
 Where the provider offers cross-account or cross-region copies of its own snapshots with a lock,
@@ -262,7 +264,8 @@ Traps:
   standby and drill frequency. Default at Launch: minutes of data, a few hours of downtime.
   Company-wide targets are in `0x:site-reliability`.
 - **How far back must recovery reach?** Bad data is often noticed late. Default: 14 days of PITR
-  plus monthly dumps kept for a year.
+  plus off-provider daily dumps kept 30 days; longer archives only with a stated reason, and the
+  privacy documentation then quotes the longest period.
 - **Is restoring a single customer's deleted data a service you offer, and at what price?** It
   takes hours of careful work. Default: a 30-day trash in the product; backup restores as a paid
   or best-effort exception.

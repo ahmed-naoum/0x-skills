@@ -49,7 +49,7 @@ silent, expensive and hard to reverse. Write these before anything else:
 |---|---|
 | Money | Amount computation in integer minor units for every plan, coupon, proration and tax path; webhook handler is idempotent (same event twice changes state once); out-of-order events (`updated` before `created`); failed payment leaves entitlements correct; refund path |
 | Auth and access | Each protected route rejects no session (401) and wrong role (403); user A cannot read or write user B's or tenant B's rows, tested per resource with two tenants seeded; password reset and email-change tokens are single use and expire; sign-out invalidates the session |
-| Data loss | Every destructive action (delete, bulk update, import overwrite) hits only intended rows; migrations run against a production-shaped copy; restore from backup has been done once for real; cascades delete what is expected and no more |
+| Data loss | Every destructive action (delete, bulk update, import overwrite) hits only intended rows; migrations tested on seeded data, and those on large or hot tables rehearsed on a production-sized copy (`0x:postgres-database`); restore from backup has been done once for real; cascades delete what is expected and no more |
 
 Write the cross-tenant test as a table over every resource route, so adding a route without
 adding it to the table is visible in review. It is the single highest-value test in a
@@ -136,12 +136,15 @@ answer "can this ship?" without judgment calls. Each criterion is a yes or no wi
 look. A workable Launch-stage set:
 
 - Type check, lint, unit and integration suites green on the release commit.
-- End-to-end suite for critical journeys green against the staging deploy of that commit.
+- End-to-end suite for critical journeys green against the preview deploy of that commit (staging
+  where one exists, `0x:ci-cd-release`).
 - No open bug of severity S1 or S2 (definitions in debugging.md); known S3 bugs listed.
-- Migrations applied on staging from a production-shaped copy; each is backward compatible with
-  the previous app version, or a maintenance window is announced.
+- Each migration is backward compatible with the previous app version, or a maintenance window
+  is announced; migrations on large or hot tables were rehearsed on a production-sized copy
+  (`0x:postgres-database`, migrations.md).
 - Rollback path stated and tested for this release (previous build redeployable, flags off).
-- Error rate and key latency on staging within the normal range after a smoke run.
+- The production smoke test passes, and error rate and latency stay normal through the
+  post-deploy watch.
 - For changes to billing, auth or data deletion: a second pair of eyes or a manual run of the
   affected journey in test mode, recorded in the pull request.
 

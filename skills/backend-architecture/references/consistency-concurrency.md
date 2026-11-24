@@ -82,8 +82,9 @@ the remote effect anyway.
 
 The intent pattern for an external call:
 
-1. In one transaction: insert the intent (`status = 'pending'`, idempotency key derived from the
-   business entity, such as `charge:{order_id}`). Commit.
+1. In one transaction: insert the intent (`status = 'pending'`, idempotency key = the intent
+   row's own ID, `charge:{intent_id}`, one per attempt; a new attempt after a definitive failure
+   inserts a new intent with a new key). Commit.
 2. Call the provider with that idempotency key and a timeout.
 3. Record the outcome with a guarded transition (`pending` to `succeeded` or `failed`).
 4. A timeout is not a failure: the outcome is unknown. Leave the intent pending; retry with the

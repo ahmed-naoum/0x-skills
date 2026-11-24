@@ -22,7 +22,7 @@ Starting targets, to adapt; publish only what can be met every week:
 
 | Priority | Examples | First response | Updates |
 |---|---|---|---|
-| Urgent | Product down, data loss, security issue, wrong charges across accounts | 1 business hour; outside hours through on-call (`0x:site-reliability`) | Every few hours until resolved |
+| Urgent | Product down, data loss, security issue, wrong charges across accounts | 1 business hour; outside hours through on-call (`0x:site-reliability`) | For product-wide incidents, the status-page cadence of the incident's severity (every 30 minutes for SEV1, `0x:site-reliability`), with the status page linked in replies; otherwise every few hours until resolved |
 | High | Core feature broken for one account, a user blocked from working | 4 business hours | Daily |
 | Normal | How-to, minor bug, billing question | 1 business day | When something changes |
 | Low | Feature request, feedback | 2 business days | When decided or shipped |

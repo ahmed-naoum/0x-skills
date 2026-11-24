@@ -233,7 +233,8 @@ Telemetry bills grow with traffic and with carelessness, usually the second. In 
 3. Traces: a head sampling rate set by environment variable; tail sampling (keep every trace
    with an error or high latency) needs a collector and is a Scale concern.
 4. Retention tiers: searchable hot storage for the window incidents are actually investigated in
-   (days to a few weeks), cheap object-storage archive beyond that only if a contract or
+   (days to a few weeks), then a cheap object-storage archive if needed to reach 30 to 90 days in
+   total for application and access logs (`0x:web-security`), longer only if a contract or
    regulation requires it. Audit logs are a separate stream with its own, longer retention.
 5. Set the error tracker's spike protection and per-key rate limits so one looping client cannot
    burn the monthly quota in an hour.
@@ -248,7 +249,8 @@ sessions with an error.
   scrubbing strictness and whether a DPA is needed. Default: IDs only, no personal data, vendor
   region matching the database.
 - **How long must logs be kept?** Contracts and regulation may set a minimum or a maximum.
-  Default: 14 to 30 days searchable, no archive, audit logs handled separately.
+  Default: 14 to 30 days searchable; 30 to 90 days in total for application and access logs
+  (cheap archive tier if the store needs one; `0x:web-security`); audit logs handled separately.
 - **Is session replay acceptable to your users?** It records behavior and needs disclosure and,
   depending on jurisdiction, consent (`0x:privacy-compliance`). Default: off until there is a specific debugging need, then masked.
 - **What may be spent on telemetry per month?** Sets sampling rates. Default: stay inside the

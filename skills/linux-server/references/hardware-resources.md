@@ -172,8 +172,9 @@ SystemMaxUse=1G
   the copy. Simpler and lossless: log to stdout and let journald keep it.
 - Docker's default `json-file` log driver has no size limit. Set `max-size` and `max-file` under
   `log-opts` in `/etc/docker/daemon.json`; it applies to containers created afterwards.
-- Alerts: warn at 80% of space or inodes, page at 90%, on every mounted filesystem. A "will be full
-  within 24 hours at the current rate" alert catches a runaway before a threshold does.
+- Alerts on every mounted filesystem: ticket at 80% of space or inodes; page when the current rate
+  predicts full within 4 hours (inodes: also page at 95%). Thresholds and routing:
+  `0x:site-reliability` (`dashboards-alerting.md`).
 
 Swap policy: give app hosts a small swap file (1 to 2 GB) and `vm.swappiness=10`. It converts a
 sudden out-of-memory kill into a slowdown that can be noticed and alerted on. Alert on swap-in and
@@ -278,5 +279,5 @@ NUMA does not apply to small instances with a single node; do not spend time on 
   matter. Default: 14 days on the host, longer only in a log service (`0x:site-reliability`).
 - **Is traffic steady or spiky, and what is the expected peak?** Burstable types suit spiky, low
   average load only. Default: non-burstable from Launch onward.
-- **Who is notified when a disk reaches 90%?** An alert nobody receives is no alert. Default: the
+- **Who is paged when a disk is predicted full within 4 hours?** An alert nobody receives is no alert. Default: the
   founder's phone through the existing alerting channel.

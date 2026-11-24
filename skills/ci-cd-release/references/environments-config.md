@@ -244,6 +244,7 @@ Staging earns its cost only for jobs that previews, flags and a fast rollback ca
 | Rehearsing infrastructure changes (proxy, platform, runtime upgrade, Terraform) | Yes |
 | Integration with third-party sandboxes that need a stable URL (webhooks, SSO, payment flows) | Yes |
 | A stable backend for mobile test builds | Yes |
+| Load tests and penetration tests | A short-lived production-shaped environment with seeded data, created for the test; long-lived staging not required |
 | Customer or stakeholder acceptance before release, contractual or audit requirements | Yes |
 
 Default for a solo founder through Launch: no long-lived staging. Use previews, flags, automatic

@@ -66,7 +66,7 @@ Deletion sequence:
 
 1. Authenticate the request; re-confirm for destructive actions.
 2. Immediately: disable the account, revoke sessions, tokens and API keys, cancel subscriptions.
-3. Grace period (commonly 7 to 30 days) during which the account can be restored. Where a law
+3. Grace period (commonly 7 to 14 days) during which the account can be restored. Where a law
    or contract sets a deadline for completing deletion, the grace period, the batch schedules
    and the vendor deletions all have to fit inside it.
 4. Hard-delete job, idempotent and resumable: primary database → object storage (every version)
@@ -279,8 +279,9 @@ Avoid in-database encryption functions that take the key as a query parameter (p
 ## Ask the user
 
 - **What do the privacy policy and customer contracts promise about retention and deletion?**
-  The code must match. Default: the retention table above, a 30-day grace period, and deletion
-  within the window the contract states.
+  The code must match. Default: the retention table above, a 14-day grace period for account
+  deletion, so that grace, purge and vendor deletions finish within the one-month erasure deadline
+  (`0x:privacy-compliance`), and deletion within the window the contract states.
 - **When a user leaves a shared workspace, does their content stay?** Default: it stays with
   the tenant, attributed to a deleted user.
 - **Which records must be kept for tax, accounting or sector rules, and for how long?** Needs
