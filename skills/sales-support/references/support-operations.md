@@ -75,7 +75,7 @@ hides the backlog. Count confusion as a product defect with a documentation or c
 
 Write the policy once, publish it, and let support apply it without asking. Consumer law can
 grant more than this: EU and UK consumers have a 14-day withdrawal right for online purchases
-(with conditions for services already started), and EU law now requires an online withdrawal
+(for a subscription started at the customer's request, a pro-rata refund of the unused part), and EU law now requires an online withdrawal
 button for it. Check each market (`0x:privacy-compliance`).
 
 | Case | Default |

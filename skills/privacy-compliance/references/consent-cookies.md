@@ -31,7 +31,7 @@ link everywhere. If geo-detection is not available, show the opt-in banner to ev
 
 | No consent needed | Consent needed |
 |---|---|
-| Session and auth cookies, CSRF tokens | Analytics that set identifiers (GA4, default PostHog, Mixpanel) |
+| Session and auth cookies, CSRF tokens | Analytics that set identifiers (GA4, default PostHog, Mixpanel); in the EU, any client-side analytics script, cookieless or not |
 | Cart, checkout state, language or theme the user set | Ad and conversion pixels (Meta, Google Ads, LinkedIn, TikTok) |
 | Load balancing, bot and fraud defense needed to deliver the service | Session replay and heatmaps |
 | The cookie storing the consent choice itself | A/B testing tools that set identifiers, in most countries |
@@ -52,11 +52,18 @@ banner is required; a privacy policy line is enough.
 
 | Need | Consent-free route (verify the vendor's current mode) |
 |---|---|
-| Traffic and page analytics | Cookieless tools (Plausible, Fathom and similar) or server-side log analytics: no device storage, no persistent identifier |
-| Product analytics for logged-in users | Server-side events keyed by user ID, covered by the privacy policy under legitimate interests with an opt-out; or the analytics SDK in a memory-only, cookieless mode |
+| Traffic and page analytics | Page counts derived on the server or CDN from requests it already receives: no script, nothing stored on or read from the device, IP and user agent not kept or hashed into a visitor ID, aggregate first-party reports only. A cookieless script (Plausible, Fathom and similar) still makes the device send data, which EU regulators treat as device access (EDPB Guidelines 2/2023): in the EU only after opt-in; in the UK per the house default below |
+| Product analytics for logged-in users | Server-side events keyed by user ID, sent from the server with no SDK or storage on the device, disclosed in the privacy policy under legitimate interests, with an opt-out the server honors, never forwarded to ad platforms. The client-side SDK, even in a memory-only, cookieless mode, needs opt-in in the EU and UK |
 | Conversion measurement | Aggregate server-side counts; UTM parameters read from the landing URL and stored with the signup |
 | Fonts, icons, scripts | Self-host; third-party font and CDN requests send the visitor's IP to another company |
 | Video | Click-to-load facade, privacy-enhanced embed domain |
+
+House default for EU and UK visitors: no non-essential tracking before opt-in. Without a banner,
+only the two server-side routes in the first two rows run, under the conditions stated there. UK
+only: a first-party cookieless script used only for aggregate statistics to improve the site may
+also run before any choice, with clear notice and a simple opt-out, never for ads, and shared with
+no one but processors (the exemption in the table above). Everything else waits for an opt-in and
+is gated as shown below. Without geo-detection, apply this to every visitor.
 
 The moment an ad pixel, GA4 or session replay is added, a real consent mechanism is required for
 EU and UK visitors. Decide whether the data is worth the banner and the consent rate: a rule of

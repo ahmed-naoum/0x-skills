@@ -104,14 +104,12 @@ above applies regardless of strategy. What makes any strategy actually zero-down
 - **At least two instances**, and the rollout never drops below the capacity needed for current
   traffic (in Kubernetes: `maxUnavailable: 0` with a `maxSurge`).
 - **Readiness check** that returns success only when the process can serve: config validated,
-  database reachable (the primary database only, through a cheap query with a short timeout;
-  `0x:web-networking`). Do not include third-party services, or their outage takes every instance
-  out of rotation. Liveness stays trivial (process responds); a liveness check that queries the
-  database restarts the whole fleet when the database is slow.
-- **Graceful shutdown.** On SIGTERM: fail readiness, keep serving until the load balancer stops
-  routing (10 s is a starting value; full handler in `0x:backend-architecture`,
-  `runtime-language.md`), stop accepting, finish in-flight requests, close pools, exit, all inside
-  the platform's grace period (30 s is common, plain `docker stop` gives 10 s; check it).
+  primary database reachable (cheap query, short timeout; `0x:web-networking`). Third parties stay
+  out, or their outage takes every instance out of rotation. Liveness stays trivial (process
+  responds); a liveness check that queries the database restarts the fleet when it is slow.
+- **Graceful shutdown.** On SIGTERM: fail readiness, serve until the balancer stops routing (10 s
+  to start; handler in `0x:backend-architecture`), stop accepting, finish in-flight requests, close
+  pools, exit, all inside the platform's grace period (30 s is common, `docker stop` gives 10 s).
 
 ```ts
 process.on('SIGTERM', () => {

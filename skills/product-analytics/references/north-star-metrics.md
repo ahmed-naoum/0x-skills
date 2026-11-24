@@ -65,7 +65,8 @@ MRR = paying accounts x average revenue per account (ARPA)
   paying accounts = previous paying + new paying - churned
     new paying    = visitors x visit->signup x signup->activated x activated->paid
     churned       = previous paying x logo churn rate
-  ARPA            = plan mix x price + seats or usage expansion - discounts
+  ARPA            = plan mix x price + seat expansion + committed usage minimums - discounts
+                    (uncommitted usage is tracked beside MRR: 0x:startup-finance definitions)
 ```
 
 Each leaf should name one event-based metric, the lever that moves it, and an owner:

@@ -60,7 +60,7 @@ and documents. The defaults below are for new decisions.
 | Funding | Bootstrap with customer funding until venture-scale evidence exists | Founder wants the venture path and money buys a specific milestone |
 | Instrument | US: standard post-money SAFE at pre-seed and seed | Larger round or a lead wanting governance → priced round on model documents; UK angels relying on SEIS/EIS → advance subscription agreement; elsewhere → the local standard (convertible loan, BSA AIR) |
 | Round size | 18 to 24 months of runway to the next round's milestones | |
-| Founder equity | Equal split; four-year vesting, one-year cliff, credit for time served; double-trigger acceleration; the tax election on vesting stock (US 83(b) within 30 days; UK section 431 within 14 days; elsewhere ask a local accountant at issuance) | Clear, durable differences in contribution |
+| Founder equity | Equal or near-equal split with a written tie-break (`0x:company-building`); four-year vesting, one-year cliff, credit for time served; double-trigger acceleration; the tax election on vesting stock (US 83(b) within 30 days; UK section 431 within 14 days; elsewhere ask a local accountant at issuance) | Clear, durable differences in contribution |
 | Employee equity | Options at a defensible current value (US: 409A appraisal; UK: EMI options, value usually agreed with HMRC); four-year vesting, one-year cliff; pool sized from the hiring plan | Other countries: the local scheme or a phantom plan, set up with local counsel |
 | Exit | A process with several buyers; cash at close over earn-outs | |
 

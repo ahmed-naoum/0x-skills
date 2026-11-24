@@ -9,7 +9,7 @@ lifecycle messages work.
 | Kind | Examples | Permission | Sent by |
 |---|---|---|---|
 | Transactional | Receipts, password resets, security alerts, invitations | Needed to deliver the service; carries no marketing | The transactional provider (`0x:email-notifications`) |
-| Lifecycle | Welcome, activation nudges, trial ending, milestones, re-engagement | How-to and account mail to the user is usually treated as service mail; anything promoting an upgrade, offer or other product is marketing in the EU and UK and may be "commercial" under US CAN-SPAM. Give every lifecycle email an unsubscribe and honor it | A product-email tool fed by product events |
+| Lifecycle | Welcome, activation nudges, trial ending, milestones, re-engagement | How-to and account mail to the user is usually treated as service mail; anything promoting an upgrade, offer or other product is marketing in the EU and UK and may be "commercial" under US CAN-SPAM. Give every lifecycle email an unsubscribe and honor it. If a trial converts to a paid charge automatically, the pre-charge notice (price, date, how to cancel) is required billing mail sent through the transactional stream regardless of unsubscribe (`0x:email-notifications`, `0x:privacy-compliance`) | A product-email tool fed by product events |
 | Marketing | Newsletter, announcements, offers | Marketing consent or another lawful basis per country; unsubscribe in every message | The same tool or a newsletter tool |
 
 Keep them apart so newsletter complaints never damage the reputation that delivers password
@@ -74,7 +74,7 @@ lifecycle failure.
 | Nudge 2 | Not activated after about three days | Proof: how a customer like them does it, or a ready template | Activation event |
 | Founder check-in | Not activated after about a week | Plain text: "What were you hoping to do? Reply and I'll help." | Activation or a reply |
 | Activated | Activation event | Brief congratulations; the next step toward a habit (second key action, invite a teammate, connect an integration) | Next milestone |
-| Trial ending | A few days before the trial ends | What they did, what they would lose, how to keep it | Converted |
+| Trial ending | A few days before the trial ends | What they did, what they would lose, how to keep it. An optional nudge, separate from the required pre-charge notice of a card-on-file trial (see above) | Converted |
 | Trial ended | Trial over without conversion | An extension or downgrade path, and a question why | Converted or replied |
 
 - **One email, one action**, with a button deep-linked to the exact screen.

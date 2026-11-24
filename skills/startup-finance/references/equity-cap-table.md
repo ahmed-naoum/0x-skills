@@ -9,7 +9,8 @@ SAFEs and rounds, creating an option pool and its valuation, or handling equity 
 Vesting matters more than the split. Default to an equal split between co-founders who start
 together full-time in comparable roles; deviate only for explicit, durable reasons (one founder
 worked a year alone, put in significant cash, or will stay part-time). Weeks spent negotiating
-52/48 are wasted; a split one founder resents is a time bomb. The founder agreement and IP
+52/48 are wasted; a split one founder resents is a time bomb. Two equal founders need a written
+tie-break (casting vote, one extra share, or a third director). The founder agreement and IP
 assignment are `0x:company-building`.
 
 - **Vesting**: four years with a one-year cliff, monthly after. Founders who already worked on
@@ -200,8 +201,8 @@ treatment is consistent and defensible.
 
 ## Ask the user
 
-- **How do the founders want to split equity, and why?** Default: equal, with four-year vesting,
-  a one-year cliff and credit for time already served.
+- **How do the founders want to split equity, and why?** Default: equal, with a written tie-break,
+  four-year vesting, a one-year cliff and credit for time already served.
 - **Has every founder made the tax election on vesting stock (US 83(b) within 30 days; UK
   section 431 within 14 days)?** If not, stop and involve counsel now. Default: assume not made
   until proof of filing or the signed election is seen.

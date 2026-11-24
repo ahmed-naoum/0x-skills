@@ -56,7 +56,7 @@ details and dates must be confirmed before relying on them.
 |---|---|---|---|
 | Data map | One page; collect the minimum | Complete, in the repository, updated per change | Reviewed on a cadence; DPIAs for risky features |
 | Privacy policy and terms | Policy if any personal data is collected | Policy generated from the data map; clickwrap terms with versioned acceptance records; lawyer review of terms | Negotiable contract set; counsel on retainer |
-| Tracking | Cookieless analytics, no ad pixels, no banner | Same; if ads are added, a blocking opt-in banner for EU and UK, GPC and an opt-out link for the US | Consent platform if programmatic ads or many tags |
+| Tracking | EU and UK visitors: no non-essential tracking before opt-in. No banner only while analytics is limited to the cookieless setups `consent-cookies.md` allows, with its conditions: script-free page counts on the server, server-side events for logged-in users with an opt-out, and in the UK only a first-party cookieless statistics script with notice and an opt-out. No ad pixels | Same; any other analytics, replay or ads for EU and UK visitors only behind a blocking opt-in banner; GPC and an opt-out link for the US | Consent platform if programmatic ads or many tags |
 | Marketing email | Double opt-in list | Unticked checkbox, one-click unsubscribe, permanent suppression list | Country-specific rules for outreach |
 | Data requests | Manual | Self-serve export and delete in settings, a `privacy@` inbox, runbook and log, 14-day internal target | Automated across systems and vendors |
 | Retention | None formal | Written schedule enforced by jobs; backups about 30 days; legal-hold flag | Audited |

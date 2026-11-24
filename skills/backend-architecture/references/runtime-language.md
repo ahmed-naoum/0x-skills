@@ -197,10 +197,8 @@ Deploys, scale-downs and node replacements send SIGTERM, then SIGKILL after a gr
 seconds to 30 s by default, by platform: read it). The order of steps is what people get wrong.
 
 1. On SIGTERM, fail the readiness check (503) and keep serving.
-2. Wait until the load balancer stops routing here: its deregistration step, or check interval ×
-   failure threshold where it learns from health checks (10 s is a starting value;
-   `0x:web-networking`). On Kubernetes, endpoint removal races the signal, so a `preStop` sleep
-   or this in-process wait is required.
+2. Wait until the balancer stops routing here, 10 s to start (`0x:web-networking`); on Kubernetes,
+   endpoint removal races the signal, so a `preStop` sleep or this in-process wait is required.
 3. Stop accepting: `server.close()`. Close idle keep-alive connections.
 4. Stop fetching jobs; let running jobs finish or release them to the queue.
 5. Wait for in-flight work with a deadline a few seconds shorter than the platform's grace period.

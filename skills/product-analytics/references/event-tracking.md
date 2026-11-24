@@ -62,7 +62,7 @@ The tracking plan is a table kept in the repository next to the code that emits 
 | Situation | Choice | Why |
 |---|---|---|
 | Prototype or Launch, one product, no data person | A product suite (PostHog-style: events, funnels, retention, replay, flags, experiments in one) | One SDK, one identity model, experiments read the same events as the funnels |
-| Content or marketing site only, no logged-in product | A cookieless page-analytics tool (Plausible-style) | Fewer consent problems, answers "which pages and sources"; cannot do per-user funnels |
+| Content or marketing site only, no logged-in product | A cookieless page-analytics tool (Plausible-style) | Answers "which pages and sources" with no device storage; cannot do per-user funnels. Its script still needs opt-in for EU visitors (UK: notice and an opt-out); script-free counts on the server need neither (`0x:privacy-compliance`) |
 | Events must join billing, CRM and support data; or analytics SQL is already the habit | Warehouse-first: events land in a warehouse, BI on top | Any join is possible; cost is modeling work and slower answers to simple funnel questions |
 | Scale, a suite already in place | Both: suite for self-serve product questions, warehouse export for finance-grade and cross-system numbers | The suite's batch export feeds the warehouse; revenue truth stays in the warehouse |
 | Google Ads is the main channel | Add GA4 only as the ads-side measurement, not the product analytics tool | GA4's model suits ad audiences, not account-level product questions |
@@ -198,7 +198,9 @@ must make whatever the banner says true.
 - **Gate on the consent state, not on the banner being shown.** Initialize the SDK opted out
   and switch on only after an opt-in where opt-in is required (posthog-js at the time of
   writing: `opt_out_capturing_by_default: true`, then `opt_in_capturing()`; check current
-  docs). Verify in the browser that nothing is stored or sent before the choice.
+  docs). Verify in the browser that nothing is stored or sent before the choice. For EU and UK
+  visitors this is the house default: no capture before opt-in, and without a banner only the
+  cookieless setups, with the conditions, in the Consent row of `SKILL.md` (`0x:privacy-compliance`).
 - **Counting visitors who refuse, without cookies, is a legal choice.** posthog-js
   `cookieless_mode: "on_reject"` (plus a project setting) keeps sending their events with no
   device storage. Whether that needs consent differs by country and regulator

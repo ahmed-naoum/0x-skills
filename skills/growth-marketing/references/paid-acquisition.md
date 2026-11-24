@@ -55,9 +55,8 @@ If the going cost per click for the target keywords (shown in the platform's pla
 is above the last number, search ads cannot work at today's conversion rates: improve
 conversion or choose another channel before spending.
 
-- Payback target by funding: a bootstrapped company needs payback within a few months because
-  cash is the constraint; a funded company may accept a year or more. Unit economics and
-  churn-adjusted lifetime value: `0x:pricing-monetization`.
+- The payback target depends on funding and segment (the 6 months above is illustrative):
+  `0x:pricing-monetization` (`unit-economics.md`), with churn-adjusted lifetime value.
 - Replace the assumptions with the channel's own cohort numbers as soon as they exist: paid
   users often convert and retain differently from organic ones.
 - Set hard daily and monthly budget caps in the ad account. Platforms spend what they are

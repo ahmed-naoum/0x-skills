@@ -80,9 +80,10 @@ column. Small enough to refresh monthly in minutes.
 
 Reading it, with widely used rules of thumb rather than laws:
 
-- **LTV:CAC of about 3 or more and payback under about 12 months** for self-serve and
-  small-business products. Enterprise products often accept longer payback, around 18 to 24
-  months, because contracts are annual and retention is higher.
+- **Payback depends on funding and segment.** Bootstrapped: within the months of CAC the cash
+  balance can float, often 3 to 6. Funded self-serve and small-business products: under about 12
+  months. Enterprise products often accept around 18 to 24 months, because contracts are annual
+  and retention is higher. LTV:CAC of about 3 or more in every case.
 - **Payback is the more robust number** at small scale; it rests on fewer uncertain inputs than
   LTV, which multiplies every churn error.
 - **Show sensitivity**: churn and CAC each at plus and minus 50 percent. A model that only works at

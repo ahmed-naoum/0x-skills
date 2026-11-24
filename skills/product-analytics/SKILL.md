@@ -61,7 +61,7 @@ Follow what the project already uses; these apply to greenfield choices.
 | Event names | `object_action`, snake_case, past tense | Enforced by a typed wrapper | Schema review on change |
 | Fact events | Server-side from the start | Reconciled daily against the database | Outbox table and job |
 | Identity | Database user ID; `identify` on login, `reset` on logout | Plus account group on every event (B2B) | Same |
-| Consent | No tracking storage before opt-in where required | Consent flag honored client and server | Same, audited |
+| Consent | EU and UK visitors: no client-side capture before opt-in. Without a banner, only page counts derived on the server (no script, nothing stored on or read from the device, no IP or user-agent hash kept as a visitor ID, aggregate only) and server-side events for logged-in users (legitimate interests, disclosed in the privacy policy, an opt-out honored, never sent to ad platforms); UK only, also a first-party cookieless script for aggregate statistics with clear notice and a simple opt-out (`0x:privacy-compliance`) | Consent flag honored client and server | Same, audited |
 | Activation | A reasoned hypothesis | Validated against week-4 retention; one server event | Reviewed twice a year |
 | Retention | Who came back, by name | Weekly cohorts on the core action; churn list with reasons | Segmented curves, NRR and GRR by cohort |
 | Scorecard | None | 5–9 numbers, weekly, automated | Per-team inputs under one north star |
@@ -91,7 +91,7 @@ Other defaults:
 4. `identify` uses the database ID, is guarded against empty or placeholder values, and
    `reset` runs on logout; B2B events carry the account group.
 5. No emails, names, free text or tokenized URLs appear in event properties; replay masks
-   inputs; the SDK stores nothing before consent where consent is required; only the public
+   inputs; the SDK stores and sends nothing for EU and UK visitors before opt-in; only the public
    capture key, never a personal or admin analytics API key, is in client code.
 6. All analytics calls go through the typed wrapper, and a test asserts the critical funnel
    events fire once with valid payloads.
