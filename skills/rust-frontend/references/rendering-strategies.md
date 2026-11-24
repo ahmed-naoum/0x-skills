@@ -4,6 +4,10 @@ Read this when: choosing between Leptos, server templates with htmx and Dioxus, 
 route is rendered, streamed, prerendered or cached, making pages readable by crawlers and link
 previews, or deciding where editable content lives and how a publish reaches the page.
 
+Contents: read the project; choosing the UI approach (Leptos, htmx templates, Dioxus); rendering
+per route and caching headers; SSR mode per route; islands; prerender and regenerate; HTML for
+crawlers and link previews; where content lives, publish webhooks and preview; ask the user.
+
 ## Read the project before deciding anything
 
 ```bash
@@ -25,7 +29,7 @@ Follow the project. For a new one:
 | Public pages and an interactive app behind login | Leptos full-stack: SSR with hydration | One Rust codebase, typed server functions, an SSR mode per route, fine-grained updates. The catch: two builds, a WASM payload, hydration discipline |
 | Forms, tables, lists and content; every interaction can wait a round trip | Axum with askama or maud, plus htmx | No WASM, no hydration, no client state; HTML is the API. Below |
 | Content site with a few interactive widgets | Leptos with islands | Only the widgets ship and hydrate |
-| The same UI must also ship as a desktop or mobile app | Dioxus | One component model and server functions for web, desktop and mobile. The catches: desktop and mobile builds render in a system webview and call server functions over HTTP, so they need the deployed server's URL configured, and every server function becomes an API that installed app versions you cannot force-update keep calling; `web_sys` code runs only in the web build. Check the current release's fullstack support before relying on it for SEO pages |
+| The same UI must also ship as a desktop or mobile app | Dioxus | One component model and server functions for web, desktop and mobile. The catches: desktop and mobile builds render in a system webview (its own native renderer is experimental) and call server functions over HTTP, so the app must be given the deployed server's URL (`set_server_url` in current releases), and every server function becomes an API that installed app versions you cannot force-update keep calling; `web_sys` code runs only in the web build. Check the installed release's fullstack SSR and streaming before relying on it for SEO pages |
 | Internal tool behind login, no SEO | Leptos client-side only | Nothing to hydrate; first paint waits for the WASM |
 | A React or template frontend that works | Keep it; move route by route only for a reason (`routing-data.md`) | A framework migration never fixes a caching or configuration bug |
 
@@ -100,6 +104,8 @@ pub fn cache_publicly(seconds: u32) {
 }
 ```
 
+Call it as `#[cfg(feature = "ssr")] cache_publicly(300);` at the top of the page component: the
+hydrate build has no such function, and an ungated call breaks the WASM build.
 A page that reads the session anywhere in its tree, including an account menu in the root layout,
 must never get this header: the CDN would serve one user's menu to everyone. Check with `curl -sI`.
 HTTP and CDN caching mechanics: `0x:web-networking`.
@@ -148,13 +154,17 @@ pub fn LikeButton(post_id: uuid::Uuid, initial: u32) -> impl IntoView {
 }
 ```
 
-- The feature is app-wide: every ordinary component becomes server-only HTML, and the hydrate
-  entry calls `leptos::mount::hydrate_islands()` instead of `hydrate_body`. Plan it per app.
+- The feature is app-wide: every ordinary component becomes server-only HTML, the hydrate entry
+  calls `leptos::mount::hydrate_islands()` instead of `hydrate_body`, and the shell renders
+  `<HydrationScripts options islands=true/>`; without that prop no island wakes up. Plan it per
+  app.
 - Island props are serialized into the HTML, so they must be serializable and are public. Pass IDs
   and rendered fields. Children passed to an island are rendered on the server and stay HTML.
 - Context provided outside an island does not reach it in the browser. Each island reads what it
   needs through props or server functions.
-- Navigation between pages is a full page load unless the experimental islands router is enabled.
+- Navigation between pages is a full page load unless the islands router is on (the
+  `islands-router` feature and `islands_router=true` on `HydrationScripts`). It gives limited
+  client-side routing; follow the islands-router example for the installed version.
 
 ## Prerender and regenerate
 
@@ -284,7 +294,8 @@ pub async fn cms_webhook(State(app): State<AppState>, headers: HeaderMap, body: 
 
 Traps: the webhook can arrive before the CMS read API serves the new version, so the page
 re-caches old content (read the uncached endpoint after a webhook). An unsigned webhook route lets
-anyone flush the cache. A preview handler that redirects to the raw `slug` parameter is an open
+anyone flush the cache; when the CMS signs a timestamp, reject deliveries older than a few minutes
+so a captured one cannot be replayed. A preview handler that redirects to the raw `slug` parameter is an open
 redirect. Unpublish must purge the lists, and the removed URL needs a redirect or a 404.
 
 ## Ask the user

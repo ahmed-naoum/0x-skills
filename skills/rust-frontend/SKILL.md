@@ -75,7 +75,8 @@ By stage:
 - **Prototype**: one crate with `ssr` and `hydrate` features from the official start template,
   Markdown content, default SSR mode everywhere, no islands, no static generation, no component
   workshop. One container on a PaaS.
-- **Launch**: row-level authorization and an origin check on every server function; `AppError`
+- **Launch**: row-level authorization, an origin check and a request body limit
+  (`RequestBodyLimitLayer`) on every server function; `AppError`
   with no internal text; loading, error and not-found states per data region with a real 404
   status; a size-optimized WASM profile; a panic hook in the hydrate entry; a test that requests
   every public URL; the cargo-leptos version and toolchain pinned in CI and the image.
@@ -88,7 +89,9 @@ By stage:
 1. A fresh clone builds with `cargo leptos build --release` and nothing else, on the pinned
    toolchain and cargo-leptos version.
 2. Clippy passes for both feature sets: `--features ssr`, and `--features hydrate --target
-   wasm32-unknown-unknown`, each with `-D warnings`.
+   wasm32-unknown-unknown`, each with `-D warnings`. CI also runs `cargo fmt --check`,
+   `cargo deny check` and, with SQLx macros behind `ssr`, `cargo sqlx prepare --check -- --features
+   ssr` (without the feature no query is compiled and the check proves nothing).
 3. `curl -s` of each public page shows the title, the `<h1>`, the main text, the canonical link
    and the Open Graph tags; an unknown slug answers 404, checked twice.
 4. Every server function identifies the caller, validates input into typed values, checks the row
@@ -96,8 +99,9 @@ By stage:
    no database or internal text.
 5. A POST to a server function with `Origin: https://evil.example` is rejected, and a signed-out
    or wrong-tenant call returns an error or "not found", never data. Tested with `curl`.
-6. No server-only crate is in the WASM build (`cargo tree -i sqlx` for the hydrate target finds
-   no match), and no server secret value appears in `target/site/pkg`.
+6. No server-only crate is in the WASM build (`cargo tree -i sqlx --target wasm32-unknown-unknown
+   --no-default-features --features hydrate` answers "did not match any packages"), and no server
+   secret value appears in `target/site/pkg`.
 7. Resources return view types with only rendered fields; the page HTML contains no private field
    (search it for an email address or an internal flag).
 8. Independent resources are created together at the top of the route; independent queries inside
@@ -105,8 +109,8 @@ By stage:
 9. The console of a debug build shows no hydration error in a private window with extensions off.
 10. No resource value copied into a signal; filters, tabs and pagination survive reload, a pasted
     link and Back.
-11. Forms submit and update the page with JavaScript disabled, show pending state and field errors
-    with it, and a double submit creates one record.
+11. Forms submit, update the page and show the server's error with JavaScript disabled, show
+    pending state and field errors with it, and a double submit creates one record.
 12. The gzip size of the release WASM is measured and within the budget from `0x:web-performance`.
 13. No `unwrap()` or `expect()` in component bodies, server functions or handlers.
 14. Interactive widgets work by keyboard and are labeled; list keys are IDs from the data.

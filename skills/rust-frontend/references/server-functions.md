@@ -5,6 +5,11 @@ Read this when: the browser must call the server or change data; writing or revi
 the page is stale after a save; reading cookies or headers in a server function; or a server-only
 crate or secret reached the WASM.
 
+Contents: a server function is a public endpoint; limits, cross-site requests and safe errors;
+server code and secrets out of the WASM; forms before the WASM loads; pending, error and
+optimistic states; refetch after a write; cookies, headers and redirects; encodings and
+streaming; shared types without server-only fields; ask the user.
+
 Snippets assume `use leptos::prelude::*;`, `serde::{Deserialize, Serialize}` and `uuid::Uuid`.
 
 ## A server function is a public endpoint
@@ -79,7 +84,7 @@ reads the session (below).
 use axum::{extract::{Request, State}, http::{header, Method, StatusCode}, middleware::Next, response::Response};
 
 #[derive(Clone)]
-pub struct PublicOrigin(pub &'static str); // "https://app.example.com", from config
+pub struct PublicOrigin(pub String); // "https://app.example.com", from the typed config
 
 pub async fn same_origin_posts(State(origin): State<PublicOrigin>, req: Request, next: Next) -> Result<Response, StatusCode> {
     if req.method() == Method::GET || req.method() == Method::HEAD {
@@ -88,7 +93,7 @@ pub async fn same_origin_posts(State(origin): State<PublicOrigin>, req: Request,
     let h = req.headers();
     let allowed = match h.get("sec-fetch-site").and_then(|v| v.to_str().ok()) {
         Some(site) => site == "same-origin",
-        None => h.get(header::ORIGIN).and_then(|v| v.to_str().ok()) == Some(origin.0), // older browsers
+        None => h.get(header::ORIGIN).and_then(|v| v.to_str().ok()) == Some(origin.0.as_str()), // older browsers
     };
     if allowed { Ok(next.run(req).await) } else { Err(StatusCode::FORBIDDEN) }
 }
@@ -96,9 +101,12 @@ pub async fn same_origin_posts(State(origin): State<PublicOrigin>, req: Request,
 
   Layer it with `axum::middleware::from_fn_with_state` on the router for pages and server functions;
   webhooks arrive cross-site by design, so merge their router after the layer, signature-checked.
-- **Body size and rate.** Server functions read the body through Axum's limited body, so
-  `DefaultBodyLimit::max(...)` applies: size it to the largest form, and send files to object
-  storage through a presigned URL (`0x:backend-architecture`). Rate-limit functions that send
+- **Body size and rate.** leptos_axum hands server functions the raw request body, which they
+  collect without a limit, and Axum's `DefaultBodyLimit` only binds extractors such as `Bytes` or
+  `Json`, so it does not cap them. Put tower-http's `RequestBodyLimitLayer` (its `limit`
+  feature) on the router (`build-deploy.md`), sized to the largest form; it answers 413 instead of
+  buffering an attacker's gigabyte. Send files to object storage through a presigned URL
+  (`0x:backend-architecture`). Rate-limit functions that send
   email, cost money or write in bulk with `tower_governor` (`0x:api-design`).
 - **Panics.** Axum does not catch them: a panic in a server function drops the connection and the
   client sees a network error. Add tower-http's `CatchPanicLayer` (its `catch-panic` feature) as a
@@ -155,10 +163,12 @@ pub fn RenameForm(id: Uuid, title: String) -> impl IntoView {
   needs `action.dispatch(...)` from code.
 - HTML constraints (`required`, `maxlength`, `type="email"`) give instant feedback without WASM;
   the server function validates again, because the attributes are advice.
-- Without the WASM, an error has no signal to show it in: the redirect lands on the same page with
-  no message. For forms that must work without the WASM (sign-in, checkout, contact), return the
-  user to a URL that renders the outcome, for example with `leptos_axum::redirect`, or accept that
-  the HTML constraints are the only feedback.
+- Without the WASM, a failed call redirects back to the `Referer` with the encoded error in the
+  query (`__path` and `__err`). The router reads it during the next server render and
+  `ServerAction::new()` for that function starts with the error as its `value()`, so the markup
+  above shows it with no WASM. The error therefore lands in the URL, browser history and access
+  logs: keep personal data out of `AppError` messages. A successful call redirects to the clean `Referer`; send the user
+  elsewhere with `leptos_axum::redirect`.
 - Disable the button while pending and make the write idempotent: a double submit makes one record.
 
 ## Pending, error and optimistic states
@@ -183,7 +193,10 @@ let shown_title = move || {
 When the call fails, `input()` returns to `None` and the saved value shows again, so a failure
 reverts by itself; show the error from `value()`. For concurrent submissions (adding todos),
 `ServerMultiAction` with `MultiActionForm` keeps one submission per call: render pending items
-from `submissions()`, each with a client-generated UUID the server keeps as the real ID.
+from `submissions()`, each with a client-generated UUID the server keeps as the real ID. The
+server inserts it with `ON CONFLICT (id) DO NOTHING`, never an upsert, so a replayed or forged ID
+cannot overwrite another row. `Uuid::new_v4()` in the WASM needs uuid's `v4` and `js` features;
+without `js` the hydrate build fails to compile on getrandom.
 
 ## After a write, refetch what shows it
 
@@ -249,11 +262,15 @@ cookie mechanics: `0x:auth-identity`.
 
 ```rust
 #[server(output = server_fn::codec::StreamingText)]
-pub async fn export_csv(project: Uuid) -> Result<server_fn::codec::TextStream, ServerFnError> {
-    let lines = vec!["id,name\n".to_string()]; // ... rows from a paginated query, not one big Vec
-    Ok(server_fn::codec::TextStream::new(futures::stream::iter(lines.into_iter().map(Ok))))
+pub async fn export_csv(project: Uuid) -> Result<server_fn::codec::TextStream<AppError>, AppError> {
+    let user = require_user().await?; // ... and check that `project` belongs to `user`, as above
+    let lines = vec![Ok("id,name\n".to_string())]; // ... rows from a paginated query, not one big Vec
+    Ok(server_fn::codec::TextStream::new(futures::stream::iter(lines)))
 }
 ```
+
+A streaming function is an endpoint like the others: identify and authorize before the first
+byte, because once the stream has started an error can no longer change the status.
 
 ## Share types without exposing server-only fields
 

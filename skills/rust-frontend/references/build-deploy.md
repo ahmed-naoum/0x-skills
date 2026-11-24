@@ -25,14 +25,15 @@ leptos_meta = "0.8"
 leptos_axum = { version = "0.8", optional = true }
 axum = { version = "0.8", optional = true }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"], optional = true }
-sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "postgres", "macros"], optional = true }
+tower-http = { version = "0.7", features = ["limit"], optional = true }
+sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "tls-rustls", "postgres", "macros", "uuid", "time"], optional = true }
 wasm-bindgen = { version = "0.2", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
 web-sys = { version = "0.3", features = ["Storage"] } # browser APIs used in components: not optional
 
 [features]
 hydrate = ["leptos/hydrate", "dep:wasm-bindgen", "dep:console_error_panic_hook"]
-ssr = ["leptos/ssr", "leptos_meta/ssr", "leptos_router/ssr", "dep:leptos_axum", "dep:axum", "dep:tokio", "dep:sqlx"]
+ssr = ["leptos/ssr", "leptos_meta/ssr", "leptos_router/ssr", "dep:leptos_axum", "dep:axum", "dep:tokio", "dep:tower-http", "dep:sqlx"]
 
 [profile.wasm-release]
 inherits = "release"
@@ -61,14 +62,17 @@ hash-files = true
 - `hash-files = true` puts a content hash in the WASM, JS and CSS file names, so those files can be
   cached forever and a page never loads another build's WASM.
 - `cargo leptos watch` for development, `cargo leptos build --release` for production,
-  `cargo leptos end-to-end` for browser tests against a running build.
+  `cargo leptos end-to-end` for browser tests against a running build. It runs `end2end-cmd`,
+  which the template sets to `npx playwright test`; point it at a Rust WebDriver test crate
+  (thirtyfour) unless the founder accepted Playwright and its Node toolchain.
 
 The server entry, called from `main`:
 
 ```rust
-use axum::{extract::DefaultBodyLimit, Router};
+use axum::Router;
 use leptos::config::get_configuration;
 use leptos_axum::{generate_route_list, LeptosRoutes};
+use tower_http::limit::RequestBodyLimitLayer;
 
 pub async fn serve(cfg: Config) -> anyhow::Result<()> {
     let leptos_options = get_configuration(None)?.leptos_options;
@@ -83,7 +87,9 @@ pub async fn serve(cfg: Config) -> anyhow::Result<()> {
             { let options = leptos_options.clone(); move || shell(options.clone()) },
         )
         .fallback(leptos_axum::file_and_error_handler(shell)) // serves target/site files
-        .layer(DefaultBodyLimit::max(256 * 1024))
+        // server functions read the raw body: DefaultBodyLimit would not cap them, this does
+        .layer(RequestBodyLimitLayer::new(256 * 1024))
+        // ... plus the session, same-origin, timeout and catch-panic layers (server-functions.md)
         .with_state(leptos_options);
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?; // add .with_graceful_shutdown(...) for rolling deploys
@@ -171,6 +177,7 @@ RUN cargo leptos build --release
 
 FROM gcr.io/distroless/cc-debian12:nonroot
 WORKDIR /app
+# the binary is named after the package (here `app`), not after output-name
 COPY --from=build /app/target/release/app /app/app
 COPY --from=build /app/target/release/hash.txt /app/hash.txt
 COPY --from=build /app/target/site /app/site
@@ -228,7 +235,7 @@ ls -l target/site/pkg/*.wasm && gzip -9c target/site/pkg/*.wasm | wc -c   # what
 | `getrandom` fails for `wasm32-unknown-unknown` | A crate needs randomness in the WASM | Enable the browser backend that getrandom's documentation names for the resolved version, or keep that crate server-only |
 | `unresolved import` in the WASM build, inside or near a `#[server]` function | A server-only `use` at module level | Move it into the function body or a `#[cfg(feature = "ssr")]` module |
 | Strange duplicate or conflicting definitions, both `ssr` and `hydrate` code compiled | `default = ["ssr"]`, a workspace crate enabling `leptos/ssr`, or rust-analyzer building with all features | No defaults; `cargo tree -e features -i leptos` for each target shows who enables what |
-| wasm-bindgen reports a schema or version mismatch | The wasm-bindgen CLI differs from the `wasm-bindgen` crate in `Cargo.lock`: an old cargo-leptos, or `LEPTOS_WASM_BINDGEN_VERSION` forcing another version | Current cargo-leptos reads the version from `Cargo.lock` and downloads that CLI: upgrade it, or fix the variable, or `cargo update -p wasm-bindgen --precise <version>`; then pin both |
+| wasm-bindgen reports a schema or version mismatch | The wasm-bindgen CLI differs from the `wasm-bindgen` crate in `Cargo.lock`. cargo-leptos downloads the CLI matching the lockfile only when none is installed; a `wasm-bindgen-cli` already on `PATH` is used as is | Remove the global CLI, or install the lockfile's version (`cargo install wasm-bindgen-cli --locked --version <version>`), or move the crate (`cargo update -p wasm-bindgen --precise <version>`); then pin both |
 | Server starts and fails on `LEPTOS_OUTPUT_NAME` | Built with plain `cargo build` | Build with cargo-leptos |
 | Release WASM works locally, the deployed page panics on hydration | Stale `/pkg` cached by a CDN or service worker without hashed names | `hash-files = true`; purge on deploy |
 
@@ -238,8 +245,8 @@ Measure a cold build, a one-line change in a component and a one-line change in 
 
 - `cargo leptos watch` rebuilds both targets on save and reloads the browser. `--hot-reload` patches
   `view!` markup without a rebuild, but it is marked beta and needs nightly; a convenience only.
-- Linking dominates incremental builds. Recent stable Rust links with `rust-lld` by default on
-  x86-64 Linux; elsewhere, configure `lld` or `mold`. `debug = "line-tables-only"` in
+- Linking dominates incremental builds. Since Rust 1.90, stable links with `rust-lld` by default
+  on `x86_64-unknown-linux-gnu`; elsewhere, configure `lld` or `mold`. `debug = "line-tables-only"` in
   `[profile.dev]` shrinks what the linker writes.
 - Split the workspace so the crate that changes most (the app) is small, and heavy, stable code
   (domain logic, SQL, generated types) lives in crates that rarely rebuild.

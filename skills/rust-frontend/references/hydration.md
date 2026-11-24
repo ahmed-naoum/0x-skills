@@ -113,7 +113,7 @@ pub fn hydrate() {
   hydration diagnostics. To investigate a problem that appears only in release, build once with
   `RUSTFLAGS="--cfg leptos_debuginfo" cargo leptos build --release`.
 - `wasm-opt` and the release profile strip function names, so stack traces become numbers. Keep a
-  debug build for reading traces.
+  debug build for reading traces, or add `--wasm-debug` (DWARF and source maps) to one build.
 - For logs from the browser, add a `tracing` subscriber that writes to the console in the hydrate
   entry, at `warn` or above in release; each log line format string adds to the WASM.
 - Report panics from real users: a panic hook that also sends the message to the error tracker
