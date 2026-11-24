@@ -6,6 +6,8 @@ crashes mid-step and messages that arrive twice or out of order.
 
 Single-database transactions, isolation levels and row locks are in `0x:postgres-database`
 (`transactions-concurrency.md`). This file starts where one transaction is no longer enough.
+Snippets use SQLx's function forms so they compile without a database; in the project, the
+`query!` family checks the same SQL at compile time.
 
 ## Where strong consistency is required
 
@@ -21,47 +23,65 @@ constraint. The decision appears the moment a second system holds state.
 | State transitions of an order, payout, job | Usage totals shown on a dashboard |
 
 Test for a doubtful case: "two requests see a value five seconds stale; what is the worst
-outcome?" If the answer involves money, security or a broken promise to a customer, it is strong.
-Put the invariant in the database (`UNIQUE`, `CHECK`, foreign key, exclusion constraint), not only
-in application code: the application check is a read followed by a write, and another request
-fits between them.
+outcome?" If it involves money, security or a broken promise to a customer, it is strong. Put the
+invariant in the database (`UNIQUE`, `CHECK`, foreign key, exclusion constraint), not only in code:
+an application check is a read followed by a write, and another request fits between them.
 
 ## Workflows as state machines
 
-Any entity with a lifecycle gets one `status` column with a closed set of values, a transition
-table in code, and guarded transitions. Several booleans (`is_paid`, `is_shipped`, `is_canceled`)
-encode eight combinations of which most are invalid and all are reachable.
-
-```ts
-const transitions = {
-  pending:   ['paid', 'canceled', 'expired'],
-  paid:      ['fulfilled', 'refunded'],
-  fulfilled: ['refunded'],
-  canceled:  [], expired: [], refunded: [],
-} as const satisfies Record<Status, readonly Status[]>;
-```
-
+Any entity with a lifecycle gets one `status` column with a closed set of values, a transition table
+in code, and guarded transitions. Several booleans (`is_paid`, `is_shipped`, `is_canceled`) encode
+eight combinations, most invalid and all reachable. In Rust the table is an enum with an exhaustive
+`match` in the `domain` crate: a new status does not compile until its transitions are declared.
 The guard lives in the write itself, so the check and the change are one atomic statement:
 
-```sql
-UPDATE orders SET status = 'paid', paid_at = now()
-WHERE id = $1 AND status = 'pending'
-RETURNING id;
+```rust
+use sqlx::PgConnection;
+use uuid::Uuid;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OrderStatus { Pending, Paid, Fulfilled, Canceled, Expired, Refunded }
+
+impl OrderStatus {
+    pub fn next(self) -> &'static [OrderStatus] {
+        use OrderStatus::*;
+        match self {
+            Pending => &[Paid, Canceled, Expired],
+            Paid => &[Fulfilled, Refunded],
+            Fulfilled => &[Refunded],
+            Canceled | Expired | Refunded => &[],
+        }
+    }
+}
+
+pub enum Moved { Done, AlreadyThere, Conflict(String), Missing }
+
+pub async fn mark_paid(conn: &mut PgConnection, order: Uuid) -> Result<Moved, sqlx::Error> {
+    let guarded = "UPDATE orders SET status = 'paid', paid_at = now() WHERE id = $1 AND status = 'pending'";
+    if sqlx::query(guarded).bind(order).execute(&mut *conn).await?.rows_affected() == 1 {
+        return Ok(Moved::Done);
+    }
+    let now: Option<String> = sqlx::query_scalar("SELECT status FROM orders WHERE id = $1")
+        .bind(order).fetch_optional(&mut *conn).await?;
+    Ok(match now.as_deref() {
+        Some("paid") => Moved::AlreadyThere,
+        Some(other) => Moved::Conflict(other.to_owned()),
+        None => Moved::Missing,
+    })
+}
 ```
 
-- Zero rows returned means another actor moved it first or the transition is invalid. Read the
-  current status: already `paid` by the same event is success (idempotent); anything else is a
-  conflict to report, not to overwrite.
-- Never read the status, check it in application code, then write unconditionally. That is the
-  race this pattern removes.
+- Zero rows means another actor moved it first or the transition is invalid. Read the current
+  status: already `paid` by the same event is success (idempotent); anything else is a conflict
+  to report, not to overwrite. Never read, check in code, then write unconditionally: that race
+  is what the guard removes.
 - Insert a row into a transitions table (entity, from, to, actor, reason, time) in the same
   transaction. It is the audit trail and the debugging tool.
 - Timeouts are transitions too: a scheduled job moves `pending` to `expired` with the same guard.
 - Before calling an external system, move to an in-flight status (`charging`) and commit. A crash
-  then leaves evidence, and a sweeper can find rows stuck in an in-flight status for more than a
-  few minutes and ask the provider what happened.
-- Add a `CHECK` or enum on the column so a typo cannot create a ninth state. A state-machine
-  library is optional; the map and the guarded update are the substance.
+  then leaves evidence: a sweeper finds rows stuck there for minutes and asks the provider.
+- Add a `CHECK` on the column so a typo in SQL cannot create a state the code does not know. A
+  state-machine crate is optional; the enum and the guarded update are the substance.
 
 ## Dual writes
 
@@ -78,7 +98,8 @@ only changes which inconsistency occurs.
 
 Never hold a database transaction open across a network call to another system. It pins a
 connection and row locks for the duration of someone else's latency, and a rollback cannot undo
-the remote effect anyway.
+the remote effect anyway. Rust compiles it without complaint: an `.await` on `reqwest` between
+`pool.begin()` and `tx.commit()` is the pattern to search for.
 
 The intent pattern for an external call:
 
@@ -105,9 +126,7 @@ CREATE TABLE outbox (
   processed_at timestamptz
 );
 CREATE INDEX outbox_pending ON outbox (id) WHERE processed_at IS NULL;
-```
 
-```sql
 -- relay, inside a transaction: claim, publish, then mark processed
 SELECT id, topic, key, payload FROM outbox
 WHERE processed_at IS NULL
@@ -116,25 +135,23 @@ LIMIT 100
 FOR UPDATE SKIP LOCKED;
 ```
 
-- If the job queue already lives in Postgres (pg-boss, Graphile Worker), enqueueing the job
-  inside the business transaction is the outbox. Do not build a second one.
+- If the job queue already lives in Postgres (a jobs table, apalis's Postgres storage),
+  enqueueing the job inside the business transaction is the outbox. Do not build a second one.
 - Delivery is at-least-once: the relay can publish and crash before marking the row. Consumers
   deduplicate (next section).
 - The relay is the one bounded exception to "no transaction across a network call": it locks
   only outbox rows. Keep the batch small and the publish timeout at a few seconds, or claim rows
   with a lease column and publish outside any transaction.
-- Select on `processed_at IS NULL`, never on "id greater than the last one seen". Identity values
-  are assigned before commit, so a lower id can become visible after a higher one and a
-  high-water-mark reader skips it forever.
+- Select on `processed_at IS NULL`, never on "id greater than the last one seen": identity values
+  are assigned before commit, so a lower id can become visible later and a high-water-mark
+  reader skips it forever.
 - Two relays with `SKIP LOCKED` can publish batches out of order. If per-entity order matters,
   run one relay (guarded by an advisory lock) or partition by a hash of `key`.
-- `LISTEN/NOTIFY` is a wake-up hint for the relay, not the delivery mechanism: notifications are
-  lost when no listener is connected and do not pass through a transaction-mode pooler. Always
-  poll as well.
-- Delete processed rows after a retention window, and alert when the oldest unprocessed row is
-  older than a minute or two: that is a stalled relay.
-- Change-data-capture from the replication log replaces the polling relay at Scale; the table and
-  the contract stay the same.
+- `LISTEN/NOTIFY` is a wake-up hint, not delivery: notifications are lost when no listener is
+  connected and do not pass through a transaction-mode pooler. Always poll as well.
+- Delete processed rows after a retention window; alert when the oldest unprocessed row is older
+  than a minute or two (a stalled relay). At Scale, change-data-capture from the replication log
+  replaces the polling relay; the table and the contract stay the same.
 
 ## Consumers that survive real delivery
 
@@ -143,16 +160,11 @@ for all three or the handler is wrong on the first provider incident.
 
 | Problem | Technique |
 |---|---|
-| Duplicate | Make the effect naturally idempotent (upsert, set a value instead of incrementing, guarded transition), or record `(consumer, event_id)` in a table with a primary key in the same transaction as the effect and skip on conflict |
+| Duplicate | Make the effect naturally idempotent (upsert, set a value instead of incrementing, guarded transition), or record `(consumer, event_id)` in a table with a primary key in the same transaction as the effect: `INSERT ... ON CONFLICT DO NOTHING`, and `rows_affected() == 0` means already handled |
 | Reordered | Carry a per-entity version or sequence and apply only if it is greater than the stored one; or treat the event as a hint and fetch the current state from the source |
 | Delayed by hours or days | Never assume the payload is current; re-read state; tolerate "entity no longer exists" as a normal outcome |
 | Arrives before the local row exists | Webhook beats the response of the request that created the object: upsert by provider ID, or retry with backoff |
 | Never arrives | Reconciliation (last section) |
-
-```sql
-INSERT INTO processed_events (consumer, event_id) VALUES ($1, $2)
-ON CONFLICT DO NOTHING;   -- affected rows = 0 means already handled: stop here
-```
 
 "Thin event, then fetch" is the most robust default for third-party webhooks: use the event only
 to learn which object changed, fetch that object from the provider, and write what the provider
@@ -172,8 +184,8 @@ comes from read replicas, search indexes, caches, CDN copies and asynchronous pr
 | Optimistic UI with a pending marker, reconciled when the server answers | Latency matters more than certainty; never for payments |
 
 Default: do not route user-facing reads to replicas until Scale, and then use the primary-pinning
-marker. After a mutation in a framework with a server cache, invalidate the affected paths or
-tags in the same action (`0x:react-nextjs`, `data-state.md`).
+marker. After a mutation through a Leptos server function or action, refetch the resources it
+affects in the same flow (`0x:rust-frontend`, `routing-data.md`).
 
 ## Sagas
 
@@ -204,17 +216,35 @@ First check whether a lock is needed at all. In order of preference:
    transaction-scoped form: session-scoped advisory locks break behind a transaction-mode pooler.
 3. Only then a lock in Redis or another store.
 
-A lock with an expiry can be lost while the holder still believes it holds it (GC pause, slow
-network, suspended VM). A lock without an expiry is held forever after a crash. So:
+A lock with an expiry can be lost while the holder still believes it holds it (a paused process,
+a Tokio worker blocked by CPU work so the renewal task never runs, a slow network, a suspended
+VM). A lock without an expiry is held forever after a crash. So acquire with an expiry and a
+random token, and release only your own lock, atomically:
 
-- Acquire with an expiry and a random token: `SET lock:{name} {token} NX PX 30000`.
-- Release only your own lock, atomically:
+```rust
+use std::sync::LazyLock;
+use redis::{Script, aio::MultiplexedConnection};
+use uuid::Uuid;
 
-```lua
-if redis.call("get", KEYS[1]) == ARGV[1] then
+static RELEASE: LazyLock<Script> = LazyLock::new(|| {
+    Script::new(r#"if redis.call("get", KEYS[1]) == ARGV[1] then
   return redis.call("del", KEYS[1])
 end
-return 0
+return 0"#)
+});
+
+/// Some(token) when acquired; None when another holder has it.
+pub async fn try_lock(con: &mut MultiplexedConnection, name: &str) -> redis::RedisResult<Option<String>> {
+    let token = Uuid::new_v4().to_string();
+    let set: Option<String> = redis::cmd("SET").arg(format!("lock:{name}")).arg(&token)
+        .arg("NX").arg("PX").arg(30_000).query_async(con).await?;
+    Ok(set.map(|_| token))
+}
+
+pub async fn unlock(con: &mut MultiplexedConnection, name: &str, token: &str) -> redis::RedisResult<bool> {
+    let deleted: i32 = RELEASE.key(format!("lock:{name}")).arg(token).invoke_async(con).await?;
+    Ok(deleted == 1)
+}
 ```
 
 - Expiry is longer than the worst-case work, or the holder renews it and stops when renewal fails.
@@ -238,14 +268,11 @@ Every at-least-once, eventual or cross-system path drifts eventually. A reconcil
 the control that finds the drift before a customer does. Mandatory at Launch for anything
 involving money; add others as each integration appears.
 
-Invariants worth checking:
-
-- Every local `succeeded` payment has exactly one matching provider charge, and the reverse.
-- Every active provider subscription has an active local entitlement, and the reverse.
-- Ledger entries sum to the stored balance.
-- No row has sat in an in-flight status (`charging`, `processing`, `syncing`) past its limit.
-- No outbox row or job is unprocessed past its limit.
-- Every file row has an object in storage; cached counters equal `count(*)`.
+Invariants worth checking: every local `succeeded` payment has exactly one matching provider
+charge, and the reverse; every active provider subscription has an active local entitlement, and
+the reverse; ledger entries sum to the stored balance; no row sits in an in-flight status
+(`charging`, `processing`, `syncing`), and no outbox row or job stays unprocessed, past its limit;
+every file row has an object in storage; cached counters equal `count(*)`.
 
 Design rules:
 
@@ -259,12 +286,10 @@ Design rules:
 
 ## Ask the user
 
-- **Which operations move money or grant access?** Those get strong consistency, idempotency
-  keys and reconciliation from the first paying customer. Assume payments, credits, seats and
-  plan entitlements.
+- **Which operations move money or grant access?** Those get strong consistency, idempotency keys
+  and reconciliation from the first paying customer. Assume payments, credits, seats, entitlements.
 - **When a multi-step process fails halfway, what should the customer see?** Refund, retry later
-  or manual follow-up is a business choice that defines the compensations. Assume automatic
-  retry, then refund and notify.
+  or manual follow-up defines the compensations. Assume automatic retry, then refund and notify.
 - **Who handles cases automation cannot resolve, and how fast?** Stuck sagas and reconciliation
   findings need an owner. Assume the founder, alerted the same day.
 - **How stale may dashboards, search and counters be?** It decides whether projections can be

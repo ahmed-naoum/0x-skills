@@ -1,117 +1,171 @@
 # Monolith, modules, services and events
 
-Read this when: laying out a new backend, deciding between the framework's server and a separate
-API service, drawing module boundaries, placing error handling, or deciding whether to extract a
-service, introduce events, or adopt event sourcing.
+Read this when: laying out a new backend, choosing between one Axum binary for UI and API and a
+separate API service, drawing module boundaries, placing error handling, or deciding whether to
+extract a service, introduce events, or adopt event sourcing.
 
 ## The shape by stage
 
 | Stage | Shape | Processes |
 |---|---|---|
-| Prototype | One codebase, one deployable, one Postgres. Folders by feature, no enforced boundaries yet | `web` |
-| Launch | Modular monolith: modules with public interfaces, a worker entrypoint from the same codebase | `web`, `worker` |
-| Scale | Same monolith; extract a service only for a reason in the extraction table below | `web`, `worker`, plus the few extracted services |
+| Prototype | One crate, one binary, one Postgres. Modules by feature, no enforced boundaries yet | `serve` |
+| Launch | Modular monolith in a Cargo workspace (`runtime-language.md`): capability modules with re-exported interfaces, one binary with a `worker` subcommand | `serve`, `worker` |
+| Scale | Same monolith; extract a service only for a reason in the extraction table below | `serve`, `worker`, plus the few extracted services |
 
 A monolith keeps the two things a small team cannot afford to lose: a function call instead of a
 network call, and one database transaction across the whole use case. The first "second service"
-is almost always the worker process, which is the same code with a different entrypoint and not a
-service boundary at all.
+is almost always the worker process, which is the same binary with a different subcommand and
+not a service boundary at all.
 
-## Framework server or separate API service
+## One Axum binary or a separate API service
 
-Stay inside the meta-framework (Next.js route handlers and server functions) while all of these
-hold: one web client, request-response work that fits the host's duration and body limits, and
-background work that can run in a worker or hosted queue.
+One Axum binary serves the Leptos app (server rendering, hydration, server functions) and the JSON
+API while all of these hold: one web client, request-response work that finishes in seconds, and
+background work that fits the worker process.
 
 | Signal | Add |
 |---|---|
-| Work outlives the host's function duration limit, or must be retried | A worker process or hosted job service, not an API service |
-| WebSockets or other long-lived connections on a serverless host (they end at the function's duration limit even where upgrades are accepted) | A long-running realtime service, or a hosted realtime provider |
-| A second client (mobile app, public API, partner integration) needs a stable, versioned contract | A separate API service (Hono or Fastify) or a clearly versioned `/api/v1` surface with its own tests |
-| CPU-heavy or non-JavaScript workload | A service in the fitting runtime (`runtime-language.md`) |
-| Backend must deploy and scale independently of the UI | A separate API service |
+| Work outlives the request or must be retried | The worker subcommand, not an API service |
+| The web tier runs on serverless functions, where long-lived connections end at the duration limit | A long-running realtime service, or a hosted realtime provider |
+| A second client (mobile app, public API, partner) needs a stable, versioned contract | A versioned `/api/v1` router with its own tests and an OpenAPI document, in the same binary first |
+| UI builds (cargo-leptos, WASM) slow API deploys, or the API must scale on its own | A second binary crate for the API in the same workspace, on the same `app` crate |
+| A workload that needs another language | A service in that language (`runtime-language.md`) |
 
 Rules that hold either way:
 
-- Server functions (server actions) are public HTTP endpoints. Each one validates input and
-  authorizes the caller as if it were a hand-written route.
-- The API surface for a mobile app cannot change in lockstep with a web deploy: old app versions
-  live for months. That alone justifies an explicit, versioned contract (`0x:api-design`).
-- A separate API service in the same language lives in the same repository and imports the same
-  modules. Splitting the repository is a separate, later decision.
+- Leptos server functions are public HTTP endpoints. The `#[server]` macro adds no
+  authentication: each one validates input and authorizes the caller as a hand-written route does.
+- A server function's error travels to the browser as written. Return expected failures as a
+  typed error with a stable code; never wrap internal error text (`e.to_string()`) into it.
+- The API for a mobile app cannot change in lockstep with a web deploy: old app versions live
+  for months. That alone justifies an explicit, versioned contract (`0x:api-design`).
+- A separate API service lives in the same workspace and depends on the same crates. Splitting
+  the repository is a separate, later decision.
 
 ## Layout and module boundaries
 
 Draw modules around business capabilities (billing, projects, notifications, identity), not
-technical layers (`controllers/`, `services/`, `models/`). A capability changes for one business
-reason; a layer changes for every reason.
+technical layers (`handlers/`, `services/`, `models/`). A capability changes for one business
+reason; a layer changes for every reason. The workspace's crates separate dependency weight
+(pure domain, SQL, HTTP); inside them, modules follow capabilities.
 
 ```text
-src/
-  modules/
-    billing/
-      index.ts        public interface: the only file other modules may import
-      service.ts      use cases
-      repo.ts         queries against tables this module owns
-      events.ts       events this module publishes
-    projects/
-  platform/           db, queue, logger, config, clock, vendor adapters
-  app/                routes: parse, authenticate, call a module, map the result
-  worker.ts           job entrypoint
-  cli/                scripts and backfills
+crates/app/src/
+  lib.rs            pub mod billing; pub mod projects;
+  billing/
+    mod.rs          the interface: pub use of the use cases and types others may call
+    service.rs      use cases (mod service; private to billing)
+    repo.rs         queries on tables billing owns (or crates/data/src/billing.rs)
+    events.rs       events billing publishes
+  projects/
+crates/web/         routes: parse, authenticate, call a use case, map the result
+crates/server/      main: serve | worker | migrate
 ```
 
-- Other modules import only `modules/<name>/index.ts`. Enforce it with a lint rule
-  (`no-restricted-imports` patterns or dependency-cruiser) in CI; an unenforced boundary is gone
-  within a quarter.
+- Declare submodules private (`mod repo;`) and re-export the interface from `billing/mod.rs`.
+  Rust's privacy rules then reject `crate::billing::repo::...` from another module at compile
+  time; no lint is needed.
+- Modules inside one crate may use each other in a cycle; crates may not. When the direction
+  between two capabilities matters, make one a crate and Cargo enforces it.
 - Each table has one owning module, and only the owner writes it. Others read through the owner's
-  query functions. Foreign keys across modules stay: referential integrity is worth more than
+  functions. Foreign keys across modules stay: referential integrity is worth more than
   theoretical extractability.
-- Use cases accept an optional transaction handle so one operation spanning two modules stays
-  atomic. Do not give this up to make the modules look like services.
-- Dependencies point one way. If billing and projects import each other, either one concept is
-  split across two modules or an event is missing.
-- At Prototype skip enforcement and keep only the folder-per-feature habit. Add the lint rule at
-  Launch, when the first module has a second consumer.
+- Use cases take `&mut PgConnection`, so a caller passes `&mut *tx` and one operation spanning two
+  modules stays atomic. Do not give this up to make modules look like services.
+- At Prototype keep only the module-per-feature habit; tighten visibility at Launch, when the
+  first module has a second consumer.
 
 ## Business logic outside transport
 
-A use case is a plain function: `createInvoice(ctx, input)`. `ctx` carries the actor, the tenant,
-the database or transaction handle, a logger and an abort signal. It knows nothing of HTTP,
-cookies, headers, queue messages or `argv`.
+A use case is a plain async function: `create_invoice(ctx, conn, input)`. `ctx` carries the
+actor, the tenant, the deadline and the request ID. It knows nothing of HTTP, cookies, headers,
+queue messages or command-line arguments.
 
 | Adapter | Does | Does not |
 |---|---|---|
-| Route handler, server function | Parse and validate, authenticate, build `ctx`, call the use case, map result to status and body | Query the database, hold business rules |
-| Job handler | Validate arguments, rebuild `ctx` (including tenant), call the use case, classify errors as retryable or not | Duplicate logic that the API also runs |
-| CLI, backfill, webhook receiver | Same pattern | Bypass the use case "because it is internal" |
+| Axum handler, Leptos server function | Parse and validate, authenticate, build `ctx`, call the use case, map the result | Query the database, hold business rules |
+| Job handler | Deserialize and validate arguments, rebuild `ctx` (including tenant), call the use case, classify errors as retryable or not | Duplicate logic that the API also runs |
+| CLI subcommand, backfill, webhook receiver | Same pattern | Bypass the use case "because it is internal" |
 
 Authorization that depends on the resource belongs inside the use case, so jobs, CLI and a future
 API cannot skip it (`0x:auth-identity`, `authorization.md`). The test of the split: the use case
-is callable from a unit test with no HTTP mock, and a new entry point needs a new adapter and
+runs in a `#[sqlx::test]` with no HTTP in sight, and a new entry point needs a new adapter and
 nothing else.
 
 ## Errors by kind
 
 | Kind | Examples | In code | To the client | Telemetry |
 |---|---|---|---|---|
-| Expected failure | Validation, not found, conflict, forbidden, quota reached, card declined | Typed result or typed error with a stable `code` | 4xx with the code and an actionable message | Count as a metric; not an error-tracker event |
-| Dependency failure | Timeout, upstream 5xx, connection refused | Wrap with `cause`, mark retryable | 502, 503 or 504 with "try again"; retry where safe | Error tracker with a rate alert, not per event |
-| Bug | `TypeError`, broken invariant, impossible state | Do not catch locally; let it reach the boundary | 500 with a generic message and a request ID | Error tracker, every one |
+| Expected failure | Validation, not found, conflict, forbidden, quota reached, card declined | A `thiserror` variant with a stable code | 4xx with the code and an actionable message | Count as a metric; not an error-tracker event |
+| Dependency failure | Timeout, upstream 5xx, connection refused | A variant holding the cause in `#[source]`, marked retryable | 502, 503 or 504 with "try again"; retry where safe | Error tracker with a rate alert, not per event |
+| Bug | Broken invariant, impossible state, a panic | Do not match it away; let it reach the boundary | 500 with a generic message and the request ID | Error tracker, every one |
 
-- One catch at each boundary (HTTP middleware, job runner, CLI main) does the mapping. `try/catch`
-  in the middle of business code exists only to add context (`new Error('charging order', {
-  cause: err })`) or to handle a specific expected failure.
+`thiserror` enums in `domain` and `app`, `anyhow` only in `main`, scripts and CLI. One
+`IntoResponse` implementation maps every error to a status and code:
+
+```rust
+use axum::{Json, http::StatusCode, response::{IntoResponse, Response}};
+use serde_json::json;
+
+#[derive(Debug, thiserror::Error)]
+pub enum BillingError {
+    #[error("plan limit reached")]
+    PlanLimit,
+    #[error("invoice not found")]
+    NotFound,
+    #[error("database")]
+    Db(#[from] sqlx::Error),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum AppError {
+    #[error("invalid input")]
+    Invalid(#[from] garde::Report),
+    #[error(transparent)]
+    Billing(#[from] BillingError),
+    #[error("database")]
+    Db(#[from] sqlx::Error),
+    #[error("{vendor} unavailable")]
+    Upstream { vendor: &'static str, #[source] source: reqwest::Error },
+}
+
+fn unique_violation(e: &sqlx::Error) -> bool {
+    matches!(e, sqlx::Error::Database(db) if db.is_unique_violation())
+}
+
+impl IntoResponse for AppError {
+    fn into_response(self) -> Response {
+        let (status, code) = match &self {
+            AppError::Invalid(_) => (StatusCode::UNPROCESSABLE_ENTITY, "invalid_input"),
+            AppError::Billing(BillingError::PlanLimit) => (StatusCode::CONFLICT, "plan_limit_reached"),
+            AppError::Billing(BillingError::NotFound) => (StatusCode::NOT_FOUND, "not_found"),
+            AppError::Upstream { .. } => (StatusCode::SERVICE_UNAVAILABLE, "upstream_unavailable"),
+            AppError::Db(e) | AppError::Billing(BillingError::Db(e)) if unique_violation(e) => {
+                (StatusCode::CONFLICT, "already_exists")
+            }
+            AppError::Db(_) | AppError::Billing(BillingError::Db(_)) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, "internal")
+            }
+        };
+        if status.is_server_error() {
+            tracing::error!(error = ?self, "request failed"); // full chain to logs, never to the body
+        }
+        (status, Json(json!({ "code": code }))).into_response()
+    }
+}
+```
+
+- `#[from] sqlx::Error` alone makes every database error a 500, including unique violations that
+  are expected conflicts. Match the cases that mean something, as above.
+- `?` in the middle of business code propagates; add context with a variant that keeps the cause
+  in `#[source]`, not by formatting it into a string.
 - Error codes are stable strings (`plan_limit_reached`); clients branch on the code, never on the
   message. The response shape is owned by `0x:api-design` (`requests-responses.md`).
-- Nothing internal reaches the client: no stack trace, SQL text or upstream response body.
-- In Next.js production builds, messages of errors thrown on the server are masked before they
-  reach the browser. Return expected failures from server functions as values (`{ ok: false,
-  code }`); throw only for bugs.
-- On `uncaughtException`, log, flush and exit: the process state is unknown and the supervisor
-  restarts it. An unhandled rejection crashes current Node by default; keep that behavior.
-- A caught-and-ignored error is the most expensive kind: `catch {}` needs a comment saying why
-  losing the error is correct.
+- Nothing internal reaches the client: no `Display` of an `sqlx::Error`, `anyhow` chain or
+  upstream body. An `impl From<anyhow::Error> for AppError` that keeps the message is how it leaks.
+- Panics are bugs: `runtime-language.md` covers catching them at the boundary.
+- An error matched and discarded (`let _ = ...`, `.ok()`) needs a comment saying why losing it is
+  correct.
 
 ## Stateless servers and horizontal scale
 
@@ -120,14 +174,14 @@ the first restarts. Find it before scaling:
 
 | In-process state | Breaks as | Move to |
 |---|---|---|
-| Sessions in memory | Users logged out at random | Session store in the database or Redis (`0x:auth-identity`) |
-| Rate-limit counters, login-attempt counters | Limit multiplied by instance count | Redis or the database |
-| Cache used as truth | Instances disagree | Database as truth, cache with TTL |
+| tower-sessions `MemoryStore` | Users logged out at random | A Postgres or Redis session store (`0x:auth-identity`) |
+| Rate-limit counters (tower_governor, a `DashMap`) | Limit multiplied by instance count | Redis or the database |
+| A `moka` or `HashMap` cache used as truth | Instances disagree | Database as truth, cache with TTL |
 | Uploads on local disk | File missing on the other instance, gone after deploy | Object storage (`file-uploads.md`) |
-| `setInterval` or in-process cron | Job runs once per instance | Scheduler with a dedupe key (`background-jobs.md`) |
-| In-memory job queue, fire-and-forget promises | Work lost on restart | Durable queue |
-| WebSocket room membership in a `Map` | Messages reach only one instance's clients | Pub/sub backplane (`realtime.md`) |
-| In-process mutex | No exclusion across instances | Database constraint or lock (`consistency-concurrency.md`) |
+| A spawned loop on `tokio::time::interval` as cron | Job runs once per instance | Scheduler with a dedupe key (`background-jobs.md`) |
+| An `mpsc` channel or detached spawn as a job queue | Work lost on restart | Durable queue |
+| WebSocket rooms in a `HashMap` of senders | Messages reach only one instance's clients | Pub/sub backplane (`realtime.md`) |
+| A `Mutex` as cross-request exclusion | No exclusion across instances | Database constraint or lock (`consistency-concurrency.md`) |
 
 Check by running two instances behind a round-robin proxy locally and killing one mid-session.
 Avoid sticky sessions as a fix: they hide the state and fail on every deploy. Do this work at
@@ -136,13 +190,16 @@ Launch even with one instance, because a deploy already behaves like a second in
 ## Events between modules
 
 Start in-process. An event is a fact in the past tense (`invoice.paid`) carrying IDs, a schema
-version and `occurredAt`; the publisher does not know who listens.
+version and `occurred_at`; the publisher does not know who listens.
 
 | Use | Mechanism |
 |---|---|
 | The caller needs the result or must fail if the reaction fails | A function call on the other module's interface, not an event |
-| The reaction must commit atomically with the change | In-process handler inside the same transaction |
+| The reaction must commit atomically with the change | A function taking the same `&mut PgConnection`, inside the transaction |
 | The reaction can lag (email, search index, analytics, webhooks out) | Outbox row or job enqueued in the same transaction, handled by the worker (`consistency-concurrency.md`) |
+
+A `tokio::sync::broadcast` bus is not a third option: it drops events for slow receivers and loses
+everything on restart. Use it only for hints such as cache invalidation and live updates.
 
 Signs of a distributed monolith, in a monolith or across services:
 
@@ -150,13 +207,13 @@ Signs of a distributed monolith, in a monolith or across services:
 - One user request passes through a chain of synchronous calls, so availability multiplies down.
 - An "event" is a command in disguise (`send_welcome_email_requested`) and the publisher waits
   for a reply event.
-- A shared library of domain models forces every consumer to upgrade in lockstep.
+- A shared crate of domain types forces every consumer to upgrade in lockstep.
 - Nobody can say what happens after `order.created` without searching the codebase. Keep a
   registry file listing each event, its schema and its subscribers.
 
 Event schemas change additively only; a breaking change is a new event name. Carry a correlation
-ID from the originating request through every event and job, or tracing a failure becomes
-archaeology.
+ID from the originating request through every event and job (a `tracing` span field), or tracing
+a failure becomes archaeology.
 
 ## Extracting a service
 
@@ -176,8 +233,8 @@ a slower local setup.
 
 Sequence:
 
-1. Make the boundary real inside the monolith first: public interface only, own tables, no
-   foreign joins. If this is hard, extraction would have been worse.
+1. Make the boundary real inside the monolith first: interface only, own tables, no foreign
+   joins. If this is hard, extraction would have been worse.
 2. Write the contract (OpenAPI, protobuf or JSON Schema), version it, and add contract tests on
    both sides (`0x:code-quality`, `e2e-contract-visual.md`).
 3. Move data ownership. The service owns its tables in its own database or schema; nobody else
@@ -203,10 +260,10 @@ A denormalized read table updated asynchronously is CQRS at the scale that pays 
 model, one or two projections, eventual by seconds. Full event sourcing is justified only when
 the history is the product (a ledger, a legally required audit record, an operation log for
 collaborative documents). Its costs are permanent: every past event schema must stay readable
-(upcasting), projections lag and need rebuild tooling, current state is not queryable with ad hoc
-SQL, and erasure requests collide with an immutable log (the usual answer is per-subject
-encryption keys that can be destroyed). If it is adopted, confine it to the one module that needs
-it.
+(upcasting, so serde types for old versions stay in the code), projections lag and need rebuild
+tooling, current state is not queryable with ad hoc SQL, and erasure requests collide with an
+immutable log (the usual answer is per-subject encryption keys that can be destroyed). If it is
+adopted, confine it to the one module that needs it.
 
 ## Ask the user
 
@@ -214,8 +271,8 @@ it.
   whether the API needs a stable versioned contract now. Assume web only, and keep use cases
   transport-free so the answer can change cheaply.
 - **Where is this hosted, and does the host allow long-running processes?** Serverless-only
-  hosting pushes jobs and realtime to hosted services. Assume a PaaS with a `web` and a `worker`
-  process.
+  hosting pushes jobs and realtime to hosted services. Assume a container PaaS running `serve`
+  and `worker`.
 - **Is there a contractual or regulatory need for a full audit history of some data?** Only that
   justifies event sourcing in one module. Assume an audit table is enough.
 - **Is any part expected to need very different resources (GPU, heavy media, untrusted code)?**

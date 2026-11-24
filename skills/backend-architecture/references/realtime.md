@@ -54,9 +54,36 @@ payload authorization disappear; the cost is one request per event, which only m
 rates.
 
 Reconnect promptly on `online` and `visibilitychange`: mobile browsers suspend background tabs
-and the socket is dead on return. On the server, watch per-connection send buffers
-(`bufferedAmount`): a client that cannot keep up is disconnected, or memory grows until the
-process dies.
+and the socket is dead on return. On the server, give each connection a bounded send buffer and
+disconnect a client that cannot keep up, or memory grows until the process dies:
+
+```rust
+use axum::{extract::ws::{Message, WebSocket, WebSocketUpgrade}, http::{HeaderMap, StatusCode, header}, response::Response};
+use tokio::sync::mpsc;
+
+const ALLOWED_ORIGINS: &[&str] = &["https://app.example.com"];
+
+pub async fn upgrade(ws: WebSocketUpgrade, headers: HeaderMap) -> Result<Response, StatusCode> {
+    let origin = headers.get(header::ORIGIN).and_then(|v| v.to_str().ok());
+    if !origin.is_some_and(|o| ALLOWED_ORIGINS.contains(&o)) {
+        return Err(StatusCode::FORBIDDEN); // cross-site WebSocket hijacking
+    }
+    // ... authenticate from the session cookie or a single-use ticket before upgrading
+    Ok(ws.max_message_size(64 * 1024).on_upgrade(serve))
+}
+
+async fn serve(mut socket: WebSocket) {
+    let (tx, mut outbox) = mpsc::channel::<String>(64); // ... register `tx` with the room
+    while let Some(text) = outbox.recv().await {
+        if socket.send(Message::Text(text.into())).await.is_err() { break }
+    }
+}
+
+/// Publisher side: a full buffer means a client that cannot keep up. Drop it, not the server.
+pub fn fan_out(room: &mut Vec<mpsc::Sender<String>>, msg: &str) {
+    room.retain(|tx| tx.try_send(msg.to_owned()).is_ok());
+}
+```
 
 ## Authenticating, authorizing and limiting connections
 
@@ -75,41 +102,64 @@ process dies.
   acts on), and force periodic re-authentication.
 - **Validate every inbound message** with a schema. It is a trust boundary like any request body.
 - **Limits**: connections per user and per IP, subscriptions per connection, messages per second
-  per connection (token bucket, disconnect on repeat offense), maximum message size (set it; the
-  `ws` library's default `maxPayload` is far larger than any chat message needs), idle timeout.
+  per connection (token bucket, disconnect on repeat offense), maximum message size (set it: Axum
+  inherits tungstenite's default of megabytes, far more than any chat message needs), idle timeout.
 - **SSE**: same-origin cookies work with `EventSource`; for an `Authorization` header use `fetch`
   with a streamed body instead.
 
 ## Server-Sent Events
 
-```ts
-export async function GET(req: Request) {
-  const lastId = req.headers.get('last-event-id');
-  const enc = new TextEncoder();
-  let cleanup = () => {};
-  const stream = new ReadableStream<Uint8Array>({
-    start(controller) {
-      const send = (id: string, data: unknown) =>
-        controller.enqueue(enc.encode(`id: ${id}\ndata: ${JSON.stringify(data)}\n\n`));
-      const ping = setInterval(() => controller.enqueue(enc.encode(': ping\n\n')), 20_000);
-      const unsubscribe = subscribe(lastId, send); // replays events after lastId, then live
-      cleanup = () => { clearInterval(ping); unsubscribe(); };
-      req.signal.addEventListener('abort', cleanup);
-    },
-    cancel() { cleanup(); },
-  });
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-transform',
-      'X-Accel-Buffering': 'no',
-    },
-  });
+```rust
+use std::{convert::Infallible, time::Duration};
+use axum::{extract::State, http::HeaderMap, response::sse::{Event, KeepAlive, Sse}};
+use futures_util::{Stream, StreamExt, stream};
+use tokio::sync::broadcast::{self, error::RecvError};
+use tokio_util::sync::CancellationToken;
+
+#[derive(Clone, Debug)]
+pub struct Note { pub seq: i64, pub json: String }
+
+#[derive(Clone)]
+pub struct Hub { pub live: broadcast::Sender<Note>, pub shutdown: CancellationToken }
+
+impl Hub {
+    /// Events after `seq` from the bounded log; None when the log no longer reaches back that far.
+    async fn replay_after(&self, seq: i64) -> Option<Vec<Note>> {
+        Some(Vec::new()) // ... SELECT from the event table, or XRANGE on a Redis Stream
+    }
+}
+
+fn event(n: Note) -> Event { Event::default().id(n.seq.to_string()).data(n.json) }
+fn resync() -> Event { Event::default().event("resync").data("{}") } // empty data is never dispatched
+
+pub async fn events(State(hub): State<Hub>, headers: HeaderMap) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
+    let last: Option<i64> = headers.get("last-event-id").and_then(|v| v.to_str().ok()?.parse().ok());
+    let rx = hub.live.subscribe(); // subscribe before replaying, so nothing falls in between
+    let backlog = match last {
+        None => Vec::new(),
+        Some(seq) => match hub.replay_after(seq).await {
+            Some(notes) => notes.into_iter().map(event).collect(),
+            None => vec![resync()],
+        },
+    };
+    let live = stream::unfold(rx, |mut rx| async move {
+        match rx.recv().await {
+            Ok(note) => Some((event(note), rx)),
+            Err(RecvError::Lagged(_)) => Some((resync(), rx)), // this client fell behind the buffer
+            Err(RecvError::Closed) => None,
+        }
+    });
+    let all = stream::iter(backlog).chain(live).map(Ok::<_, Infallible>);
+    Sse::new(all.take_until(hub.shutdown.cancelled_owned())) // ends on shutdown, so draining finishes
+        .keep_alive(KeepAlive::new().interval(Duration::from_secs(20)))
 }
 ```
 
 - An event is `id:`, optional `event:`, one `data:` line per line of payload, then a blank line.
-  A line starting with `:` is a comment; use it as the heartbeat.
+  A line starting with `:` is a comment; Axum's `KeepAlive` sends one as the heartbeat.
+- An event published between subscribing and replaying can arrive twice; the client drops
+  duplicates by `id`. A `broadcast` receiver that falls behind gets `Lagged`: send "resync"
+  instead of silently skipping.
 - `EventSource` reconnects by itself and sends the last received `id` as `Last-Event-ID`. The
   server must replay from there; without `id` lines, every reconnect loses the gap.
 - `retry: 5000` sets the client's reconnect delay in milliseconds. `EventSource` reconnects only
@@ -120,7 +170,8 @@ export async function GET(req: Request) {
   buffering (`X-Accel-Buffering: no` for nginx) and exclude the route from response compression.
 - Under HTTP/1.1 a browser allows about six connections per origin across all tabs; a few open
   tabs with one stream each freeze the app. Serve over HTTP/2 or later.
-- Clean up on disconnect (the abort signal), or every closed tab leaks a subscription.
+- On disconnect Axum drops the stream, and with it the receiver: keep per-connection state inside
+  the stream so nothing outlives a closed tab.
 - For LLM output use `fetch` with a streamed body: it allows POST and headers. Resuming after a
   drop then needs a server-side buffer keyed by a stream ID (`0x:ai-features`, `ai-ux.md`).
 
@@ -153,9 +204,11 @@ database, and never replay it after a reconnect.
 - Hosted pricing follows peak concurrent connections and delivered messages. Fan-out is billed
   per delivery: one message to a 1,000-member channel is 1,000 messages. Model the bill with real
   room sizes before committing.
-- Keep the provider behind a two-function interface: `publish(channel, event)` on the server and
-  a subscription hook on the client, with tokens minted by an endpoint in the app that performs
-  the authorization.
+- Keep the provider behind a two-function interface: `publish(channel, event)` on the server
+  (their REST APIs work with `reqwest`) and a subscription hook on the client, with tokens minted
+  by an endpoint in the app that performs the authorization. Hosted client SDKs are JavaScript;
+  from Leptos they mean a small JS interop layer (`0x:frontend-foundations`,
+  `browser-runtime-wasm.md`).
 - Payloads pass through a third party. Send IDs and let clients fetch sensitive data; list the
   provider as a subprocessor.
 
@@ -176,16 +229,16 @@ to a backplane and forwards to its own connections.
 - **Capacity**: the limits are memory per connection and file descriptors (`ulimit -n`), not CPU.
   Set a per-instance connection cap and autoscale on connection count. Heartbeats alone are
   connections divided by interval messages per second.
-- Large channels need sharding or a provider; one publish that fans out to 100,000 sockets
-  blocks an event loop.
+- Large channels need sharding or a provider; a loop that fans one publish out to 100,000
+  senders holds a Tokio worker for the whole loop.
 
 ## Collaboration and offline: sync engines and CRDTs
 
 | Need | Approach |
 |---|---|
 | Several people edit the same records, rarely the same field | Last write wins per field with server ordering, plus presence so people see each other. No CRDT |
-| Concurrent editing of the same text or rich document, or offline edits merged later | A CRDT library (Yjs, Automerge) with a maintained sync server or hosted provider. Never a hand-written merge algorithm |
-| The whole app should feel instant and work offline over the user's data | A sync engine that replicates a subset of the database to the client (Zero, ElectricSQL, PowerSync, Replicache-style) |
+| Concurrent editing of the same text or rich document, or offline edits merged later | A CRDT library with a maintained sync server or hosted provider: `yrs` (the Rust port of Yjs, wire-compatible with it) or Automerge, whose core is Rust. Never a hand-written merge algorithm |
+| The whole app should feel instant and work offline over the user's data | A sync engine that replicates a subset of the database to the client (ElectricSQL, PowerSync, Zero). Their client SDKs are JavaScript, so a Leptos client needs JS interop: check before committing |
 
 CRDT documents:
 

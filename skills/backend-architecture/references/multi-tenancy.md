@@ -15,7 +15,7 @@ its own infrastructure.
 
 Start pooled. Two cheap choices keep the other models reachable: a tenant ID on every
 tenant-owned row, and one function that hands out the database handle for a tenant
-(`dbFor(orgId)`), even while it always returns the same pool.
+(`db_for(org_id)`), even while it always returns the same pool.
 
 ## Accounts, organizations and users
 
@@ -47,10 +47,10 @@ identities and SSO in `enterprise-sso.md`.
 
 | Surface | Rule |
 |---|---|
-| Queries | A tenant-scoped data layer that cannot be called without a tenant context; raw access is reserved for a named, reviewed set of admin and migration code |
-| Cache keys | Prefix with the tenant: `t:{orgId}:projects:list`. A shared key is a cross-tenant leak served fast |
-| Jobs | `orgId` in the arguments; the handler rebuilds the tenant context (and the RLS setting) before touching data |
-| Object storage | Server-generated keys under `tenants/{orgId}/...`; authorize before signing a URL; never build a key from a client-supplied path |
+| Queries | Data-layer functions take a tenant handle that only a verified membership can create (below), so an unscoped call does not compile; raw pool access is reserved for a named, reviewed set of admin and migration code |
+| Cache keys | Prefix with the tenant: `t:{org_id}:projects:list`. A shared key is a cross-tenant leak served fast |
+| Jobs | `org_id` in the arguments; the handler rebuilds the tenant context (and the RLS setting) before touching data |
+| Object storage | Server-generated keys under `tenants/{org_id}/...`; authorize before signing a URL; never build a key from a client-supplied path |
 | Search and vector indexes | Tenant filter applied on the server on every query; never a filter the client can drop |
 | Realtime channels | Channel names include the tenant; authorize each subscription on the server |
 | Logs, traces, error reports | Attach `org_id` so one tenant's incident can be isolated, and so support does not read other tenants' data to debug |
@@ -77,11 +77,41 @@ CREATE POLICY tenant_isolation ON projects
   WITH CHECK (org_id = nullif(current_setting('app.org_id', true), '')::uuid);
 ```
 
-```ts
-await db.transaction(async (tx) => {
-  await tx.execute(sql`select set_config('app.org_id', ${orgId}, true)`); // true = this transaction only
-  return fn(tx);
-});
+The tenant handle carries the setting, so code holding one cannot forget it:
+
+```rust
+use sqlx::{PgConnection, PgPool, Postgres, Transaction};
+use uuid::Uuid;
+
+/// Only `verify_membership` builds this, so holding one proves the check ran.
+pub struct Membership { org_id: Uuid, user_id: Uuid }
+
+pub async fn verify_membership(pool: &PgPool, org_id: Uuid, user_id: Uuid) -> sqlx::Result<Option<Membership>> {
+    let found: Option<Uuid> =
+        sqlx::query_scalar("SELECT org_id FROM memberships WHERE org_id = $1 AND user_id = $2")
+            .bind(org_id)
+            .bind(user_id)
+            .fetch_optional(pool)
+            .await?;
+    Ok(found.map(|org_id| Membership { org_id, user_id }))
+}
+
+/// A transaction with the RLS setting applied; tenant data functions take this, never a pool.
+pub struct TenantTx { tx: Transaction<'static, Postgres>, org_id: Uuid }
+
+impl TenantTx {
+    pub async fn begin(pool: &PgPool, m: &Membership) -> sqlx::Result<Self> {
+        let mut tx = pool.begin().await?;
+        sqlx::query("SELECT set_config('app.org_id', $1, true)") // true: this transaction only
+            .bind(m.org_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+        Ok(Self { tx, org_id: m.org_id })
+    }
+    pub fn org_id(&self) -> Uuid { self.org_id }
+    pub fn conn(&mut self) -> &mut PgConnection { &mut self.tx }
+    pub async fn commit(self) -> sqlx::Result<()> { self.tx.commit().await }
+}
 ```
 
 | Trap | Consequence | Fix |
@@ -119,18 +149,21 @@ WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p')
 ```
 
 Tests must run as the application role, not as the migration owner, or every RLS test passes
-while proving nothing.
+while proving nothing. `#[sqlx::test]` connects with the credentials in `DATABASE_URL`, usually a
+role that can create databases and owns the tables: begin each isolation test with `SET ROLE` to
+the application role.
 
 ## Per-tenant settings and overrides
 
 Resolve in layers: code defaults, then plan, then organization override, then user preference.
-One typed schema (Zod) defines every setting with its default; overrides are stored sparsely
+One typed struct (serde with `#[serde(default)]`, checked with garde) defines every setting with
+its default; overrides are stored sparsely
 (a JSONB column or an `org_settings` table) and read through one resolver.
 
-- Code asks for capabilities and limits (`can(org, 'sso')`, `limit(org, 'seats')`), never
-  `plan === 'pro'`. Plans change and enterprise deals need exceptions; only the mapping should
+- Code asks for capabilities and limits (`limits.sso`, `limits.seats`), never
+  `plan == Plan::Pro`. Plans change and enterprise deals need exceptions; only the mapping should
   move (`0x:payments-billing`, `subscriptions.md`).
-- `if (org.id === '...')` in code is a fork with one customer. Turn it into a named setting that
+- `if org.id == ACME_ID` in code is a fork with one customer. Turn it into a named setting that
   any organization could have.
 - Customer-defined fields go in a JSONB column validated against per-tenant field definitions,
   not in per-tenant columns or tables.
@@ -144,9 +177,11 @@ One tenant can exhaust request capacity, the job queue, database time, connectio
 shared third-party quota. Skip most of this until Launch; add fairness as soon as one customer is
 visibly larger than the rest.
 
-- **Requests**: token bucket per tenant in addition to per user and per IP.
+- **Requests**: token bucket per tenant in addition to per user and per IP, shared across
+  instances (an in-process limiter such as tower_governor counts per instance).
 - **Jobs**: FIFO lets one tenant's 500,000-row import delay every other tenant's email. Cap
-  concurrency per tenant (group or concurrency keys in the queue library), or dispatch at most N
+  concurrency per tenant (with a jobs table, rank ready jobs per tenant in a subquery and claim
+  the first few of each), or dispatch at most N
   jobs per tenant per tick, and keep bulk work on its own queue with its own workers.
 - **Database**: `statement_timeout` on the application role, pagination limits, and bulk
   endpoints that enqueue instead of running inline.
@@ -217,12 +252,12 @@ multiplies infrastructure and operations by the number of regions.
   must be region-pinned or excluded for those tenants. What the law requires is in
   `0x:privacy-compliance`.
 
-Cheap preparation now: the `region` column, tenant-prefixed storage keys, `dbFor(orgId)`, and no
+Cheap preparation now: the `region` column, tenant-prefixed storage keys, `db_for(org_id)`, and no
 code that assumes a globally unique sequence.
 
 ## Moving a tenant to dedicated infrastructure
 
-Prerequisites: `org_id` on every table, routing through `dbFor(orgId)`, IDs that do not collide
+Prerequisites: `org_id` on every table, routing through `db_for(org_id)`, IDs that do not collide
 across databases (UUIDs).
 
 1. Provision the target at the same schema version and freeze schema migrations for the move.
