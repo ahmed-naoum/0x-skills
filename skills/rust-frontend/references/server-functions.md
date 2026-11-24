@@ -1,14 +1,9 @@
 # Server functions, actions and forms
 
-Read this when: the browser must call the server or change data; writing or reviewing a
-`#[server]` function, an `ActionForm` or an action; showing pending, error or optimistic states;
-the page is stale after a save; reading cookies or headers in a server function; or a server-only
-crate or secret reached the WASM.
-
-Contents: a server function is a public endpoint; limits, cross-site requests and safe errors;
-server code and secrets out of the WASM; forms before the WASM loads; pending, error and
-optimistic states; refetch after a write; cookies, headers and redirects; encodings and
-streaming; shared types without server-only fields; ask the user.
+Read this when: the browser must call the server or change data; writing or reviewing a `#[server]`
+function, an `ActionForm` or an action; showing pending, error or optimistic states; the page is
+stale after a save; reading cookies or headers in a server function; or a server-only crate or
+secret reached the WASM.
 
 Snippets assume `use leptos::prelude::*;`, `serde::{Deserialize, Serialize}` and `uuid::Uuid`.
 
@@ -61,18 +56,14 @@ pub async fn rename_post(id: Uuid, title: String) -> Result<(), AppError> {
 }
 ```
 
-With `query!` in the project, the same SQL is checked at compile time. `Title` is a newtype whose
-only constructor validates (garde at the boundary, then the type proves it), and `require_user`
-reads the session (below).
+With `query!` the same SQL is checked at compile time. `Title` is a newtype whose only constructor
+validates (garde at the boundary), and `require_user` reads the session (below).
 
 - Arguments, hidden inputs and IDs are attacker-controlled. Re-check ownership against the session
   on every call, in the query itself where possible.
-- Expected failures (validation, conflict, not allowed) are `AppError` variants the UI renders.
-  `ServerFnError::new(e.to_string())` on a database error sends its text, including table and
-  constraint names, to the browser.
-- For another tenant's resource answer "not found", not "forbidden": a 403 confirms the ID exists.
-- Callers that are not this app's browser code (mobile app, webhook, cron) get an Axum JSON route
-  over the same data function, with a contract of its own.
+- Expected failures (validation, conflict, not allowed) are `AppError` variants the UI renders;
+  `ServerFnError::new(e.to_string())` on a database error sends table and constraint names to the
+  browser.
 
 ## Limits, cross-site requests and safe errors
 
@@ -101,20 +92,19 @@ pub async fn same_origin_posts(State(origin): State<PublicOrigin>, req: Request,
 
   Layer it with `axum::middleware::from_fn_with_state` on the router for pages and server functions;
   webhooks arrive cross-site by design, so merge their router after the layer, signature-checked.
-- **Body size and rate.** leptos_axum hands server functions the raw request body, which they
-  collect without a limit, and Axum's `DefaultBodyLimit` only binds extractors such as `Bytes` or
-  `Json`, so it does not cap them. Put tower-http's `RequestBodyLimitLayer` (its `limit`
-  feature) on the router (`build-deploy.md`), sized to the largest form; it answers 413 instead of
-  buffering an attacker's gigabyte. Send files to object storage through a presigned URL
-  (`0x:backend-architecture`). Rate-limit functions that send
-  email, cost money or write in bulk with `tower_governor` (`0x:api-design`).
+- **Body size and rate.** Server functions collect the raw body with no limit, and Axum's
+  `DefaultBodyLimit` binds only extractors such as `Bytes` or `Json`, so it does not cap them. Put
+  tower-http's `RequestBodyLimitLayer` (`limit` feature) on the router (`build-deploy.md`), sized
+  to the largest form: it answers 413 instead of buffering an attacker's gigabyte. Files go to
+  object storage through a presigned URL (`0x:backend-architecture`). Rate-limit functions that
+  send email, cost money or write in bulk with `tower_governor` (`0x:api-design`).
 - **Panics.** Axum does not catch them: a panic in a server function drops the connection and the
   client sees a network error. Add tower-http's `CatchPanicLayer` (its `catch-panic` feature) as a
   backstop, and keep `unwrap()`, `expect()` and `expect_context` out of request paths;
   `use_context` returns an `Option` to map to `AppError::Internal`.
-- **Blocking and `Send`.** The function runs on Tokio. Password hashing, image work and other CPU
+- **Blocking and `Send`.** The function runs on Tokio: password hashing, image work and other CPU
   work go in `tokio::task::spawn_blocking`. A `std::sync::MutexGuard` held across an `.await` makes
-  the future `!Send` and fails to compile; drop the guard before awaiting or use `tokio::sync::Mutex`.
+  the future `!Send` and fails to compile; drop it before awaiting or use `tokio::sync::Mutex`.
 
 ## Keep server code and secrets out of the WASM
 
@@ -124,11 +114,8 @@ rest of the module is compiled for both, so:
 - Server-only crates (sqlx, argon2, reqwest with secrets, tokio) are optional dependencies enabled
   by the `ssr` feature (`build-deploy.md`). Import them inside the function body or in a
   `#[cfg(feature = "ssr")]` module; a top-level `use sqlx::PgPool;` breaks the WASM build.
-- Secrets are read at runtime on the server into the typed config and provided as context. Never
-  `env!` or `option_env!` in shared code: the value is compiled into whichever binary uses it,
-  including the WASM.
-- Data-layer modules carry `#[cfg(feature = "ssr")]` on the module declaration, so a client import
-  fails to compile instead of shipping.
+- Secrets are read at runtime into the typed config and provided as context. `env!` or `option_env!`
+  in shared code compiles the value into every binary that uses it, the WASM included.
 - Check the output: `grep -c "$SECRET_VALUE" target/site/pkg/*.wasm` prints 0 for each secret.
 
 ## Forms that work before the WASM loads
@@ -159,16 +146,14 @@ pub fn RenameForm(id: Uuid, title: String) -> impl IntoView {
 ```
 
 - Input `name`s are the function's argument names. A struct argument uses `input[field]` names.
-- Only the default `PostUrl` input encoding works with `ActionForm`; a function with `Json` input
-  needs `action.dispatch(...)` from code.
 - HTML constraints (`required`, `maxlength`, `type="email"`) give instant feedback without WASM;
   the server function validates again, because the attributes are advice.
 - Without the WASM, a failed call redirects back to the `Referer` with the encoded error in the
-  query (`__path` and `__err`). The router reads it during the next server render and
+  query (`__path`, `__err`); the router reads it on the next server render, and
   `ServerAction::new()` for that function starts with the error as its `value()`, so the markup
-  above shows it with no WASM. The error therefore lands in the URL, browser history and access
-  logs: keep personal data out of `AppError` messages. A successful call redirects to the clean `Referer`; send the user
-  elsewhere with `leptos_axum::redirect`.
+  above shows it. The error therefore lands in URLs, history and access logs: keep personal data
+  out of `AppError` messages. Success redirects to the clean `Referer`; `leptos_axum::redirect`
+  sends the user elsewhere.
 - Disable the button while pending and make the write idempotent: a double submit makes one record.
 
 ## Pending, error and optimistic states
@@ -192,11 +177,10 @@ let shown_title = move || {
 
 When the call fails, `input()` returns to `None` and the saved value shows again, so a failure
 reverts by itself; show the error from `value()`. For concurrent submissions (adding todos),
-`ServerMultiAction` with `MultiActionForm` keeps one submission per call: render pending items
-from `submissions()`, each with a client-generated UUID the server keeps as the real ID. The
-server inserts it with `ON CONFLICT (id) DO NOTHING`, never an upsert, so a replayed or forged ID
-cannot overwrite another row. `Uuid::new_v4()` in the WASM needs uuid's `v4` and `js` features;
-without `js` the hydrate build fails to compile on getrandom.
+`ServerMultiAction` with `MultiActionForm` keeps one submission per call: render pending items from
+`submissions()`, each with a client-generated UUID that the server inserts with `ON CONFLICT (id)
+DO NOTHING` (never an upsert, so a forged ID cannot overwrite another row). `Uuid::new_v4()` in the
+WASM needs uuid's `v4` and `js` features, or the hydrate build fails on getrandom.
 
 ## After a write, refetch what shows it
 
@@ -216,8 +200,7 @@ or context for app-wide actions). When a successful write leaves the screen stal
 2. The action was created in a child component, so another part of the page has its own copy.
 3. A server-side cache (moka, CDN) still holds the old value: the function did not invalidate it
    (step 5), or each instance holds its own moka cache and only one was invalidated.
-4. Another tab or user wrote it. Invalidation cannot reach them: refetch on focus, poll, or push
-   (`routing-data.md`).
+4. Another tab or user wrote it: refetch on focus, poll, or push (`routing-data.md`).
 
 ## Cookies, headers and responses inside server functions
 
@@ -269,8 +252,8 @@ pub async fn export_csv(project: Uuid) -> Result<server_fn::codec::TextStream<Ap
 }
 ```
 
-A streaming function is an endpoint like the others: identify and authorize before the first
-byte, because once the stream has started an error can no longer change the status.
+Authorize a streaming function before the first byte: once the stream has started, an error can no
+longer change the status.
 
 ## Share types without exposing server-only fields
 
