@@ -1,6 +1,6 @@
 ---
 name: postgres-database
-description: Models, queries, migrates, tunes, backs up and scales a relational database with PostgreSQL as the default. Use when designing a schema or choosing keys and an ORM, fixing a slow query or pegged database CPU, writing a migration that must not lock tables, debugging a race or running out of connections, setting up or restoring backups, recovering deleted data, or deciding on replicas and partitioning.
+description: Models, queries, migrates, tunes, backs up and scales a relational database, with PostgreSQL and SQLx as the defaults. Use when designing a schema, choosing keys or SQLx versus an ORM, fixing a slow query or pegged database CPU, writing a migration that must not lock tables, debugging a race or running out of connections, setting up or restoring backups, recovering deleted data, or planning replicas or partitioning.
 ---
 
 # PostgreSQL and relational data
@@ -41,34 +41,34 @@ no backup trusted until it has been restored.
 
 | If the task is | Read |
 |---|---|
-| Designing or reviewing tables, keys, constraints or column types; UUID or integer ids; ORM or raw SQL; storing money, JSON, soft deletes, history, trees or polymorphic relations | `references/schema-modeling.md` |
-| Writing or reviewing a query, upsert, bulk write or pagination; removing N+1 queries; checking what the ORM generates; running SQL by hand against production; a one-off data fix | `references/sql-queries.md` |
+| Designing or reviewing tables, keys, constraints or column types; UUID or integer ids; SQLx, SeaORM, Diesel or raw SQL; storing money, JSON, soft deletes, history, trees or polymorphic relations | `references/schema-modeling.md` |
+| Writing or reviewing a query, upsert, bulk write or pagination; removing N+1 queries; SQLx `query!` macros, nullability, type mapping or offline data; running SQL by hand against production; a one-off data fix | `references/sql-queries.md` |
 | Two requests raced, a counter or balance went wrong, writes must be all-or-nothing, queries block each other, deadlocks appear in logs, or a queue or run-once job is being built | `references/transactions-concurrency.md` |
 | A query or endpoint is slow, database CPU or I/O is high, a plan got worse, or deciding which index to add or drop | `references/indexes-query-plans.md` |
 | Any schema change on a database with live traffic: columns, indexes, constraints, renames, retypes, backfills, or a migration that failed halfway | `references/migrations.md` |
-| Choosing a provider, "too many connections", pooler or serverless setup, database roles, what to monitor, killing a query, preview branches, vacuum and bloat, tuning, a major-version upgrade | `references/postgres-operations.md` |
+| Choosing a provider, "too many connections", SQLx pool settings, pooler or serverless setup, database roles, what to monitor, killing a query, preview branches, vacuum and bloat, tuning, a major-version upgrade | `references/postgres-operations.md` |
 | Setting up backups, proving a restore works, a snapshot before a risky change, deleted or corrupted production data, restoring one customer's rows | `references/backup-recovery.md` |
 | One node is not enough: standby and failover, read replicas and lag, reports slowing the app, partitioning a huge table, sharding, moving providers with little downtime | `references/replication-scaling.md` |
 
 ## Defaults at a glance
 
-Read what the project already uses first (ORM, migration tool, key scheme, provider) and stay
+Read what the project already uses first (data-access crate, migration tool, key scheme, provider) and stay
 consistent with it. These apply to greenfield choices and when the user asks what to pick.
 
 | Decision | Default | Changes when |
 |---|---|---|
 | Database | Managed PostgreSQL in the application's region, on a supported major version past its first minor releases | Self-host only at Scale, with someone who has run it before |
 | Provider tier | Prototype: the platform's one-click database. Launch: a paid tier with point-in-time recovery, no idle pausing and a pooler | Compliance or data residency narrows the list first |
-| Data access | Typed SQL-first layer (Drizzle); raw parameterized SQL for window functions, recursion, bulk writes and locking clauses | The project already has an ORM: keep it |
+| Data access | SQLx with the checked macros (`query!`, `query_as!`) and the `.sqlx/` offline data committed; `QueryBuilder` with bound values only for SQL chosen at run time | The project already has SeaORM or Diesel: keep it |
 | Primary keys | UUIDv7 for anything exposed; `bigint` identity for internal high-volume tables | The project already has one scheme |
 | Column types | `timestamptz`, `text` plus `CHECK`, `bigint` minor units with a currency code, `jsonb` only for variable attributes | |
 | Deletes | Hard delete, with `ON DELETE RESTRICT` from money and history tables | A trash window for customer-created top-level objects |
 | Concurrency | READ COMMITTED with atomic or guarded updates; a version column for records users edit | SERIALIZABLE with retries for one transaction type whose invariant cannot be locked |
 | Timeouts, web role | `statement_timeout` 10 s, `lock_timeout` 3 s, idle-in-transaction 30 s, pool acquire 3 s | Longer on worker and reporting roles; migrations set their own |
-| Pool | 5 to 10 connections per Node.js process; all pools together at most 80 percent of `max_connections` | Transaction-mode pooler for serverless or hundreds of clients |
+| Pool | One SQLx pool per process, built in `main`: 10 connections (its default), acquire timeout 3 s; all pools together at most 80 percent of `max_connections` | Transaction-mode pooler for serverless or hundreds of clients |
 | Roles | A migrator role owns the schema; the application role has DML only; a read-only role for people | One application role per service at Scale |
 | Pagination | Keyset with a unique tiebreaker | `OFFSET` only for small, bounded admin lists |
-| Migrations | Generated SQL read by hand, applied by the pipeline, forward-only, indexes built `CONCURRENTLY` | A short announced window can replace a multi-deploy change |
+| Migrations | Hand-written SQL files applied from the pipeline by sqlx-cli or the binary's embedded migrator, never at web startup; forward-only, `SET LOCAL lock_timeout` in each, indexes built `CONCURRENTLY` in `-- no-transaction` files | A short announced window can replace a multi-deploy change |
 | Backups | Prototype: provider dailies. Launch: point-in-time recovery of 7 days or more, an off-provider dump, one restore drill. Scale: immutable copies in a second account and region, automated restore tests | A contract or regulation fixes retention |
 | Availability | One node at Prototype and Launch | A standby once an hour of downtime costs more than a month of the standby |
 | Scaling | A bigger instance before replicas; partition only large append-mostly tables; sharding last | Evidence, as laid out in `references/replication-scaling.md` |
@@ -82,14 +82,15 @@ consistent with it. These apply to greenfield choices and when the user asks wha
 3. Each new or changed query was run with `EXPLAIN (ANALYZE, BUFFERS)` on production-sized data
    using a large tenant's parameters: no unexpected sequential scan, estimates within 10x of actual.
 4. List endpoints run a fixed number of queries whatever the row count, and paginate by keyset.
-5. Multi-step writes run in one transaction through the transaction handle with no external call
+5. Multi-step writes run in one transaction with every statement on `&mut *tx` and no external call
    inside; read-modify-write paths use an atomic or guarded update, a version check or a row lock.
 6. The migration SQL was read line by line: `lock_timeout` set, indexes built `CONCURRENTLY`,
-   constraints added `NOT VALID` then validated, nothing renamed or dropped that deployed code names.
+   constraints added `NOT VALID` then validated, nothing renamed or dropped that deployed code names;
+   afterwards no invalid index and no unvalidated constraint remains (`references/migrations.md`).
 7. The migration works with the previous application version and with the next one.
 8. Backfills run in keyed batches that commit, skip finished rows and can resume, then `ANALYZE`.
-9. After migrating, no invalid index and no unvalidated constraint remains (queries in
-   `references/migrations.md`).
+9. Static SQL uses the checked macros, `cargo sqlx prepare --check` passes against the migrated
+   schema, `.sqlx/` is committed, and request paths use `fetch_optional` and `?`, never `unwrap()`.
 10. The application connects as a non-owner role that carries statement, lock and
     idle-in-transaction timeouts, and the pools at maximum instance count fit the connection budget.
 11. Any manual production write was shown to the user with its row count, approved, run by a

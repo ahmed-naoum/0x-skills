@@ -71,8 +71,8 @@ The provider's side usually works. The application's side is what a rehearsal ex
 
 | Symptom after failover | Cause | Fix |
 |---|---|---|
-| Errors continue after the database is healthy again | The pool keeps dead connections, or an address is cached | Evict connections on error, cap their lifetime, connect by hostname |
-| `25006`, cannot execute INSERT in a read-only transaction | A connection is still attached to the demoted node | Destroy that connection and reconnect; do not retry on it |
+| Errors continue after the database is healthy again | The pool keeps dead connections, or an address is cached | Connect by hostname and cap connection lifetime; SQLx pings each idle connection before handing it out (`test_before_acquire`, on by default) and drops dead ones |
+| `25006`, cannot execute INSERT in a read-only transaction | A connection is still attached to the demoted node | Do not retry on it. A ping cannot tell; a `before_acquire` hook on the primary pool that returns `false` when `pg_is_in_recovery()` is true closes such connections (it can replace the ping) |
 | A record the user saw saved is gone | Asynchronous replication lost the tail | Reconcile money paths against the payment provider; synchronous mode if that loss is unacceptable |
 | Change-data or logical subscribers stop | The logical slot did not follow the failover | Slot synchronization (PostgreSQL 17+) or the provider's equivalent; otherwise re-seed |
 
@@ -136,11 +136,11 @@ Indexes for reports go on the primary and tax its writes, which is one signal fo
 
 ## Routing reads to replicas
 
-Default: everything reads from the primary. Move reads one call site at a time by explicitly
-choosing a second client (`dbRead`), and only reads that are heavy and tolerate staleness: search
-and list pages, dashboards, exports, public pages. Helpers that send every `SELECT` to a replica
-(Drizzle's `withReplicas`, Prisma's read-replicas extension) invert that default; where the
-project uses one, force the primary (`db.$primary`, `prisma.$primary()`) for these:
+Default: everything reads from the primary. Move reads one call site at a time to a second pool,
+and only reads that are heavy and tolerate staleness: search and list pages, dashboards, exports,
+public pages. Wrap the pools in two newtypes, `struct Primary(PgPool)` and `struct Replica(PgPool)`,
+so the compiler keeps the rule: code that decides a write takes `&Primary`, and a replica pool
+cannot be passed to it by accident. These stay on the primary:
 
 - Reads inside a transaction that writes, and anything that takes locks or claims queue rows.
 - Reads that decide a write: balance and stock checks, uniqueness and idempotency lookups,
@@ -150,7 +150,7 @@ project uses one, force the primary (`db.$primary`, `prisma.$primary()`) for the
 | Technique | How | Use |
 |---|---|---|
 | Sticky primary | After a write, keep "read from the primary until now + N" in the session, with N well above normal lag (5 s is a common start) | Default |
-| Position token | After the write, read `pg_current_wal_lsn()` on the primary and keep it in the session; before a replica read, check `SELECT pg_last_wal_replay_lsn() >= $1::pg_lsn` on the same connection and fall back to the primary when false | When "sees own write" must be exact |
+| Position token | After the write, read `pg_current_wal_lsn()::text` on the primary (SQLx has no `pg_lsn` type) and keep it in the session; before a replica read, acquire one replica connection, check `SELECT pg_last_wal_replay_lsn() >= $1::pg_lsn` and run the read on that same `&mut *conn`, falling back to the primary when false | When "sees own write" must be exact |
 | Lag breaker | A health check removes a replica from rotation when its lag passes the threshold or it is unreachable | Always, with either of the above |
 
 Once replicas carry load they are production capacity: size for one more than the load needs, and

@@ -1,7 +1,7 @@
 # Writing application SQL
 
 Read this when: writing or reviewing the queries an application runs (joins, aggregates, upserts,
-pagination, ORM output), or changing production data by hand or with a one-off fix script.
+pagination, SQLx macros), or changing production data by hand or with a one-off fix script.
 
 ## Traps that produce wrong results
 
@@ -116,38 +116,61 @@ SELECT id, name, depth FROM tree WHERE NOT is_cycle;
 One query for a list and then one more per row. Each is fast, so no slow-query log shows it; the
 request is slow because of round trips.
 
-Find it: log query count per request in development and fail a test when a list endpoint exceeds
-a fixed number; in production look in `pg_stat_statements` for a trivial `WHERE id = $1` statement
-with a call count orders of magnitude above the rest.
+Find it: SQLx logs every statement through `tracing` (target `sqlx::query`, DEBUG; over 1 s, WARN).
+Count them per request in development and fail a test when a list endpoint exceeds a fixed number;
+in production look in `pg_stat_statements` for a trivial `WHERE id = $1` with a huge call count.
 
 | Cause | Fix |
 |---|---|
-| Loop that queries per item | One query with `WHERE parent_id = ANY($1)`, grouped in memory |
-| Lazy relation access in an ORM | Eager load: Drizzle `with: { ... }`, Prisma `include` or `select` |
-| GraphQL resolver per field | Batch per request with a DataLoader |
-| Each React server component fetching its own row | Fetch the list's data once in the parent, or batch behind a per-request cache (`0x:react-nextjs`) |
+| A loop with a query `.await`ed per item | One query with `WHERE parent_id = ANY($1)`, grouped into a `HashMap` by parent id |
+| Lazy relation loading in an ORM | Batch load: Diesel `belonging_to(&parents)` with `grouped_by`, SeaORM's loader (`load_many`) |
+| GraphQL resolver per field | Batch per request with a DataLoader (async-graphql ships one) |
+| Each Leptos resource or server function fetching its own row | One server function returns the page's data; SQLx stays behind the `ssr` feature, out of the WASM build (`0x:rust-frontend`) |
 | Count or sum per row | A grouped subquery or `LATERAL` join in the list query |
 
-An ORM that loads a relation with one extra query for all parents is fine; one query per parent is
-the bug. Pass id lists as a single array parameter (`= ANY($1::uuid[])`): the wire protocol allows
-at most 65,535 parameters per statement, and an `IN` list with one placeholder per id hits that
-and creates a different statement shape for every list length.
+One extra query for all parents is fine; one per parent is the bug. Bind the ids as one array
+(`.bind(&ids)`, or `&ids[..]` in a macro, for `= ANY($1)`): the wire protocol allows 65,535
+parameters per statement, and an `IN` list with a placeholder per id hits that and changes shape.
 
-## Reading and overriding ORM SQL
+## SQLx checked queries
 
-Turn on query logging in development (Drizzle `logger: true`, Prisma `log: ['query']`), or print one
-statement (Drizzle `.toSQL()`). Paste the statement with real parameters into `psql` under
-`EXPLAIN (ANALYZE, BUFFERS)` (`indexes-query-plans.md`).
+`query!`, `query_as!` and `query_scalar!` prepare each statement against a database at build time
+and generate Rust types from what Postgres reports: a misspelled column, a wrong parameter type or
+a column a migration dropped fails `cargo build` instead of a request.
 
-Override with hand-written SQL when the ORM selects every column of wide tables on a hot path,
-issues a query per row, joins in application memory, or cannot express the statement: window
-functions, `DISTINCT ON`, `LATERAL`, recursive CTEs, `ON CONFLICT ... WHERE`,
-`FOR UPDATE SKIP LOCKED`, multi-row updates from `VALUES`.
+```rust
+let row = sqlx::query!(
+    r#"SELECT i.id, i.paid_at, count(l.id) AS "line_count!",
+              sum(l.amount_minor)::bigint AS "lines_minor?"
+       FROM invoices i LEFT JOIN invoice_lines l ON l.invoice_id = i.id
+       WHERE i.id = $1
+       GROUP BY i.id"#,
+    invoice_id,
+)
+.fetch_optional(pool) // a missing invoice is None: a 404, never a panic
+.await?;
+// id: Uuid, paid_at: Option<OffsetDateTime>, line_count: i64, lines_minor: Option<i64>
+```
 
-Use the parameterized escape hatch (Drizzle's `sql` template tag, Prisma's `$queryRaw` tagged
-template). The `Unsafe` and `raw` variants concatenate strings; injection rules are in
-`0x:web-security`. Raw results are typed by assertion only, so parse them with a schema at the
-boundary. A query used in several places can live in a view that the ORM maps like a table.
+| Postgres | Rust | Rule |
+|---|---|---|
+| `NOT NULL` column; nullable column | `T`; `Option<T>` | Keep the `Option`: it is the schema telling the truth |
+| Expression or aggregate (`count`, `coalesce`) | `Option<T>`: nullability unknown | `AS "name!"` when it can never be NULL (a NULL then fails at run time); `AS "name?"` when SQLx wrongly infers non-null |
+| `bigint`, `integer`; `numeric`, including `sum()` of a `bigint` | `i64`, `i32`; SQLx's `rust_decimal` or `bigdecimal` feature | No unsigned types (`u64` does not bind); cast sums to `::bigint`; never `f64` for money |
+| `timestamptz`, `uuid`, `jsonb` | `time::OffsetDateTime` (or `chrono`), `uuid::Uuid`, `sqlx::types::Json<T>` | One time crate per project |
+| Text parsed into an enum or newtype | `AS "name: Type"` in a macro; `#[sqlx(try_from = "String")]` on a `FromRow` field | Parse once, at decode |
+
+The macros need that database in every build, so commit what they learned: after changing a query,
+run `cargo sqlx prepare --workspace` against a database with every migration applied and commit
+`.sqlx/`. CI and image builds set `SQLX_OFFLINE=true`; one CI job migrates a service Postgres and
+runs `cargo sqlx prepare --workspace --check`, which fails when a query or the schema changed
+without fresh data (`0x:ci-cd-release`). Offline builds are faster too: no round trip per macro.
+
+For SQL chosen at run time (optional filters, a user-picked sort), pick among a few complete checked
+statements with `match`; otherwise use `sqlx::QueryBuilder` with `push_bind` for every value. Since
+SQLx 0.9 the run-time functions take only a `&'static str` unless it is wrapped in `AssertSqlSafe`:
+review each one for injection (`0x:web-security`). Run-time `sqlx::query_as` with
+`#[derive(FromRow)]` checks types only as rows decode, so give each such query a `#[sqlx::test]`.
 
 ## Upserts and bulk writes
 
@@ -173,7 +196,7 @@ RETURNING events;
 
 | Rows | Method |
 |---|---|
-| Up to a few thousand | One multi-row `INSERT`, or arrays through `unnest` (below), in one transaction |
+| Up to a few thousand | One multi-row `INSERT`, or arrays through `unnest` (below, one bound `Vec` per column), in one transaction |
 | Tens of thousands | Batches of 1,000 to 5,000 rows, one transaction per batch |
 | Hundreds of thousands and up | `COPY` into a staging table, then `INSERT ... SELECT ... ON CONFLICT` |
 
@@ -206,9 +229,9 @@ LIMIT 21;                             -- page size + 1 tells whether another pag
 - The sort must end in a unique column, and the index must match the filter prefix and the sort.
   The row comparison `(a, b) < ($2, $3)` becomes a single index range; it needs every sort column
   in the same direction and NOT NULL.
-- JavaScript dates hold milliseconds, `timestamptz` holds microseconds. A cursor that passes
-  through a `Date` rounds, and rows are skipped. Carry the timestamp as text
-  (`created_at::text`) or page on a time-ordered id alone (`WHERE id < $2 ORDER BY id DESC`).
+- `timestamptz` holds microseconds; a cursor that passes through milliseconds (a JavaScript `Date`,
+  an epoch-milliseconds field) rounds, and rows are skipped. Encode the full value
+  (`time::OffsetDateTime` keeps it) or page on a time-ordered id alone (`WHERE id < $2 ORDER BY id DESC`).
 - Keyset gives next and previous, not "jump to page 40", and no total count. The opaque cursor
   format the API exposes is specified in `0x:api-design`.
 

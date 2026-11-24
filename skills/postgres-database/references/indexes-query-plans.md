@@ -92,7 +92,8 @@ by row; with `(created_at)` alone it may walk the whole index.
 
 **Partial indexes** cover a hot subset and cost almost nothing to maintain:
 `CREATE INDEX ... ON jobs (run_at) WHERE status = 'queued'`. The query must repeat the predicate
-with a literal; a parameter (`status = $1`) cannot be proven to match once a generic plan is used.
+with a literal written into the SQL text, not bound: a parameter (`status = $1`) cannot be proven
+to match once a generic plan is used, and SQLx's statement cache makes generic plans likely.
 Good targets: unprocessed rows, non-deleted rows, the rare value of a skewed status.
 
 **Expression indexes** must match the query's expression exactly: `ON accounts (lower(email))`
@@ -205,7 +206,7 @@ it sits a nested loop or a sort that only made sense for the estimate.
 | Skewed column with many distinct values | `ALTER TABLE t ALTER COLUMN c SET STATISTICS 1000;` then `ANALYZE t;` |
 | Correlated columns (`tenant_id` and `project_id`, city and postcode) multiplied as if independent | `CREATE STATISTICS s (dependencies, ndistinct, mcv) ON a, b FROM t;` then `ANALYZE t;` |
 | Filter on an expression or a JSONB key | Expression index (it collects statistics), or `CREATE STATISTICS` on the expression |
-| Prepared statement switched to a generic plan that is bad for a skewed parameter | `SET plan_cache_mode = force_custom_plan` for that role or transaction |
+| Prepared statement switched to a generic plan that is bad for a skewed parameter. SQLx prepares and caches every statement per connection, so from the sixth run Postgres may pick a generic plan | `ALTER ROLE ... SET plan_cache_mode = force_custom_plan`, or `SET LOCAL` in that transaction |
 | Planner avoids index scans on SSD storage | `random_page_cost = 1.1` (`postgres-operations.md`) |
 
 Postgres has no query hints in core. When statistics are right and the plan is still wrong, change

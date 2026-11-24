@@ -1,7 +1,7 @@
 # Relational modeling
 
 Read this when: designing or reviewing tables, keys, constraints and column types for a feature or
-a new product, or deciding ORM versus raw SQL and UUID versus integer keys.
+a new product, or choosing between SQLx, an ORM and raw SQL, or between UUID and integer keys.
 
 ## Order of work
 
@@ -39,12 +39,38 @@ CREATE INDEX invoices_account_id_idx ON invoices (account_id);
   Every nullable column doubles the states the code must handle; a nullable boolean has three.
 - Postgres indexes the referenced side of a foreign key (it must be unique) but not the referencing
   column. Index it yourself: joins need it, and without it every parent delete scans the child.
-- Name the constraints that users can hit. The driver error carries `code` (`23505` unique, `23503`
-  foreign key, `23514` check) and `constraint`; map the name to a field-level message instead of
+- Name the constraints that users can hit. SQLx's database error carries `code()` (`23505` unique,
+  `23503` foreign key, `23514` check), `kind()` and `constraint()`; map the name to a typed error
+  (below) and that to a field-level message in the one `IntoResponse` mapping, instead of
   pre-checking with a SELECT, which races.
-- `updated_at` does not maintain itself. Set it in one place (the ORM's on-update hook or one
-  trigger function), not both.
+- `updated_at` does not maintain itself, and SQLx has no on-update hook. Set it in one place: one
+  trigger function, or `updated_at = now()` in every `UPDATE` of the module that owns the table.
 - `snake_case` identifiers, never quoted mixed case. Follow the project's singular or plural habit.
+
+```rust
+use sqlx::PgPool;
+use uuid::Uuid;
+
+#[derive(Debug, thiserror::Error)]
+pub enum CreateAccountError {
+    #[error("email already registered")]
+    EmailTaken,
+    #[error(transparent)]
+    Db(#[from] sqlx::Error),
+}
+
+pub async fn create_account(pool: &PgPool, email: &str) -> Result<Uuid, CreateAccountError> {
+    let id = Uuid::now_v7(); // uuid crate with its `v7` feature
+    sqlx::query!("INSERT INTO accounts (id, email) VALUES ($1, $2)", id, email)
+        .execute(pool)
+        .await
+        .map_err(|e| match e.as_database_error().and_then(|d| d.constraint()) {
+            Some("accounts_email_lower_key") => CreateAccountError::EmailTaken,
+            _ => CreateAccountError::Db(e),
+        })?;
+    Ok(id)
+}
+```
 
 | Child relationship | `ON DELETE` | Why |
 |---|---|---|
@@ -60,7 +86,7 @@ tenant-sized deletes, delete children in batches first.
 | Rule | Mechanism |
 |---|---|
 | Value from a fixed set, numeric range, cross-column rule | `CHECK`, including multi-column checks such as the paid/paid_at pair above |
-| Case-insensitive unique email | `CREATE UNIQUE INDEX ... ON accounts (lower(email))` and query with `lower(email) = lower($1)` |
+| Case-insensitive unique email | `CREATE UNIQUE INDEX accounts_email_lower_key ON accounts (lower(email))` and query with `lower(email) = lower($1)` |
 | "At most one active/default/primary per parent" | Partial unique index: `CREATE UNIQUE INDEX ... ON subscriptions (account_id) WHERE status = 'active'` |
 | Unique among non-deleted rows | Partial unique index `WHERE deleted_at IS NULL` |
 | Unique where NULLs should collide | `UNIQUE NULLS NOT DISTINCT (a, b)` (15+); by default NULLs never conflict |
@@ -105,7 +131,10 @@ Enumerations, three options. `text` plus a named `CHECK` is the default: changin
 online constraint swap (`NOT VALID` then `VALIDATE`). A native `ENUM` is compact and what some ORMs
 generate; adding a value is cheap but a value can never be removed or reordered without recreating
 the type, so use it only for sets that are stable. A lookup table with a foreign key fits when the
-values carry attributes (label, sort order) or are edited at runtime.
+values carry attributes (label, sort order) or are edited at runtime. In Rust, parse the `text`
+value into an enum once, at decode: `#[sqlx(try_from = "String")]` on a `FromRow` field, or
+`TryFrom<String>` on a macro's `String` field. A native `ENUM` maps to a Rust enum with
+`#[derive(sqlx::Type)]` and `#[sqlx(type_name = "...")]`.
 
 When a boolean will prompt the question "since when?", store a nullable timestamp instead
 (`archived_at`, `verified_at`).
@@ -116,9 +145,12 @@ Store an integer count of the currency's minor unit in `bigint` next to an expli
 currency code, as in the baseline table. Reasons: integer arithmetic is exact, the payment provider
 speaks the same format, and the amount is meaningless without its currency.
 
-- The number of minor-unit digits is per currency (JPY 0, USD 2, KWD 3). Convert for display with
-  a currency library or `Intl.NumberFormat`, never by dividing by 100.
-- Never add amounts of different currencies; aggregate `GROUP BY currency`. Store a converted
+- The number of minor-unit digits is per currency (JPY 0, USD 2, KWD 3). Format for display from
+  that exponent and the reader's locale (a maintained formatting crate, or `Intl.NumberFormat`
+  where the browser renders it), never by dividing by 100.
+- Never add amounts of different currencies; aggregate `GROUP BY currency`. In Rust, keep amount
+  and currency in one type whose addition fails on a mismatch, and add with `checked_add`: release
+  builds wrap on overflow unless the profile sets `overflow-checks = true`. Store a converted
   reporting amount as a separate column pair with the rate and its timestamp.
 - Unit prices finer than a minor unit (per-token, per-request pricing) and tax or FX rates are
   `numeric`. Round once, at the invoice-line or invoice level, with a rule written down, and store
@@ -138,34 +170,37 @@ speaks the same format, and the amount is meaningless without its currency.
 | Natural key | Truly immutable external codes (ISO country or currency) | Emails, usernames, SKUs and slugs change: give them `UNIQUE`, not the primary key |
 
 UUIDv7 is time-ordered, so inserts land at the right edge of the index like a sequence, and it can
-be generated in the application before the insert (`uuidv7()` in SQL from PostgreSQL 18, a library
-before that). No UUID version is a secret: authorization still applies, and tokens need a separate
+be generated in the application before the insert (`Uuid::now_v7()`, with the `uuid` crate's `v7`
+feature) or in SQL with `uuidv7()` from PostgreSQL 18. No UUID version is a secret: authorization still applies, and tokens need a separate
 random value. Use `IDENTITY` rather than `serial`, and `ALWAYS` so a stray explicit id cannot
 desynchronize the sequence. Pick one scheme per project and keep it.
 
 Join tables take a composite key in the lookup order, `PRIMARY KEY (team_id, user_id)`, plus an
 index on the reverse `(user_id, team_id)`.
 
-## ORM or raw SQL
+## SQLx, an ORM, or raw SQL
 
 | Situation | Choice |
 |---|---|
-| Greenfield TypeScript | A typed SQL-first layer (Drizzle): schema in code, queries shaped like SQL, migrations emitted as SQL files |
-| Project already on Prisma or another ORM | Keep it; drop to its raw-SQL escape hatch where needed |
-| Reports, window functions, recursive queries, bulk writes, locking clauses | Raw parameterized SQL, even inside an ORM project |
-| No ORM wanted | A query builder (Kysely) or a driver with tagged templates, plus generated types |
+| Greenfield | SQLx: plain SQL in the checked macros, verified against the migrated schema at build time, offline data committed (`sql-queries.md`); migrations as SQL files (`migrations.md`) |
+| Project already on SeaORM or Diesel | Keep it; drop to its raw SQL (Diesel `sql_query`, SeaORM `Statement::from_sql_and_values`) where its DSL cannot say the statement |
+| Mostly CRUD screens over simple tables, and entities with relations are wanted | SeaORM, which is async and runs on SQLx; the rules below still apply |
+| Diesel's typed query DSL is wanted | Its core API is blocking: on Tokio use `diesel-async` or `spawn_blocking`, never a direct call from an async handler, which stalls every task on that thread |
+| Reports, window functions, recursive queries, bulk writes, locking clauses | Hand-written SQL, even in an ORM project; under SQLx it is simply the default |
+| Filters or sort order chosen at run time | A few complete checked statements picked by `match`; otherwise `sqlx::QueryBuilder` with bound values |
 
 Rules that hold for any of them:
 
-- The migration files are SQL that gets read and reviewed; the ORM is a generator, not the author.
-- Schema-sync commands (`drizzle-kit push`, `prisma db push`, `synchronize: true`) are for
-  Prototype databases only. They diff and apply with no review and will drop a column to "fix" a
-  rename.
-- What the schema DSL cannot express (some ORMs lack CHECK, partial or expression indexes,
+- The migration files are SQL that gets read and reviewed; a generator (SeaORM's, or Diesel's
+  `migration generate --diff-schema`) writes a draft, not the migration.
+- Commands that diff code against a database and apply the difference without a reviewed file are
+  for Prototype databases only. They will drop a column to "fix" a rename.
+- What a schema DSL cannot express (some ORMs lack CHECK, partial or expression indexes,
   exclusion constraints) goes into a hand-written SQL migration. Then confirm the next generated
   migration does not try to drop it.
-- Types follow the database: infer or generate them from the schema and fail CI on drift
-  (`0x:code-quality`).
+- Types follow the database. SQLx checks each query against the migrated schema, and CI fails on
+  drift with `cargo sqlx prepare --check`; with Diesel, regenerate `schema.rs`
+  (`diesel print-schema`) and fail CI when it changes (`0x:code-quality`).
 
 ## JSONB without losing integrity
 
@@ -173,8 +208,11 @@ Use it for attributes that vary per row (per-category product fields, user-defin
 provider payloads kept verbatim, and settings bags. Do not use it for anything filtered, joined,
 summed or constrained on most requests; that is a column.
 
-- Validate at the boundary with a schema (Zod) and store a `schema_version` key so old shapes can
-  be migrated. Add `CHECK (jsonb_typeof(attrs) = 'object')`.
+- Parse at the boundary into a serde struct checked with garde (its `derive` feature), write it as
+  `sqlx::types::Json<T>`, and keep a `schema_version` key so old shapes can be migrated. Add
+  `CHECK (jsonb_typeof(attrs) = 'object')`. Decoding `Json<T>` fails the whole row when one stored
+  document no longer fits `T`: add fields with `#[serde(default)]`, never rename or retype one in
+  place, and migrate old documents before tightening the struct.
 - Promote a hot key to a real column or a stored generated column, which can be indexed, checked
   and made NOT NULL: `sku text GENERATED ALWAYS AS (attrs ->> 'sku') STORED`. Write `STORED`:
   from PostgreSQL 18 the default is `VIRTUAL`, and that version cannot index a virtual column.
@@ -198,13 +236,14 @@ summed or constrained on most requests; that is a column.
 Soft delete has a standing cost: every query must exclude deleted rows (one missed filter leaks
 them), unique constraints must be partial, child rows stay behind, and where privacy law gives
 people a right to deletion, that request still needs a real delete (`0x:privacy-compliance`;
-`0x:data-stores` owns deletion across stores). Enforce the filter in one place, such as a view or
-the data-access layer's base query.
+`0x:data-stores` owns deletion across stores). Enforce the filter in one place, such as a view the
+queries read from; with SQLx there is no shared base query to hang it on.
 
 History table: `(id, table_name, row_id, action, actor_id, at, old jsonb, new jsonb)`. Written by
 application code it carries context but can be bypassed; written by a trigger it cannot be
-bypassed but needs the actor passed in, with `SELECT set_config('app.user_id', $1, true)` inside
-the transaction and `current_setting('app.user_id', true)` in the trigger. Revoke UPDATE and DELETE
+bypassed but needs the actor passed in, with `SELECT set_config('app.user_id', $1, true)` run on
+`&mut *tx` (the transaction's own connection) and `current_setting('app.user_id', true)` in the
+trigger. Revoke UPDATE and DELETE
 on it from the application role (`backup-recovery.md`). Security audit logging requirements are in
 `0x:web-security`.
 

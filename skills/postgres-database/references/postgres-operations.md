@@ -38,27 +38,28 @@ rarely the fix.
 
 Budget: (web instances x pool max) + (workers x pool max) + 10 for migrations, admin and
 monitoring must stay at or below 80 percent of `max_connections`. Count the maximum instance
-number during a rolling deploy, when old and new run together. A pool of 5 to 10 per Node.js
-process is usually plenty; a bigger pool does not make queries faster, it only moves the queue
-into the database.
+number during a rolling deploy, when old and new run together. SQLx's default of 10 per process
+is usually plenty, since one Tokio process serves every request through it; a bigger pool does
+not make queries faster, it only moves the queue into the database.
 
-```ts
-import { Pool } from "pg";
+```rust
+use std::{str::FromStr, time::Duration};
+use sqlx::postgres::{PgConnectOptions, PgPool, PgPoolOptions};
 
-const g = globalThis as unknown as { pgPool?: Pool };
-export const pool = (g.pgPool ??= new Pool({
-  connectionString: process.env.DATABASE_URL, // the pooled URL at runtime
-  max: 10,                        // per process; must fit the connection budget
-  connectionTimeoutMillis: 3_000, // fail fast instead of queueing forever
-  idleTimeoutMillis: 30_000,
-  maxLifetimeSeconds: 1_800,      // recycle so connections rebalance after a failover
-  application_name: "web",
-}));
+pub async fn connect(database_url: &str) -> Result<PgPool, sqlx::Error> {
+    let options = PgConnectOptions::from_str(database_url)?.application_name("web"); // pooled URL
+    PgPoolOptions::new()
+        .max_connections(10)                        // per process; must fit the connection budget
+        .acquire_timeout(Duration::from_secs(3))    // the default is 30 s: fail fast instead
+        .max_lifetime(Duration::from_secs(30 * 60)) // the default; rebalances after a failover
+        .connect_with(options) // connects now, so a bad URL fails startup, not the first request
+        .await
+}
 ```
 
-Create the pool once per process. In Next.js development, hot reload re-evaluates modules and
-leaks a pool each time unless it is cached on `globalThis` as above. Set `application_name` per
-service so sessions can be attributed.
+Build the pool once in `main` and put clones in Axum state: a clone is a handle to the same pool,
+and a pool built per request opens connections until the budget is gone. An exhausted pool fails
+with `sqlx::Error::PoolTimedOut`: map it to 503. `application_name` attributes each session.
 
 | Error or symptom | Cause | Fix |
 |---|---|---|
@@ -66,7 +67,7 @@ service so sessions can be attributed.
 | Many sessions `idle` | Pools too large, or one pool per request | One shared pool; lower `max` |
 | Many `idle in transaction` | Code opens a transaction and awaits something else | Fix the code path; set the idle-in-transaction timeout |
 | Many `active` for seconds | Slow queries or lock waits, not a connection problem | `indexes-query-plans.md`, `transactions-concurrency.md` |
-| Pool acquire timeouts while the database is calm | Pool smaller than in-process concurrency, or connections leaked without release | Always release in `finally`; check for a client held across awaits |
+| Pool acquire timeouts while the database is calm | A `PoolConnection` or `Transaction` held across a slow `.await` (an HTTP call), or a Tokio worker blocked by synchronous work, so the tasks holding connections cannot run | Acquire late and drop early (dropping returns the connection); blocking and CPU-heavy work goes to `spawn_blocking` |
 
 ## PgBouncer and serverless
 
@@ -77,15 +78,17 @@ more than a few hundred clients. Use the provider's pooler when it has one.
 - **Transaction mode** is the point: a server connection is lent for one transaction, so thousands
   of clients share tens of connections. Session mode multiplexes nothing.
 - Transaction mode breaks session state: session-level `SET` (use `SET LOCAL`), session advisory
-  locks, `LISTEN`, temporary tables kept across transactions, SQL-level `PREPARE`. Protocol-level
-  prepared statements work on PgBouncer 1.21 and later with `max_prepared_statements` set above zero
-  (its default changed between releases); on older or other poolers, disable them in the driver.
+  locks, `LISTEN`, temporary tables kept across transactions, SQL-level `PREPARE`. SQLx prepares
+  every statement that has parameters; PgBouncer supports that from 1.21 with
+  `max_prepared_statements` above zero (its default changed between releases). On older or other
+  poolers use session mode: turning off SQLx's statement cache does not stop it preparing.
 - Keep two URLs. Pooled for application traffic. Direct for migrations, `pg_dump`, logical
   replication, `LISTEN/NOTIFY` and long maintenance sessions. Some providers' direct hosts are
   IPv6-only; a CI runner without IPv6 then needs the session-mode pooler for migrations.
-- In a function, set the client pool to 1 where an instance serves one request at a time, up to
-  about 5 where it serves many concurrently, against the pooled URL, and cap function concurrency
-  (`0x:cloud-infrastructure`). Edge runtimes without TCP need the provider's HTTP or WebSocket driver.
+- In a function (AWS Lambda through cargo-lambda), build the pool in `main`, outside the handler,
+  with `max_connections` 1 where an instance serves one request at a time, up to about 5 where it
+  serves many, against the pooled URL; cap function concurrency (`0x:cloud-infrastructure`). SQLx
+  needs TCP and Tokio, so it does not run in WASM edge runtimes.
 
 ```ini
 [pgbouncer]
@@ -114,14 +117,12 @@ GRANT CONNECT ON DATABASE app TO app_migrator, app_rw, app_ro;
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 GRANT USAGE, CREATE ON SCHEMA public TO app_migrator;   -- or make it the schema's owner
 GRANT USAGE ON SCHEMA public TO app_rw, app_ro;
-
 ALTER DEFAULT PRIVILEGES FOR ROLE app_migrator IN SCHEMA public
   GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO app_rw;
 ALTER DEFAULT PRIVILEGES FOR ROLE app_migrator IN SCHEMA public
   GRANT USAGE, SELECT ON SEQUENCES TO app_rw;
 ALTER DEFAULT PRIVILEGES FOR ROLE app_migrator IN SCHEMA public
   GRANT SELECT ON TABLES TO app_ro;
-
 ALTER ROLE app_rw CONNECTION LIMIT 40;
 ALTER ROLE app_ro SET default_transaction_read_only = on;
 ALTER ROLE app_ro SET statement_timeout = '60s';
@@ -162,8 +163,7 @@ GROUP BY 1, 2, 3 ORDER BY count(*) DESC;
 
 SELECT pid, usename, application_name, state, wait_event_type, wait_event,
        now() - xact_start AS xact_age, now() - query_start AS query_age, left(query, 80) AS query
-FROM pg_stat_activity
-WHERE backend_type = 'client backend' AND state <> 'idle' AND pid <> pg_backend_pid()
+FROM pg_stat_activity WHERE backend_type = 'client backend' AND state <> 'idle' AND pid <> pg_backend_pid()
 ORDER BY xact_start NULLS LAST;
 ```
 
@@ -203,8 +203,8 @@ parent before each end-to-end test run.
 - Scale-to-zero means the first connection after idle pays a cold start. Turn it off for the
   production database; keep it on for branches.
 - Give branches a time to live. Forgotten branches accumulate storage cost and copies of data.
-- Unit and integration tests are faster and work offline against a local Postgres in a container.
-  Branching is a provider feature, not a Postgres one: keep the workflow replaceable.
+- Tests are faster and work offline against a local Postgres in a container, where `#[sqlx::test]`
+  gives each test a fresh migrated database. Branching is a provider feature: keep it replaceable.
 
 ## Vacuum, bloat and wraparound
 

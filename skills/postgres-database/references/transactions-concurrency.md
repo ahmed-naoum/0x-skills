@@ -10,20 +10,23 @@ Any change that touches more than one row or table and must not be seen half-don
 transaction: order plus items, transfer between balances, state change plus its audit row, row
 plus the job that processes it.
 
-- Inside an ORM transaction callback, every query must use the transaction handle (`tx`), not the
-  global client. A query on the global client runs on another connection, outside the transaction:
-  it does not roll back, does not see uncommitted rows, and with a pool of one it deadlocks the
-  process against itself.
+- After `let mut tx = pool.begin().await?`, every statement runs on `&mut *tx`, never on the pool
+  in application state. A statement on the pool runs on another connection, outside the
+  transaction: it does not roll back, does not see uncommitted rows, and with a pool of one (or an
+  exhausted one) it waits on itself until the acquire timeout. Functions that run several
+  statements take `&mut PgConnection`: an `impl PgExecutor` argument is used up by its first query.
+- A `Transaction` dropped without `commit()` rolls back, so returning early with `?` is safe;
+  nothing is committed unless `commit().await` returned `Ok`.
 - After any error inside a transaction, Postgres rejects every further statement ("current
-  transaction is aborted") until rollback. Do not catch a constraint error and continue in the
-  same transaction. Avoid the error (`ON CONFLICT`), or wrap the risky statement in a `SAVEPOINT`.
+  transaction is aborted") until rollback. Do not handle a constraint error and keep using the
+  same `tx`. Avoid the error (`ON CONFLICT`), or wrap the risky statement in a `SAVEPOINT`.
 - Let constraints arbitrate. "SELECT to check, then INSERT" races however it is wrapped; a unique
   or exclusion constraint plus handling of the violation does not.
 - Keep transactions short: no user think time, no network calls, no slow computation between
-  `BEGIN` and `COMMIT`. A transaction holds a pooled connection and its row locks for its entire
-  duration, and an open one stops vacuum from cleaning rows anywhere in the database.
-- When an ORM reports its own transaction timeout (Prisma's interactive transactions have one),
-  shorten the transaction rather than raise the limit.
+  `BEGIN` and `COMMIT`; no `.await` between `begin()` and `commit()` except statements on `tx`,
+  and CPU-heavy work goes to `spawn_blocking` before the transaction opens. A transaction holds a
+  pooled connection and its row locks for its entire duration, and an open one stops vacuum from
+  cleaning rows anywhere in the database.
 
 ## Races and their fixes
 
@@ -51,15 +54,16 @@ WHERE id = $1 AND version = $2;
 
 The guarded update is safe at the default level because an `UPDATE` that waits for a row lock
 re-checks its `WHERE` against the newly committed row before applying. Keep a `CHECK (qty >= 0)`
-as the backstop. The HTTP side of the optimistic check (ETag, `If-Match`, 409 or 412) is in
-`0x:api-design`.
+as the backstop, and read the count from `rows_affected()` on the `execute` result. The HTTP side
+of the optimistic check (ETag, `If-Match`, 409 or 412) is in `0x:api-design`.
 
 ## External calls stay outside transactions
 
 A payment, email or third-party API call inside a transaction holds a connection and row locks for
 the length of a network round trip, exhausts the pool when the provider slows down, and cannot be
 rolled back: if the transaction fails after the call succeeded, the customer was charged and the
-database has no record.
+database has no record. Nothing in Rust stops a `reqwest` call between `begin()` and `commit()`;
+look for one in review.
 
 1. Transaction one: insert the intent with status `pending` and an idempotency key. Commit.
 2. Call the provider with that key, with a timeout.
@@ -85,36 +89,65 @@ the invariant is hard to lock; every transaction that touches that data must the
 serializable, and all of them need the retry wrapper. Keep serializable transactions short; long
 ones multiply false conflicts.
 
-Retry the whole transaction on `40001` (serialization failure) and `40P01` (deadlock). The
-callback must be safe to run again, which is one more reason it contains no external calls.
+Retry the whole transaction on `40001` (serialization failure) and `40P01` (deadlock). Each attempt
+opens, uses and commits its own transaction, so the helper takes a closure that starts a fresh
+attempt rather than lending a transaction to a callback; the attempt must be safe to run again, one
+more reason it contains no external calls. Since SQLx 0.9 `begin_with`, like `query`, takes a
+`&'static str` unless it is wrapped in `AssertSqlSafe`: keep the isolation level a literal.
 
-```ts
-import { Pool, type PoolClient } from "pg";
+```rust
+use std::time::Duration;
+use sqlx::{PgConnection, PgPool};
 
-const RETRYABLE = new Set(["40001", "40P01"]); // serialization_failure, deadlock_detected
-type Isolation = "READ COMMITTED" | "REPEATABLE READ" | "SERIALIZABLE"; // interpolated: never a free string
-
-export async function withTransaction<T>(
-  pool: Pool,
-  fn: (tx: PoolClient) => Promise<T>,
-  { isolation = "READ COMMITTED" as Isolation, maxAttempts = 4 } = {},
-): Promise<T> {
-  for (let attempt = 1; ; attempt++) {
-    const tx = await pool.connect();
-    try {
-      await tx.query(`BEGIN ISOLATION LEVEL ${isolation}`);
-      const result = await fn(tx);
-      await tx.query("COMMIT"); // a serializable COMMIT can itself fail with 40001
-      return result;
-    } catch (err) {
-      await tx.query("ROLLBACK").catch(() => {});
-      const code = (err as { code?: string }).code ?? "";
-      if (!RETRYABLE.has(code) || attempt >= maxAttempts) throw err;
-    } finally {
-      tx.release();
+/// Reruns `attempt` on 40001 or 40P01 with jittered backoff; each call runs its own transaction.
+pub async fn with_retry<T, F, Fut>(max_attempts: u32, mut attempt: F) -> Result<T, sqlx::Error>
+where
+    F: FnMut() -> Fut,
+    Fut: Future<Output = Result<T, sqlx::Error>>,
+{
+    let mut n = 1;
+    loop {
+        let result = attempt().await;
+        let code = result.as_ref().err().and_then(|e| e.as_database_error()).and_then(|e| e.code());
+        if n >= max_attempts || !code.is_some_and(|c| c == "40001" || c == "40P01") {
+            return result;
+        }
+        let backoff = Duration::from_millis(25 << n).mul_f64(rand::random_range(0.5..1.5));
+        tokio::time::sleep(backoff).await;
+        n += 1;
     }
-    await new Promise((r) => setTimeout(r, 25 * 2 ** attempt * (0.5 + Math.random())));
-  }
+}
+
+/// Returns false when the allocation would exceed the project's budget.
+pub async fn allocate(pool: &PgPool, project: i64, amount: i64) -> Result<bool, sqlx::Error> {
+    with_retry(4, || async {
+        let mut tx = pool.begin_with("BEGIN ISOLATION LEVEL SERIALIZABLE").await?;
+        if !try_allocate(&mut tx, project, amount).await? {
+            return Ok(false); // dropping tx rolls back
+        }
+        tx.commit().await?; // a serializable COMMIT can itself fail with 40001
+        Ok(true)
+    })
+    .await
+}
+
+// Takes `&mut PgConnection` so the caller decides the transaction: pass `&mut tx`.
+async fn try_allocate(conn: &mut PgConnection, project: i64, amount: i64) -> Result<bool, sqlx::Error> {
+    let used = sqlx::query_scalar!(
+        r#"SELECT coalesce(sum(amount_minor), 0)::bigint AS "used!"
+           FROM allocations WHERE project_id = $1"#,
+        project
+    )
+    .fetch_one(&mut *conn) // reborrow: passing `conn` itself would move it
+    .await?;
+    let inserted = sqlx::query!(
+        "INSERT INTO allocations (project_id, amount_minor)
+         SELECT id, $2 FROM projects WHERE id = $1 AND budget_minor >= $3",
+        project, amount, used + amount
+    )
+    .execute(&mut *conn)
+    .await?;
+    Ok(inserted.rows_affected() == 1)
 }
 ```
 
@@ -122,10 +155,7 @@ export async function withTransaction<T>(
 
 Plain `SELECT` never blocks and is never blocked by writers. To hold a row steady between a read
 and a later write in the same transaction, lock it in the read:
-
-```sql
-SELECT id, budget_minor FROM projects WHERE id = $1 FOR NO KEY UPDATE;
-```
+`SELECT id, budget_minor FROM projects WHERE id = $1 FOR NO KEY UPDATE`.
 
 | Clause | Effect |
 |---|---|
@@ -171,21 +201,21 @@ one-off overrides (`SET LOCAL statement_timeout = '5min'` in a report). The numb
 points: set them above the slowest legitimate statement of that role and tighten over time. Set
 them in the migration that creates the roles, at the latest before Launch.
 
+A request timeout (tower-http `TimeoutLayer`) or a client disconnect drops the handler's future
+mid-query. SQLx sends no cancel request: the statement runs on in Postgres until it ends or
+`statement_timeout` stops it, which is why that timeout sits below the request timeout.
+
 ## Queues with SKIP LOCKED, single-run work with advisory locks
 
-Prefer a maintained Postgres-backed queue library (pg-boss and Graphile Worker are the usual Node.js
-choices; check for recent releases before adding one); retries, backoff and dead-letter policy are
-in `0x:backend-architecture`. Underneath, they all claim work like this:
+Prefer a maintained Postgres-backed queue crate (apalis with its Postgres backend is one; check for
+recent releases before adding it) or a jobs table you own; retries, backoff and dead-letter policy
+are in `0x:backend-architecture`. Underneath, they all claim work like this:
 
 ```sql
-UPDATE jobs
-SET status = 'running', locked_at = now(), attempts = attempts + 1
+UPDATE jobs SET status = 'running', locked_at = now(), attempts = attempts + 1
 WHERE id IN (
-  SELECT id FROM jobs
-  WHERE status = 'queued' AND run_at <= now()
-  ORDER BY priority, run_at
-  LIMIT 10
-  FOR UPDATE SKIP LOCKED
+  SELECT id FROM jobs WHERE status = 'queued' AND run_at <= now()
+  ORDER BY priority, run_at LIMIT 10 FOR UPDATE SKIP LOCKED
 )
 RETURNING id, kind, payload, attempts;
 ```
@@ -197,6 +227,9 @@ RETURNING id, kind, payload, attempts;
 - Index only the claimable rows: `CREATE INDEX ... ON jobs (priority, run_at) WHERE status = 'queued'`.
 - Queue tables churn. Delete or partition finished jobs and give the table aggressive autovacuum
   settings (`postgres-operations.md`), or the claim query slows as dead rows pile up.
+- Bound the worker: claim at most as many rows as free slots (a `tokio::sync::Semaphore` or a
+  capped `JoinSet`), never one unbounded `tokio::spawn` per row. A panic in a job task ends that
+  task only, silently unless its result is collected: log each `JoinError`; the reaper requeues.
 
 Advisory locks are application-defined locks keyed by a 64-bit number, with no table behind them.
 
@@ -208,7 +241,9 @@ SELECT pg_try_advisory_xact_lock(hashtextextended('nightly-invoice-run', 0)) AS 
 SELECT pg_advisory_xact_lock(hashtextextended('invoice-number:' || $1, 0));
 ```
 
-Use the transaction-scoped `_xact_` functions. Session-scoped locks (`pg_advisory_lock`) survive
+Use the transaction-scoped `_xact_` functions, and run them on `&mut *tx`: sent to the pool, the
+statement is its own transaction and the lock is gone when it returns. Session-scoped locks
+(`pg_advisory_lock`, and SQLx's `PgAdvisoryLock`) survive
 commit, must be released explicitly, and break under transaction pooling, where the unlock can
 reach a different server connection. The key space is shared by the whole database, so derive keys
 from a namespaced string. They coordinate clients of one database only; locks spanning systems
@@ -217,14 +252,10 @@ need fencing tokens (`0x:backend-architecture`).
 ## Diagnosing blocked queries and deadlocks
 
 ```sql
-SELECT blocked.pid                  AS blocked_pid,
-       blocked.application_name     AS blocked_app,
-       now() - blocked.query_start  AS waiting_for,
-       left(blocked.query, 80)      AS blocked_query,
-       blocker.pid                  AS blocker_pid,
-       blocker.state                AS blocker_state,
-       now() - blocker.xact_start   AS blocker_xact_age,
-       left(blocker.query, 80)      AS blocker_last_query
+SELECT blocked.pid AS blocked_pid, blocked.application_name AS blocked_app,
+       now() - blocked.query_start AS waiting_for, left(blocked.query, 80) AS blocked_query,
+       blocker.pid AS blocker_pid, blocker.state AS blocker_state,
+       now() - blocker.xact_start AS blocker_xact_age, left(blocker.query, 80) AS blocker_last_query
 FROM pg_stat_activity AS blocked
 JOIN LATERAL unnest(pg_blocking_pids(blocked.pid)) AS b(pid) ON true
 JOIN pg_stat_activity AS blocker ON blocker.pid = b.pid
@@ -235,7 +266,7 @@ Follow the chain to the session that is blocking but not itself blocked.
 
 | Root blocker looks like | Meaning | Action |
 |---|---|---|
-| `idle in transaction`, old `xact_start` | Application opened a transaction and stopped (awaited a network call, lost the handle, crashed mid-flow) | Terminate it (`postgres-operations.md`), then fix the code path and set the idle timeout |
+| `idle in transaction`, old `xact_start` | Application opened a transaction and stopped (awaited a network call while holding `tx`, kept a `Transaction` alive in a long-lived struct, crashed mid-flow) | Terminate it (`postgres-operations.md`), then fix the code path and set the idle timeout |
 | `active` long-running statement | A slow report, backfill or missing index | Cancel if safe; move or batch the work |
 | A waiting `ALTER TABLE` with many sessions behind it | Lock queue: the DDL waits for one old transaction, and every new query on that table waits behind the DDL | Cancel the DDL now; rerun it with `lock_timeout` (`migrations.md`) |
 | `active` autovacuum "(to prevent wraparound)" | Mandatory freeze holding a weak lock that conflicts with DDL | Do not kill it; reschedule the DDL |
