@@ -8,43 +8,72 @@ local, preview and performance environments need realistic data.
 
 A shared fixture file (one big seed all tests read) couples every test to every other: changing
 a row for one test breaks ten, and no test shows which data it depends on. Each test should
-create exactly the data it needs and state only the fields that matter to it.
+create exactly the data it needs and state only the fields that matter to it. A factory struct
+with `Default` and struct-update syntax does this. Fragment (`Role` is the app's enum, `User`
+its row type):
 
-```ts
-let n = 0;
-export async function createUser(db: Db, overrides: Partial<NewUser> = {}) {
-  n += 1;
-  const [user] = await db.insert(users).values({
-    email: `user${n}-${crypto.randomUUID()}@example.test`,
-    name: `User ${n}`,
-    role: 'member',
-    ...overrides,
-  }).returning();
-  return user;
+```rust
+static SEQ: AtomicU64 = AtomicU64::new(0);
+
+/// Valid and unique by default; a test states only the fields it is about.
+pub struct UserFactory {
+    pub email: String,
+    pub name: String,
+    pub role: Role,
 }
 
-// in a test: only the relevant fact is visible
-const admin = await createUser(db, { role: 'admin' });
+impl Default for UserFactory {
+    fn default() -> Self {
+        let n = SEQ.fetch_add(1, Ordering::Relaxed);
+        Self {
+            email: format!("user{n}-{}@example.test", Uuid::new_v4()),
+            name: format!("User {n}"),
+            role: Role::Member,
+        }
+    }
+}
+
+impl UserFactory {
+    pub async fn insert(self, pool: &PgPool) -> sqlx::Result<User> {
+        sqlx::query_as("INSERT INTO users (email, name, role) VALUES ($1, $2, $3) RETURNING id, email")
+            .bind(self.email)
+            .bind(self.name)
+            .bind(self.role.as_str())
+            .fetch_one(pool)
+            .await
+    }
+}
+
+#[sqlx::test]
+async fn only_admins_can_invite(pool: PgPool) -> sqlx::Result<()> {
+    let admin = UserFactory { role: Role::Admin, ..Default::default() }.insert(&pool).await?;
+    let member = UserFactory::default().insert(&pool).await?;
+    // ...
+    Ok(())
+}
 ```
 
 Rules:
 
-- **Valid by default.** A factory with no arguments produces a row that passes every
+- **Valid by default.** A factory with no overrides produces a row that passes every
   constraint. Tests override only what they are about.
 - **Unique by construction.** Emails, slugs and external IDs include a counter or UUID, so
   parallel tests and re-runs never collide on unique indexes.
-- **Factories create their parents.** `createInvoice()` makes its customer and organization
-  unless given one. Provide scenario helpers for common graphs
-  (`createOrgWithMembers({ members: 3 })`) so setup stays one line.
-- **Go through the same code or constraints as production.** Insert through the typed schema
-  so a new required column breaks the factory once, not 200 tests.
+- **Factories create their parents.** An invoice factory makes its customer and organization
+  unless given one. Provide scenario helpers for common graphs (an org with three members) so
+  setup stays one line.
+- **Go through the same constraints as production.** A new `NOT NULL` column then breaks the
+  factory once, not 200 tests.
 - **No randomness that changes behavior.** Random names are fine; a random role or plan makes
-  failures unreproducible. If a faker library is used, seed it (`faker.seed(1)`).
-- **Builders for pure objects**: for unit tests, a plain function returning an in-memory
-  object (`buildSubscription({ status: 'past_due' })`) with no database.
+  failures unreproducible.
+- **Builders for pure values**: for unit tests, a function returning a valid in-memory struct,
+  overridden with struct-update syntax (`Subscription { status: Status::PastDue, ..sample() }`).
+- **Where factories live.** Code under `#[cfg(test)]` is invisible to other crates, to the
+  `tests/` directory and to binaries. Put factories in a small test-support crate that other
+  crates take as a dev-dependency and the seed binary depends on.
 
 Reference data that is truly static and read-only (countries, plan catalog) can be loaded once
-by migrations or a base seed; that is the only acceptable shared data.
+by migrations; that is the only acceptable shared data.
 
 ## Seed scripts for local and preview environments
 
@@ -52,8 +81,9 @@ A new clone and every preview deploy should reach a usable, populated app with o
 Without it, each developer and each agent session builds data by clicking, and bugs that need
 volume never appear before production.
 
-- One idempotent script (`pnpm db:seed`), built on the same factories as the tests so it
-  cannot drift from the schema. Safe to run twice: upsert on stable keys or reset first.
+- One idempotent seed binary (`cargo run -p testkit --bin seed`, or an `xtask` command),
+  built on the same factories as the tests so it cannot drift from the schema. Safe to run
+  twice: upsert on stable keys or reset first.
 - Deterministic: fixed seed, fixed reference "now", so screenshots and demos are stable.
 - Content that exercises the UI: an empty account, a typical account, and a heavy account
   (thousands of rows to force pagination and slow queries); long names, non-Latin text, a
@@ -71,82 +101,109 @@ volume never appear before production.
 
 | Method | How | Speed | Limits |
 |---|---|---|---|
-| Transaction per test | Begin before each test, run the code on that connection, roll back after | Fastest | Code under test must use the test's connection; cannot test commit behavior, multiple connections, real concurrency, or code that manages its own top-level transactions unless they become savepoints |
-| Truncate between tests | `TRUNCATE ... RESTART IDENTITY CASCADE` of the touched tables after each test | Medium; cost grows with table count | Tests in the same database cannot run in parallel; Vitest runs test files in parallel by default, so give each worker its own database or set `fileParallelism: false` |
-| Database per worker | Create one database per parallel worker from a migrated template, then transaction or truncate inside it | Fast, parallel-safe | Slightly more setup; the default once the suite is parallel |
-| Unique data, shared database | Every test creates its own tenant and only queries within it | Fast, parallel-safe, also works for end-to-end against a deployed app | Global queries (counts, "latest N") and unique global keys still collide |
+| Database per test | `#[sqlx::test]` creates one, migrates it and hands the test a pool | Fast enough for most suites; parallel-safe | Migration time per test grows with the migration count |
+| Transaction per test | The test opens a transaction, passes it to the code, drops it to roll back | Fastest | Code must take a connection (`&mut PgConnection`), not the pool; cannot test commits, several connections or real concurrency |
+| Truncate between tests | `TRUNCATE ... RESTART IDENTITY CASCADE` of the touched tables | Medium | Tests sharing the database cannot run in parallel |
+| Unique data, shared database | Every test creates its own tenant and queries only within it | Fast, parallel-safe, also works for end-to-end against a deployed app | Global queries (counts, "latest N") and global unique keys still collide |
 
-Default: database per worker created from a template, with per-test transaction rollback where
-the code allows and truncation for the tests that need real commits (concurrency, multiple
-connections). In Postgres:
+Default: `#[sqlx::test]`. Designing functions to take `&mut PgConnection` also lets a caller
+compose them in one transaction, and lets a test run them inside one:
 
-```sql
-CREATE DATABASE app_test_3 TEMPLATE app_test_template;
+```rust
+/// Takes a connection, not the pool, so a caller (or a test) decides the transaction.
+pub async fn rename_org(conn: &mut PgConnection, id: Uuid, name: &str) -> sqlx::Result<u64> {
+    let done = sqlx::query("UPDATE orgs SET name = $2 WHERE id = $1")
+        .bind(id)
+        .bind(name)
+        .execute(&mut *conn)
+        .await?;
+    Ok(done.rows_affected())
+}
 ```
 
-The template must have no open connections while it is copied. Name the worker databases from
-the runner's worker identifier (Vitest sets `VITEST_POOL_ID`; Playwright exposes
-`testInfo.parallelIndex`).
+In a test, `let mut tx = pool.begin().await?;` then `rename_org(&mut tx, ...)`; queries on the
+transaction itself are written `.execute(&mut *tx)`. Dropping `tx` without `commit` rolls back.
 
-Other shared state needs the same treatment: Redis (a key prefix or logical database per
-worker, flushed between tests), files (a temp directory per test), ports (ask the OS for a free
-port by listening on 0), module-level caches and singletons (reset in `afterEach`, or better,
-remove), environment variables (restore after mutation), fake servers (reset handlers after
-each test).
+Shared process state needs the same treatment, and Rust adds a trap: `cargo test` runs a
+binary's tests as parallel threads of one process, so environment variables, `static` values,
+`OnceLock` and `LazyLock` initializers, the current directory and the global tracing
+subscriber are shared. Edition 2024 makes `std::env::set_var` `unsafe` for this reason; pass a
+config struct instead of mutating the environment. cargo-nextest runs each test in its own
+process, which removes these collisions without fixing the design. Other shared resources:
+Redis (a key prefix per test), files (a temp directory per test), ports (bind `127.0.0.1:0`
+and read the assigned port), fake servers (one wiremock server per test).
 
 ## Clocks and randomness
 
 Any test whose result depends on when or how often it runs is a future flake.
 
-- **Inject time** into logic (`now` parameter). For code that reads the clock directly, freeze
-  it:
+- **Inject wall-clock time** into logic: a `now` parameter, or a `Clock` trait
+  (`fn now(&self) -> OffsetDateTime`, `Send + Sync`) held as `Arc<dyn Clock>` in the
+  application state: `SystemClock` in production, `FixedClock(datetime!(2026-03-31 23:30 UTC))`
+  in tests. This is the one place a trait for a test is right: the clock has no wire to fake.
 
-```ts
-beforeEach(() => {
-  vi.useFakeTimers();
-  vi.setSystemTime(new Date('2026-03-10T12:00:00Z'));
-});
-afterEach(() => vi.useRealTimers());
+- **Pause Tokio time for timers.** With `#[tokio::test(start_paused = true)]`, sleeps,
+  timeouts and intervals complete instantly and in order, so backoff and debounce are tested
+  without waiting (`retry` below takes attempts, a base delay and the operation, and doubles
+  the delay after each failure). Traps: only `tokio::time` is paused, not `SystemTime` or `now_utc()`; it
+  needs the single-threaded test runtime; and when every task is idle the paused clock jumps to
+  the next timer, so a test waiting on real I/O (a database, a wiremock server) sees its
+  timeouts fire at once. Use paused time for code whose waiting is all timers.
+
+```rust
+#[tokio::test(start_paused = true)] // tokio::time is virtual: sleeps complete at once, in order
+async fn gives_up_after_three_attempts_with_doubling_backoff() {
+    let start = tokio::time::Instant::now();
+    let mut calls = 0;
+    let res: Result<(), &str> = retry(3, Duration::from_millis(100), || {
+        calls += 1;
+        async { Err("503") }
+    })
+    .await;
+    assert_eq!(res, Err("503"));
+    assert_eq!(calls, 3);
+    assert_eq!(start.elapsed(), Duration::from_millis(300)); // 100 + 200
+}
 ```
 
-- Advance instead of waiting: `await vi.advanceTimersByTimeAsync(30_000)` for timeouts,
-  backoff and debounce. Fake timers can stall libraries that rely on real timers (database
-  drivers, some HTTP clients); when a test hangs under fake timers, fake only `Date`
-  (`vi.useFakeTimers({ toFake: ['Date'] })`).
-- **Pin the time zone** for the test process (`TZ=UTC` in the test script) and add a few
-  explicit tests in a far-from-UTC zone for date logic. Tests that only pass in the author's
-  zone fail in CI or for two hours every evening.
+- **Time zones.** Compute in UTC and convert with an explicit zone from the user's settings.
+  The `time` crate's local-offset lookup fails in multi-threaded Unix processes, the test
+  harness included. Set the test database's `TimeZone` to UTC; add far-from-UTC cases.
 - Choose fixed dates that are not special by accident, and add deliberate cases for month end,
-  leap day, year end and both DST transitions. Database-side time (`now()`,
-  `DEFAULT CURRENT_TIMESTAMP`) is not affected by the test runner's fake clock: pass timestamps
-  from the application where tests assert on them.
-- **Seed randomness** and print the seed on failure. Inject ID and token generators where the
-  test asserts on them; otherwise assert on shape, not value.
-- In browser tests, use the Playwright clock API (`page.clock`) to fix or advance page time.
+  leap day, year end and both DST transitions. Database-side time (`now()`, column defaults)
+  ignores the application's clock: pass timestamps from the application where tests assert on
+  them.
+- **Seed randomness** (a seeded `StdRng`) and print the seed on failure. proptest records
+  failing seeds in `proptest-regressions/`; commit them.
+- **`HashMap` iteration order differs between runs** by design. Output built by iterating one
+  (JSON, CSV, logs, SQL) changes order between runs: sort, or use `BTreeMap` or an
+  insertion-ordered map where order is visible.
+- In browser tests the page clock cannot be frozen from WebDriver; give the app under test a
+  fixed `Clock` through its test configuration, guarded like any test-only switch.
 
 ## Finding the root cause of a flake
 
 First make it fail on demand; a flake that cannot be reproduced cannot be confirmed fixed.
 
 ```bash
-npx playwright test e2e/checkout.spec.ts --repeat-each=30 --workers=4
-pnpm vitest run --sequence.shuffle              # order dependence; prints the seed
-for i in $(seq 1 50); do pnpm vitest run src/billing/renew.test.ts || break; done
+for i in $(seq 1 50); do cargo nextest run -p billing renew || break; done   # loop one test
+cargo test -p billing -- --test-threads=1      # passes serially, fails in parallel: shared state
+cargo test --test e2e -- --ignored --test-threads=4   # browser tests under parallel load
 ```
 
 Then classify by how it fails:
 
 | Evidence | Cause | Fix |
 |---|---|---|
-| Fails only with other tests, or only in a certain order; passes alone | Shared state: database rows, module singleton, env var, leftover mock, fake timers not restored | Shuffle with the printed seed to reproduce; bisect the file list; isolate or reset the shared thing |
+| Fails with other tests, passes alone or with `--test-threads=1` | Shared state: database rows, a `static`, an env var, a global subscriber, a port | Isolate or remove the shared thing; nextest's process per test helps only with process state |
 | Fails alone, passes in the full run | Depends on another test's leftovers | Make the test create its own data |
-| Fails more under load or on CI, timing-related errors | Race: assertion before the async work finished, missing `await`, fixed sleep too short, event ordering assumed | Wait on the condition, not on time; await every promise (lint rule in static-analysis-types.md) |
-| Fails at certain hours or dates, or only in CI's zone | Real clock or time zone | Freeze time, pin zone |
-| Fails with connection, DNS or timeout errors to an external host | Real network in a test | Fake at the boundary; fail on unhandled requests |
-| Fails when parallelism rises | Collisions on unique keys, ports, files, or exhausted connection pool | Unique data, per-worker resources, pool sized for workers |
-| Different element or text order between runs | Unordered query or object-key iteration assumed stable | Add `ORDER BY` in the product code (often a real bug) or sort in the assertion |
-| Browser test: click has no effect, intermittent | Acting before hydration or during animation | Wait for the interactive state |
-| Memory or slow creep, late tests time out | Leaked handles, servers or containers not closed | Close in teardown; run with fewer files to confirm |
+| Fails more under load or on CI, timing-related errors | Race: assertion before the async work finished, a spawned task not awaited, a fixed sleep, event ordering assumed | Wait on the condition (await the `JoinHandle`, poll the state), not on time |
+| Hangs until the slow-test timeout | Blocking call on the single-threaded test runtime, a `std::sync::Mutex` held across `.await`, waiting on a channel whose sender is still alive | `spawn_blocking`, async-aware locking, drop senders; see debugging.md |
+| Fails at certain hours or dates, or only in CI's zone | Real clock or time zone | Inject time, pin zone |
+| Connection, DNS or timeout errors to an external host | Real network in a test | Fake at the boundary; fail on unexpected requests |
+| Fails when parallelism rises | Collisions on unique keys, ports or files, or Postgres out of connections | Unique data, per-test resources, fewer threads or more `max_connections` |
+| Different element or text order between runs | Unordered query or `HashMap` iteration assumed stable | Add `ORDER BY` in the product code (often a real bug) or sort in the assertion |
+| Browser test: click has no effect, intermittent | Acting before hydration or during animation | Wait for the hydration marker and the interactive state |
 
 A meaningful share of flakes are real product races that users also hit, only less visibly.
 Rule that out before blaming the test.
@@ -156,44 +213,53 @@ Rule that out before blaming the test.
 One flaky test teaches everyone to re-run; after that, real failures get re-run too. The
 policy that keeps CI trusted:
 
-1. **Detect.** Retries stay on in CI for browser tests, but a pass-on-retry is recorded as
-   flaky, not passed. Review the flaky list weekly; for a stricter gate on main, Playwright
-   can fail the run on flaky tests (`--fail-on-flaky-tests`).
+1. **Detect.** Retries stay on in CI for browser tests only, and nextest reports a pass on
+   retry as flaky, not passed. Review the flaky list weekly.
 2. **Quarantine the same day** when a test fails on main without a code cause twice: mark it
-   (`test.fixme` in Playwright, `it.skip` or a `@quarantine` tag excluded from the blocking
-   job) and open an issue linked in a comment on the test. A quarantined test still runs in a
-   non-blocking job so data keeps coming.
+   `#[ignore = "quarantined: <issue link>"]` and keep running ignored tests in a non-blocking
+   job so data keeps coming.
 3. **Time limit.** A quarantined test is fixed or deleted within about two weeks. A test that
    nobody will fix protects nothing; if the behavior matters, rewrite it at a lower layer.
 4. **Cap.** If more than a handful are quarantined, stop feature work on that area and fix the
    shared cause (usually isolation), because the suite no longer covers it.
 
-Do not raise retry counts or timeouts as a fix. Retries are for collecting traces, timeouts for
-real slowness with a known bound. Never add retries to unit and integration tests by default: a
-retried race in server code is a hidden production bug.
+Do not raise retry counts or timeouts as a fix. Retries are for collecting evidence, timeouts
+for real slowness with a known bound. Never retry unit and integration tests by default: a
+retried race in server code is a hidden production bug. Scope retries in nextest's config:
+
+```toml
+# .config/nextest.toml
+[profile.ci]
+fail-fast = false
+slow-timeout = { period = "60s", terminate-after = 3 }
+
+[[profile.ci.overrides]]
+filter = "binary(e2e)"
+retries = 2
+```
 
 ## Parallelizing and sharding
 
-Parallelism within a machine (workers) comes first; sharding across CI machines comes when one
-machine's wall-clock passes about 10 minutes.
+Parallelism within a machine comes first; sharding across CI machines comes when one machine's
+wall-clock passes about 10 minutes.
 
-Preconditions, in order: tests are order-independent (prove with a shuffled run), each worker
-has its own database and other stateful resources, data is unique by construction, no test
-relies on a fixed port or a global file.
+Preconditions, in order: tests are order-independent and pass under nextest and plain
+`cargo test`, each test has its own database and other stateful resources, data is unique by
+construction, no test relies on a fixed port or a global file.
 
-- Workers: start at the number of CPU cores for unit tests; fewer for database or browser
-  tests, since the database and the app under test also need CPU. On small CI runners, 2
-  workers for browser tests is a common ceiling.
-- Size the database's `max_connections` and each worker's pool so
-  workers x pool size stays under the limit; pool exhaustion shows up as random timeouts.
-- Shard in CI with a job matrix: `npx playwright test --shard=${{ matrix.shard }}/4` or
-  `vitest run --shard=1/4`. Each shard uploads its own report; merge them in a final job.
-  Shards split by file, so one huge file unbalances the run: split it.
-- End-to-end tests in parallel against one app instance share that app's caches, rate limits
-  and background jobs. Raise or disable rate limits in the test environment's configuration
-  (never through a bypass that also exists in production), or tests throttle each other.
-- Serial mode for a group of tests is a smell that they share state. Use it only for a true
-  multi-step journey, and prefer one longer test.
+- Threads: the CPU count for unit tests; fewer for database or browser tests, since Postgres
+  and the app also need CPU. On small CI runners, 2 browser sessions is a common ceiling.
+- Each `#[sqlx::test]` opens its own pool. Keep test threads times connections per test under
+  Postgres `max_connections`; exhaustion shows up as random timeouts.
+- Compile once, run in shards: build with `cargo nextest archive`, pass the archive to each
+  shard job, and run `cargo nextest run --archive-file <file> --partition count:1/4`. Shards
+  that each compile the workspace waste most of their time.
+- Tests that need a resource exclusively go in a nextest test group with one thread, not a
+  global `--test-threads=1`.
+- End-to-end tests in parallel against one app instance share its caches, rate limits and
+  background jobs. Raise or disable rate limits in the test configuration (never through a
+  bypass that also exists in production), or tests throttle each other.
+- A serial group is a smell of shared state; accept one only for a true multi-step journey.
 
 ## Production-shaped data for performance and migration tests
 
@@ -230,6 +296,4 @@ compatibility. Migration technique is in `0x:postgres-database`; load testing in
   Shapes the seed and the heavy account. Assume one empty, one typical and one account with
   about 100 times the typical volume.
 - **Is paying for more CI parallelism acceptable to keep feedback under 10 minutes?** Assume
-  yes up to a small fixed budget; fix slow tests first.
-- **Are there demo or sales accounts that need stable seeded data?** If so, the seed script
-  doubles as the demo dataset and its content needs review. Assume no.
+  yes up to a small fixed budget; fix slow tests and compile time first.

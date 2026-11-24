@@ -19,10 +19,9 @@ because it is trusted.
 What never needs prose: anything a tool can generate or enforce from the source (API reference
 from the schema, types, lint rules, the list of scripts). Generate it or link to the source.
 
-Owners elsewhere: decision records in `0x:engineering-leadership`; runbooks and postmortems in
-`0x:site-reliability`; public API reference and developer portal in `0x:api-design`; agent
-instruction files in depth in `0x:ai-coding-agents`; customer help content in
-`0x:sales-support`.
+Owners elsewhere: decision records in `0x:engineering-leadership`; runbooks in
+`0x:site-reliability`; public API reference in `0x:api-design`; agent instruction files in
+depth in `0x:ai-coding-agents`; customer help content in `0x:sales-support`.
 
 ## README and quickstart
 
@@ -35,14 +34,14 @@ running app with seeded data in under 10 minutes, with no question asked of the 
 One or two sentences: what it does and for whom. Link to production and staging.
 
 ## Quickstart
-Prerequisites: Node (version from .nvmrc), pnpm, Docker.
+Prerequisites: rustup (the toolchain in rust-toolchain.toml installs itself), Docker,
+sqlx-cli and cargo-leptos (`cargo install --locked sqlx-cli cargo-leptos`).
     cp .env.example .env
-    pnpm install
-    pnpm dev:setup      # starts Postgres, migrates, seeds
-    pnpm dev            # http://localhost:3000, sign in as admin@example.test / printed password
+    ./scripts/setup         # starts Postgres, runs migrations, seeds
+    cargo leptos watch      # http://127.0.0.1:3000, sign in as admin@example.test / printed password
 
 ## Common tasks
-Test, lint, type check, add a migration, run one test, reset the database: one command each.
+Test, lint, format, add a migration, run one test, reset the database: one command each.
 
 ## Project layout
 Five to ten lines: top-level directories and what belongs in each.
@@ -56,19 +55,19 @@ Links: architecture, decisions, runbooks, contributing.
 
 Rules that make it work:
 
-- **Commands are copy-pasteable and complete.** No "configure your database" steps: give the
-  command. Every step a human must do by hand is a step that will fail for the next person
-  and for an agent.
-- **Collapse setup into one script** (`pnpm dev:setup` or `make setup`), idempotent, that
-  starts dependencies, migrates and seeds. The README then documents one command, and the
-  script is the tested source of truth.
+- **Commands are copy-pasteable and complete.** No "configure your database": give the
+  command. Every manual step will fail for the next person and for an agent.
+- **Collapse setup into one script** (`./scripts/setup`, a `just` recipe, or a
+  `cargo xtask setup` command written in Rust), idempotent, that starts dependencies, migrates,
+  seeds and sets `core.hooksPath`. The README then documents one command, and the script is the
+  tested source of truth.
 - **`.env.example` is complete**: every variable, with a safe local default or a comment
-  saying where to obtain the value. Validate env at startup so a missing one fails with its
-  name. Secrets never go in the README or the example file.
-- **State versions by reference** (`.nvmrc`, `engines`, the lockfile), not by number in prose
-  that goes stale.
-- **Show the expected result**: the URL, the login, what success looks like, and the two or
-  three most common setup failures with their fix.
+  saying where to obtain the value. Parse env into the typed config struct at startup so a
+  missing one fails with its name. Secrets never go in the README or the example file.
+- **State versions by reference** (`rust-toolchain.toml`, `Cargo.lock`, the Compose file's
+  Postgres image), not by number in prose that goes stale.
+- **Show the expected result**: the URL, the login, what success looks like (and that the
+  first cold build takes minutes), and the most common setup failures with their fix.
 - **Keep it short.** Past roughly 150 lines, move sections into `docs/` and link. Marketing
   copy, badges walls and history do not belong.
 - **Test it**: follow it on a clean machine or container before calling it done, and run the
@@ -82,8 +81,7 @@ behavior it describes.
 - The pull request is the enforcement point. Add a checklist line ("docs updated or not
   needed") and, when reviewing a change to setup, env variables, commands, architecture or
   public behavior, treat a missing doc change as a defect in the change.
-- Docs are then versioned with the code: checking out an old release shows its docs, and
-  `git blame` explains a paragraph.
+- Docs are versioned with the code: an old release shows its docs, `git blame` explains them.
 - Agents and search find them. A wiki or a shared drive is invisible to a coding agent and
   drifts, because updating it is a separate chore after the work is "done".
 - Layout that scales to a small team: `README.md` at the root; `docs/architecture.md`;
@@ -91,11 +89,9 @@ behavior it describes.
   README in a package or module only when it has its own setup or rules.
 - One home per fact. If the same instruction appears in the README, a wiki page and a
   comment, two of the three will be wrong within months. Link instead of copying.
-- What belongs outside the repo: secrets (a secrets manager), customer-facing help, and
-  company matters that are not about the code.
+- Outside the repo: secrets (a secrets manager), customer-facing help, non-code matters.
 
-A docs site generator is worth adding only when external developers read the docs. Until
-then, Markdown rendered by the code host is enough.
+Add a docs site generator only once external developers read the docs.
 
 ## Comments: why, not what
 
@@ -106,10 +102,11 @@ edit. A comment earns its place when it carries information the code cannot:
 |---|---|
 | Why this approach and not the obvious one | `// Sequential on purpose: the provider rate-limits to 2 requests per second per key.` |
 | A constraint or invariant from outside the code | `// Amounts are integer cents. Stripe rejects fractional minor units.` |
-| A workaround, with its exit condition | `// Works around <library> issue #1234 (double fire on iOS). Remove when on >= 3.2.` |
+| A workaround, with its exit condition | `// Works around <crate> issue #1234 (double fire on iOS). Remove when on >= 3.2.` |
+| Why an `unsafe` block is sound (required) | `// SAFETY: len was checked against the buffer above; the pointer is valid for len bytes.` |
 | A non-obvious consequence | `// Order matters: revoking sessions before the password write leaves a window for reuse.` |
 | A warning to the next editor | `// Called from the billing webhook too. Do not add user-context assumptions here.` |
-| The unit, range or format of a value when the type cannot say | `timeoutMs`, or `// ISO 4217 code, upper case` |
+| The unit, range or format of a value when the type cannot say | `timeout: Duration` beats a comment; else `// ISO 4217 code, upper case` |
 
 Rules:
 
@@ -119,10 +116,35 @@ Rules:
   those), no banner separators, no restating the function name.
 - `TODO` comments carry an issue reference or an owner and a condition; a bare `TODO` is a
   wish. Lint for the format if they accumulate.
-- Doc comments (TSDoc) on exported functions of shared modules and public packages: one line
-  of purpose, then only what the signature does not show (units, errors thrown, side effects,
-  idempotency, an example for anything tricky). Skip them on internal code whose signature is
-  self-explanatory.
+- Doc comments (`///` on items, `//!` for a crate or module's purpose) on the `pub` API of
+  shared crates: one line of purpose, then only what the signature does not show, in rustdoc's
+  conventional sections: `# Errors` (when it returns `Err`), `# Panics`, side effects and
+  idempotency, and `# Examples`. Examples are doctests: `cargo test --doc` compiles and runs
+  them, so they cannot drift from the API (cargo-nextest skips doctests; run both). Skip doc
+  comments on internal code whose signature is self-explanatory.
+
+```rust
+/// Splits an amount into `parts` shares that differ by at most one cent; the first
+/// `cents % parts` shares carry the extra cent, so the result is stable across calls.
+///
+/// # Panics
+///
+/// Panics if `parts` is zero.
+///
+/// # Examples
+///
+/// ```
+/// assert_eq!(billing::split_evenly(1_000, 3), vec![334, 333, 333]);
+/// ```
+pub fn split_evenly(cents: u64, parts: u32) -> Vec<u64> {
+    let parts = u64::from(parts);
+    let (base, remainder) = (cents / parts, cents % parts);
+    (0..parts).map(|i| base + u64::from(i < remainder)).collect()
+}
+```
+
+- `cargo doc --no-deps` with `RUSTDOCFLAGS="-D warnings"` in CI fails on broken intra-doc
+  links; pedantic clippy's `missing_errors_doc` and `missing_panics_doc` enforce the sections.
 - When changing code, update or delete the comment above it in the same edit. A stale comment
   is a bug.
 - Commit messages hold the why of a change; comments hold the why of the code as it stands.
@@ -135,17 +157,20 @@ where a change goes and what it might break. Three parts:
 1. **Map.** The system's parts and what talks to what: the web app, database, queue and
    workers, cache, object storage, each third party, and where each runs. One diagram at the
    level of deployable units and external systems, kept as text in the repo (Mermaid renders
-   on the common code hosts) so it is diffable. Then the code map: top-level directories or
-   modules, the responsibility of each in one line, and the dependency direction between them.
+   on the common code hosts) so it is diffable. Then the code map: the workspace's crates and
+   top-level modules, the responsibility of each in one line, and the dependency direction
+   between them (the crate graph enforces it; static-analysis-types.md).
 2. **Key flows.** Three to six traces through the system for the paths that matter and are
    not obvious from the map: a request from browser to database and back, sign-in and
-   session, checkout through webhook to entitlement, a background job's life, a deploy. Each
-   as a numbered sequence naming the files or modules involved. Flows are what people
+   session, a server function from the WASM client to the database, checkout through webhook
+   to entitlement, a background job's life, a deploy. Each as a numbered sequence naming the
+   crates, modules or files involved. Flows are what people
    actually need when debugging.
 3. **Constraints and invariants.** The rules that are true everywhere and that code review
    must protect: every query is tenant-scoped through one helper; money is integer minor
-   units; all third-party calls go through wrappers; webhook handlers are idempotent;
-   migrations are backward compatible with the previous release. Add what is deliberately
+   units; all third-party calls go through wrappers; webhook handlers are idempotent; no
+   `unwrap` in request paths; no `unsafe` outside the one crate that needs it; migrations are
+   backward compatible with the previous release. Add what is deliberately
    absent ("no service calls between modules except through X"), since absences cannot be
    seen in code. Add known weak points and planned changes.
 
@@ -168,11 +193,9 @@ written before starting.
 | Reference | Working, needs a fact | Complete, consistent, dry: every option, endpoint, variable, error code; structured like the thing it describes | The fact is found in seconds and is correct |
 | Explanation | Wants to understand why | Prose: background, trade-offs, alternatives rejected | The reader can make a good decision the doc did not foresee |
 
-For an internal codebase the useful mix is mostly how-to guides and explanation
-(architecture, decisions), with reference generated from code. Tutorials matter when external
-developers adopt the product; the quickstart is the one tutorial every project needs. Common
-failure: a how-to that stops to explain concepts (link to the explanation instead), or
-reference written as narrative that cannot be scanned.
+Internally the useful mix is how-to guides and explanation, with reference generated from code
+(`cargo doc`); the quickstart is the one tutorial every project needs. Common failure: a how-to
+that stops to explain concepts (link instead), or reference written as unscannable narrative.
 
 ## Docs that people, search and AI assistants can retrieve from
 
@@ -193,13 +216,14 @@ reading from the top. Write each section to survive that.
   mark deprecated material at the top of the page, or delete it. Stale pages are retrieved
   with the same confidence as current ones, so contradiction between two pages is the worst
   defect: remove the older.
-- **Complete, runnable examples** with imports and realistic values; fragments get assembled
-  wrongly.
+- **Complete, runnable examples** with `use` lines and realistic values; fragments get
+  assembled wrongly.
 - **An agent instruction file at the repository root** (`CLAUDE.md`, or `AGENTS.md` for other
   tools): the commands to build, test and lint, the invariants from the architecture notes,
   conventions that differ from defaults, and pointers to deeper docs. Short and current, since
   it is read in every session; put detail in linked files. Depth is in `0x:ai-coding-agents`.
-- **For public docs**, serve clean Markdown or plain HTML that works without JavaScript, keep
+- **For public docs**, serve clean Markdown or plain HTML that works without JavaScript or
+  WASM, keep
   stable URLs with redirects when pages move, and consider publishing an index of the docs in
   a machine-readable form such as the `llms.txt` convention. Check what assistants actually
   answer about the product by asking them the top ten support questions, and fix the pages
@@ -241,12 +265,13 @@ rules differ by country, so have the assignment clause checked by a lawyer
 Docs decay because nothing fails when they are wrong. Make something fail.
 
 - **Tested examples.** Run the setup script and the README's test command in CI from a clean
-  checkout; a broken quickstart then breaks the build. Keep code samples in real files that
-  are compiled or executed by the test suite and included into the docs, or type-check the
-  fenced blocks, so samples cannot drift from the API.
-- **Generated reference.** API reference from the OpenAPI document or schema, CLI help from
-  the command definitions, env variable tables from the env schema. Regenerate in CI and fail
-  on a diff.
+  checkout; a broken quickstart then breaks the build. Rust examples in rustdoc are doctests,
+  run by `cargo test --doc`. A library crate can make its README a doctest too, with
+  `#![doc = include_str!("../README.md")]` at the crate root: every `rust` block in the README
+  then compiles in CI (tag shell blocks `bash` and fragments `rust,ignore`, or they fail).
+- **Generated reference.** `cargo doc` from the doc comments, the API reference from the
+  generated OpenAPI document, CLI help from the clap definitions, env variable tables from the
+  config struct. Regenerate in CI and fail on a diff.
 - **Link checking** on a schedule and in pull requests that touch docs; internal links by
   relative path, so they resolve on every branch and the checker can verify them offline.
 - **An owner per document.** Put docs paths in the code-owners file so changes request the
@@ -257,9 +282,8 @@ Docs decay because nothing fails when they are wrong. Make something fail.
   also reviewed after every incident that used one.
 - **Delete aggressively.** For each stale page choose: fix now, delete, or mark at the top as
   historical with a pointer to the current source. Never leave it looking current.
-- **Use the docs.** Onboard each new person or agent from the docs alone and have them fix
-  what failed them as their first change. Answer questions by writing or fixing the doc and
-  sending the link; a question asked twice is a missing page.
+- **Use the docs.** Onboard each new person or agent from the docs alone; their first change
+  fixes what failed them. A question asked twice is a missing page: write it, send the link.
 
 ## Ask the user
 
