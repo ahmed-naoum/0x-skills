@@ -89,8 +89,9 @@ consistent with it. These apply to greenfield choices and when the user asks wha
    afterwards no invalid index and no unvalidated constraint remains (`references/migrations.md`).
 7. The migration works with the previous application version and with the next one.
 8. Backfills run in keyed batches that commit, skip finished rows and can resume, then `ANALYZE`.
-9. Static SQL uses the checked macros, `cargo sqlx prepare --check` passes against the migrated
-   schema, `.sqlx/` is committed, and request paths use `fetch_optional` and `?`, never `unwrap()`.
+9. Static SQL uses the checked macros, `cargo sqlx prepare --workspace --check` passes against the
+   migrated schema, `.sqlx/` is committed, run-time `query_as` and `QueryBuilder` statements each
+   have a `#[sqlx::test]`, and request paths use `fetch_optional` and `?`, never `unwrap()`.
 10. The application connects as a non-owner role that carries statement, lock and
     idle-in-transaction timeouts, and the pools at maximum instance count fit the connection budget.
 11. Any manual production write was shown to the user with its row count, approved, run by a

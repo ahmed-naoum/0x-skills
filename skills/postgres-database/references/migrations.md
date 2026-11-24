@@ -35,19 +35,20 @@ files matter yet. From Launch every rule below applies, because a blocked table 
   know about locks and will emit a blocking `CREATE INDEX` and a drop-and-add for a rename.
 - A merged or applied migration is immutable; fix forward with a new file. SQLx stores each file's
   checksum and refuses to run once an applied file changed by one byte, line endings included.
+  A file with an older version merged later (a long-lived branch) is applied anyway, so environments
+  can run files in different orders: recreate such a file with `sqlx migrate add` before merging.
 - Applied from the deploy pipeline before the new version serves: `sqlx migrate run` from a pinned
   sqlx-cli, or the release binary's `migrate` subcommand (below). Never from a laptop, and never at
   web-process startup: instances queue on the migrator's lock, a slow migration fails health
   checks, and an older binary started for a rollback refuses to run (`VersionMissing`: applied
-  versions it does not know) unless `set_ignore_missing(true)` is set. Pipeline wiring and ordering
-  against the code deploy are in `0x:ci-cd-release`.
+  versions it does not know) unless it ignores them (`set_ignore_missing(true)` on the `Migrator`,
+  `--ignore-missing` on `sqlx migrate run`). Pipeline wiring is in `0x:ci-cd-release`.
 - `sqlx::migrate!()` embeds the files at compile time. Commit the `build.rs` that `sqlx migrate
   build-script` writes, or cargo may skip the rebuild when only a migration file changed.
 - Run as a dedicated owner role over a direct connection, not the application role and not a
   transaction pooler (`postgres-operations.md`).
-- One logical change per file. Destructive steps get their own file in a later release. Never
-  combine DDL with a large data backfill in one migration: the deploy would hold locks for the
-  whole backfill.
+- One logical change per file; destructive steps get their own file in a later release. Never
+  combine DDL with a large backfill in one migration: the deploy would hold locks throughout.
 - Make statements rerunnable where the syntax allows: `IF NOT EXISTS`, `IF EXISTS`.
 - Lint migrations in CI for unsafe statements (Squawk is a linter for exactly this); `cargo sqlx
   prepare --check` against the migrated schema fails a migration that breaks a checked query.
@@ -109,8 +110,10 @@ existing rows is deferred. Put each step in its own transaction so the brief exc
 
 - It cannot run inside a transaction block, and SQLx wraps each file in one unless its first line
   is `-- no-transaction`. Put the statement alone in such a file.
-- It waits for every transaction that was open when it started, so one idle-in-transaction session
-  stalls it. Under a `lock_timeout` that wait aborts the build and leaves an invalid index, so run
+- It waits for open transactions that have written to the table, and for any transaction in the
+  database holding an older snapshot (a long query, a REPEATABLE READ transaction, `pg_dump`), so
+  one such session left open stalls it. Under a `lock_timeout` that wait aborts the build and
+  leaves an invalid index, so run
   it with none (the migrator role has none, or set `PGOPTIONS='-c lock_timeout=0'`, which SQLx
   reads): the build blocks no reads or writes, only other schema changes and vacuum on that table.
   The same applies to `DROP INDEX CONCURRENTLY` and `REINDEX ... CONCURRENTLY`. Do not add a `SET`
@@ -152,9 +155,9 @@ instances immediately, and `cargo sqlx prepare --check` cannot see them.
 ## Renaming and retyping
 
 **Rename.** Usually the right move is not to rename in the database: rename in Rust only, with
-`old_name AS new_name` in the query or `#[sqlx(rename = "old_name")]` on a `FromRow` field. A true rename is the six steps above with a new column,
-which is five deploys of work for a cosmetic gain. Table renames: the same, or a view under the
-old name for the transition.
+`old_name AS new_name` in the query or `#[sqlx(rename = "old_name")]` on a `FromRow` field. A true
+rename is the six steps above with a new column, five deploys of work for a cosmetic gain. Table
+renames: the same, or a view under the old name for the transition.
 
 **Retype** (for example `integer` to `bigint`, `text` to `jsonb`):
 
@@ -164,12 +167,13 @@ old name for the transition.
 3. Backfill in batches (next section), then verify zero rows where the two differ.
 4. Build required indexes on `col_new` concurrently; add `NOT NULL` with the check recipe.
 5. Swap in one short transaction with `lock_timeout`: rename `col` to `col_old` and `col_new` to
-   `col`, and drop the trigger. Code must tolerate both types for that deploy: SQLx refuses to
-   decode `bigint` into `i32`, so the release before the swap selects `col::bigint` into an `i64`.
+   `col`, and drop the trigger. The release before already reads `col::bigint` into an `i64`: an
+   `i32` read fails after the swap, at once under `query_scalar!`, `FromRow` and `try_get`, and at
+   the first value above `i32::MAX` under `query!` and `query_as!`. Cached statements re-prepare
+   themselves, except inside a transaction, where the first use fails once with `0A000`.
 6. Drop `col_old` in a later release.
 
-Retyping a primary key also means every referencing foreign key. Start with `bigint` or `uuid`
-keys so this is never needed.
+Retyping a primary key also means every referencing foreign key; start with `bigint` or `uuid` keys.
 
 ## Backfilling in batches
 
@@ -230,8 +234,7 @@ pub async fn backfill_total_cents(pool: &PgPool, mut last_id: i64, batch: i64) -
 }
 ```
 
-While it runs, watch replication lag, disk (WAL and dead rows), and dead-tuple counts on the table. Finish
-with `ANALYZE` on the table.
+While it runs, watch replication lag, disk (WAL) and the table's dead rows; finish with `ANALYZE` on it.
 
 ## Rehearsal
 
@@ -241,12 +244,10 @@ million rows or a gigabyte) or hot:
 
 1. Create a production-sized copy: a provider branch or clone, or a restore of last night's backup
    (`backup-recovery.md`).
-2. Run the exact migration files with the same `lock_timeout`, with `\timing` on. Record the
-   duration of every statement.
+2. Run the exact migration files with the same `lock_timeout` and `\timing` on; record each duration.
 3. While it runs, hold a transaction open in a second session to confirm the migration fails fast
    on the lock timeout instead of hanging, and that the retry succeeds once it is released.
-4. Check the outcome: schema as expected, no invalid indexes, no unvalidated constraints, disk
-   growth acceptable.
+4. Check the outcome: expected schema, no invalid index or unvalidated constraint, acceptable disk growth.
 5. Any statement that holds an exclusive lock for more than a second or two needs a safer form.
 
 ## Down script or forward fix
@@ -268,22 +269,21 @@ files (`sqlx migrate add -r`, run by `sqlx migrate revert`) suit development, no
 A migration inside a transaction that fails rolls back completely: nothing was applied. Fix the
 cause (usually data the statement did not expect, or a lock timeout) and rerun, editing the file
 only if it has run in no other environment. Trouble comes from migrations that could not be
-transactional (`CONCURRENTLY`), runners
-that apply several files and stop midway, backfills that died, and pipelines that timed out and
-killed the client while the server kept going.
+transactional (`CONCURRENTLY`), runners that apply several files and stop midway, backfills that
+died, and pipelines that timed out and killed the client while the server kept going.
 
 1. Stop. Do not rerun the pipeline, and do not edit the runner's history table yet.
 2. Check for leftovers still running or blocked: `pg_stat_activity` for the migration role.
 3. Establish the real state: `\d table` for columns and constraints; invalid indexes (query above);
    unvalidated constraints (`SELECT conrelid::regclass, conname FROM pg_constraint WHERE NOT
    convalidated;`); `_sqlx_migrations` (or `sqlx migrate info`) for what SQLx believes is applied.
-4. Ask whether the application is healthy on the current state. After a partial expand it almost
-   always is, so there is time to think.
+4. Ask whether the application is healthy on the current state; after a partial expand it usually is.
 5. Prefer rolling forward: apply the remaining statements by hand in idempotent form, dropping and
    rebuilding any invalid index. Roll back (drop what was added) only if the forward path is blocked.
 6. Make the record match reality last. SQLx writes a file's row only after the file succeeded, so
    once the remaining statements are in place, rerun the migration: idempotent statements find the
-   work done and the row gets the right checksum. Never edit `_sqlx_migrations` by hand.
+   work done and the row gets the right checksum. Never edit `_sqlx_migrations` by hand, and do not
+   use `sqlx migrate override skip`: it marks every pending file applied without running it.
 7. Add a new idempotent migration so every other environment converges to the same state.
 8. If a destructive statement ran before the failure, do not improvise: restore the affected table
    to a side database and copy the data back (`backup-recovery.md`).

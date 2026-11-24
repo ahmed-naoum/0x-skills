@@ -158,7 +158,7 @@ let row = sqlx::query!(
 | Expression or aggregate (`count`, `coalesce`) | `Option<T>`: nullability unknown | `AS "name!"` when it can never be NULL (a NULL then fails at run time); `AS "name?"` when SQLx wrongly infers non-null |
 | `bigint`, `integer`; `numeric`, including `sum()` of a `bigint` | `i64`, `i32`; SQLx's `rust_decimal` or `bigdecimal` feature | No unsigned types (`u64` does not bind); cast sums to `::bigint`; never `f64` for money |
 | `timestamptz`, `uuid`, `jsonb` | `time::OffsetDateTime` (or `chrono`), `uuid::Uuid`, `sqlx::types::Json<T>` | One time crate per project |
-| Text parsed into an enum or newtype | `AS "name: Type"` in a macro; `#[sqlx(try_from = "String")]` on a `FromRow` field | Parse once, at decode |
+| Text parsed into an enum or newtype | `AS "name: Type"` in a macro, where `Type` derives `sqlx::Type` (`#[sqlx(type_name = "text", rename_all = "lowercase")]` on an enum, `#[sqlx(transparent)]` on a newtype); `#[sqlx(try_from = "String")]` on a `FromRow` field | Parse once, at decode |
 
 The macros need that database in every build, so commit what they learned: after changing a query,
 run `cargo sqlx prepare --workspace` against a database with every migration applied and commit

@@ -22,8 +22,8 @@ that on only at Scale, with someone who has done it before.
 Families: the cloud's own service (Amazon RDS and Aurora, Google Cloud SQL, Azure Database for
 PostgreSQL) when the application already runs there or compliance demands it; serverless with
 branching (Neon) for preview-heavy workflows; a backend platform (Supabase) when its auth and storage
-are wanted too; the application platform's own add-on; a Postgres specialist (Aiven, Crunchy Bridge)
-for support depth. These vendors are acquired and repackaged often: confirm the product is still
+are wanted too; the application platform's own add-on; a Postgres specialist (Aiven; Crunchy Bridge, whose company
+Snowflake bought in 2025) for support depth. These vendors are acquired and repackaged often: confirm the product is still
 sold, and on what terms, before recommending one by name.
 
 Default: Prototype uses whatever the application's platform offers in one click. From Launch, a
@@ -79,9 +79,10 @@ more than a few hundred clients. Use the provider's pooler when it has one.
   of clients share tens of connections. Session mode multiplexes nothing.
 - Transaction mode breaks session state: session-level `SET` (use `SET LOCAL`), session advisory
   locks, `LISTEN`, temporary tables kept across transactions, SQL-level `PREPARE`. SQLx prepares
-  every statement that has parameters; PgBouncer supports that from 1.21 with
-  `max_prepared_statements` above zero (its default changed between releases). On older or other
-  poolers use session mode: turning off SQLx's statement cache does not stop it preparing.
+  every statement sent through `query*` or the macros, bound values or not (`raw_sql` is the
+  exception); PgBouncer supports that from 1.21 with `max_prepared_statements` above zero (on by
+  default only in recent releases: check). On older or other poolers use session mode: turning
+  off SQLx's statement cache does not stop it preparing.
 - Keep two URLs. Pooled for application traffic. Direct for migrations, `pg_dump`, logical
   replication, `LISTEN/NOTIFY` and long maintenance sessions. Some providers' direct hosts are
   IPv6-only; a CI runner without IPv6 then needs the session-mode pooler for migrations.
@@ -264,10 +265,9 @@ Scale or a measured problem. Then change one setting at a time, measured with `p
 
 ## Major version upgrades
 
-Minor releases are bug and security fixes with no behavior change: apply them promptly in the
-provider's maintenance window. Each major version is supported for five years; plan a major
-upgrade every year or two rather than at the deadline, and let a new major version reach its
-first or second minor release before adopting it.
+Minor releases are bug and security fixes: apply them promptly in the provider's maintenance
+window. Each major version is supported for five years; upgrade every year or two rather than at
+the deadline, once the new major version has reached its first or second minor release.
 
 | Method | Downtime | Use when |
 |---|---|---|

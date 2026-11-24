@@ -132,8 +132,9 @@ online constraint swap (`NOT VALID` then `VALIDATE`). A native `ENUM` is compact
 generate; adding a value is cheap but a value can never be removed or reordered without recreating
 the type, so use it only for sets that are stable. A lookup table with a foreign key fits when the
 values carry attributes (label, sort order) or are edited at runtime. In Rust, parse the `text`
-value into an enum once, at decode: `#[sqlx(try_from = "String")]` on a `FromRow` field, or
-`TryFrom<String>` on a macro's `String` field. A native `ENUM` maps to a Rust enum with
+value into an enum once, at decode: derive `sqlx::Type` with `#[sqlx(type_name = "text",
+rename_all = "lowercase")]` and name it in a macro as `AS "status: Status"`; or
+`#[sqlx(try_from = "String")]` on a `FromRow` field. A native `ENUM` maps to a Rust enum with
 `#[derive(sqlx::Type)]` and `#[sqlx(type_name = "...")]`.
 
 When a boolean will prompt the question "since when?", store a nullable timestamp instead
