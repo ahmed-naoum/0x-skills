@@ -3,7 +3,7 @@
   "layer": 2,
   "order": 1,
   "title": "Cloud infrastructure and hosting",
-  "summary": "Choose where the product runs and build it: hosting model, container images, Kubernetes, serverless and edge runtimes, cloud networking, IAM, infrastructure as code and cost control.",
+  "summary": "Choose where the product runs and build it: hosting model, container images for a Rust binary, Kubernetes, serverless and WASM edge runtimes, cloud networking, IAM, infrastructure as code and cost control.",
   "useWhen": [
     "Where should I host this: a PaaS, serverless, a VPS, containers or Kubernetes?",
     "Write or shrink a Dockerfile, or set up Docker Compose for local development",
@@ -13,7 +13,8 @@
     "My cloud bill jumped and I need to find out why and cut it",
     "Serverless functions are slow to start or exhausting the database",
     "A pod is stuck Pending or crash-looping in Kubernetes",
-    "Should this code run at the edge or next to the database?"
+    "Should this code run at the edge or next to the database?",
+    "Run part of the app on Cloudflare Workers with workers-rs, or on AWS Lambda"
   ],
   "notFor": [
     {
@@ -83,7 +84,7 @@
       "purpose": "Read when writing, shrinking, speeding up or securing a container image, running the stack locally in containers, or deploying containers to a single server.",
       "leaves": [
         {
-          "topic": "Write a multi-stage Dockerfile producing a small non-root image",
+          "topic": "Build a static release binary in a multi-stage Dockerfile into a small non-root image",
           "level": "core"
         },
         {
@@ -99,7 +100,7 @@
           "level": "core"
         },
         {
-          "topic": "Order layers and use build cache so image builds stay fast",
+          "topic": "Cache dependency builds in image layers with cargo-chef so builds stay fast",
           "level": "pro"
         },
         {
@@ -111,7 +112,7 @@
           "level": "pro"
         },
         {
-          "topic": "Build multi-arch images and run on ARM64 for price-performance",
+          "topic": "Cross-compile multi-arch images for ARM64 without slow emulation, for price-performance",
           "level": "pro"
         },
         {
@@ -158,10 +159,10 @@
     {
       "file": "serverless-edge.md",
       "title": "Serverless and edge runtimes",
-      "purpose": "Read when code runs in functions or edge isolates: cold starts, limits, state, connections and runaway invocations.",
+      "purpose": "Read when Rust runs in functions (AWS Lambda with cargo-lambda) or WASM edge isolates (Cloudflare Workers with workers-rs): cold starts, limits, state, connections and runaway invocations.",
       "leaves": [
         {
-          "topic": "Write to Web-standard APIs (fetch, Request, Streams) portable across runtimes",
+          "topic": "Write handlers on http and tower types to run on servers, cargo-lambda or Workers",
           "level": "core"
         },
         {
@@ -173,7 +174,7 @@
           "level": "core"
         },
         {
-          "topic": "Work within edge-runtime limits: missing Node APIs, CPU caps, eventually consistent stores",
+          "topic": "Work within Workers limits: no Tokio runtime or threads, WASM size caps, CPU time, eventual KV",
           "level": "pro"
         },
         {

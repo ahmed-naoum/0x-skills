@@ -36,7 +36,7 @@
   - ○ Tune kernel TCP backlog, buffers and congestion control
   - ○ Trace kernel and network latency with eBPF tools
 - **packages-updates.md** — Packages, updates and provisioning
-  - ● Install language runtimes with version managers, not distro packages
+  - ● Install build toolchains with rustup, not distro packages; servers run only the binary
   - ◐ Install and pin packages with apt or dnf from trusted repositories
   - ◐ Apply kernel and package security updates on a schedule, including reboots
   - ◐ Audit what is installed, running and listening before exposing a host
@@ -157,7 +157,7 @@
 
 ## 2 · Cloud & delivery — Where does my code run, and how does a change reach production safely?
 
-### cloud-infrastructure — Choose where the product runs and build it: hosting model, container images, Kubernetes, serverless and edge runtimes, cloud networking, IAM, infrastructure as code and cost control.
+### cloud-infrastructure — Choose where the product runs and build it: hosting model, container images for a Rust binary, Kubernetes, serverless and WASM edge runtimes, cloud networking, IAM, infrastructure as code and cost control.
 - **platform-choice.md** — Choosing where to run
   - ● Decide between a PaaS, managed containers, a VPS and Kubernetes for your stage
   - ● Choose container, function, edge isolate or VM for each workload
@@ -167,14 +167,14 @@
   - ◐ Assess lock-in and exit cost before adopting a platform's proprietary services
   - ○ Decide cloud versus bare metal versus colocation on cost and risk
 - **docker-images.md** — Docker images, Compose and single-server deploys
-  - ● Write a multi-stage Dockerfile producing a small non-root image
+  - ● Build a static release binary in a multi-stage Dockerfile into a small non-root image
   - ● Run the whole stack locally with Compose or dev containers
   - ● Keep build secrets and development dependencies out of the final image
   - ● Set a health check and resource limits on every container
-  - ◐ Order layers and use build cache so image builds stay fast
+  - ◐ Cache dependency builds in image layers with cargo-chef so builds stay fast
   - ◐ Choose a minimal or distroless base image and keep it patched
   - ◐ Tag images immutably and manage a registry with retention rules
-  - ◐ Build multi-arch images and run on ARM64 for price-performance
+  - ◐ Cross-compile multi-arch images for ARM64 without slow emulation, for price-performance
   - ◐ Deploy containers to one VPS with Kamal or Coolify and zero downtime
 - **kubernetes.md** — Kubernetes operations
   - ○ Write a Deployment with probes, a rollout strategy and externalized config
@@ -185,10 +185,10 @@
   - ○ Isolate workloads with namespaces, network policies and pod security settings
   - ○ Upgrade cluster versions and node pools without downtime
 - **serverless-edge.md** — Serverless and edge runtimes
-  - ● Write to Web-standard APIs (fetch, Request, Streams) portable across runtimes
+  - ● Write handlers on http and tower types to run on servers, cargo-lambda or Workers
   - ● Design around cold starts, time limits and stateless invocations
   - ● Decide what runs at the edge versus in-region beside the database
-  - ◐ Work within edge-runtime limits: missing Node APIs, CPU caps, eventually consistent stores
+  - ◐ Work within Workers limits: no Tokio runtime or threads, WASM size caps, CPU time, eventual KV
   - ◐ Set concurrency limits so functions cannot exhaust the database or the budget
   - ◐ Run background and scheduled work on a serverless platform
   - ◐ Guard against recursive triggers and unbounded retry loops
@@ -231,14 +231,14 @@
 
 ### ci-cd-release — Get a change from a merged pull request to production safely: CI pipelines, pipeline security, environments and config, zero-downtime deploys, rollback and feature flags.
 - **ci-pipelines.md** — CI pipelines
-  - ● Build a pipeline that type-checks, lints, tests and builds every pull request
+  - ● Run fmt, clippy, nextest, cargo deny and a release build on every pull request
   - ● Protect main with required checks and review
   - ● Run database migrations as a gated, ordered deploy step
   - ● Make a CI failure reproducible on a laptop
-  - ◐ Keep CI fast with caching, parallelism and affected-only runs
+  - ◐ Keep Rust CI fast with dependency caching, split jobs and affected-only runs
   - ◐ Build one immutable artifact and promote it through environments
   - ○ Choose hosted or self-hosted runners and control CI spend
-  - ○ Automate mobile builds, code signing, store submission and over-the-air updates
+  - ○ Automate mobile builds, code signing and store submission
 - **pipeline-security.md** — Pipeline security and provenance
   - ● Pin CI actions to commit SHAs and minimize token permissions
   - ◐ Authenticate CI to the cloud with OIDC federation, not long-lived keys
@@ -248,7 +248,7 @@
   - ○ Publish packages with trusted publishing instead of long-lived registry tokens
 - **environments-config.md** — Environments and configuration
   - ● Separate development, staging and production with distinct secrets and data
-  - ● Validate configuration and environment variables at startup and fail fast
+  - ● Parse environment variables once at startup into a typed config and fail fast
   - ● Keep local, CI and production environments close enough to trust
   - ◐ Create a preview environment with its own database per pull request
   - ◐ Seed staging with safe, anonymized data
@@ -258,7 +258,7 @@
   - ● Roll back a bad release within minutes, knowing what its migrations allow
   - ● Deploy without downtime using rolling or blue-green releases
   - ● Run post-deploy smoke tests and watch error rate per release
-  - ◐ Keep stale cached frontends and old clients working across a deploy
+  - ◐ Keep already-loaded WASM clients and their server function calls working across a deploy
   - ◐ Order deploys across database, backend and frontend changes
   - ◐ Set deploy frequency and freeze windows around risk and support cover
   - ○ Release progressively with canaries that roll back on SLO burn
@@ -281,7 +281,7 @@
   - ● Make invalid states impossible with NOT NULL, CHECK, UNIQUE and exclusion constraints
   - ● Choose column types: timestamptz, text, numeric, enums and JSONB
   - ● Store money as integer minor units with an explicit currency
-  - ● Choose between a typed ORM (Drizzle, Prisma) and raw SQL
+  - ● Choose SQLx checked queries, SeaORM or Diesel, or raw SQL for data access
   - ● Choose primary keys: UUIDv7, identity columns or natural keys
   - ◐ Use JSONB for variable attributes without losing integrity or indexability
   - ◐ Model soft deletes, audit history and temporal data deliberately
@@ -289,10 +289,10 @@
   - ◐ Decide when to denormalize and how to keep the copies consistent
 - **sql-queries.md** — Writing application SQL
   - ● Write joins, aggregates, window functions and CTEs by hand
-  - ● Eliminate N+1 queries in the ORM
+  - ● Eliminate N+1 queries from loops with joins or batched ANY lookups
   - ● Wrap manual production SQL in a transaction and review it first
   - ● Write upserts and bulk writes with ON CONFLICT and batching
-  - ● Read the SQL an ORM generates and override it when it is wrong
+  - ● Write SQLx checked queries, map nullability and types, commit the offline data
   - ◐ Write keyset pagination queries that stay fast on deep pages
   - ◐ Use RETURNING, lateral joins and recursive CTEs to simplify application code
   - ◐ Write, dry-run and execute a backfill to correct bad records
@@ -315,7 +315,7 @@
   - ○ Use covering indexes and index-only scans for hot reads
   - ○ Fix bad plans caused by stale statistics or row misestimates
 - **migrations.md** — Zero-downtime schema migrations
-  - ● Run schema migrations as versioned, reviewed code
+  - ● Run schema migrations with sqlx-cli as versioned, reviewed code
   - ● Write backward-compatible migrations using expand-then-contract
   - ◐ Add indexes and constraints without long table locks
   - ◐ Rename or retype a column across several deploys without downtime
@@ -363,9 +363,9 @@
   - ○ Choose a document, key-value or wide-column store only for a proven access pattern
   - ○ Run analytics on a columnar engine such as ClickHouse or DuckDB
   - ○ Choose a time-series or event store for metrics-shaped data at volume
-- **caching-redis.md** — Application caching with Redis
+- **caching-redis.md** — Application caching with moka and Redis
   - ● Decide what must never be cached: balances, entitlements, payment state
-  - ◐ Cache hot reads in Redis or Valkey with TTLs and explicit invalidation
+  - ◐ Cache hot reads in moka or Redis with TTLs and explicit invalidation
   - ◐ Choose cache-aside, read-through or write-through for a use case
   - ◐ Design cache keys and versions so deploys never read stale shapes
   - ◐ Size memory, set an eviction policy and decide whether persistence matters
@@ -375,7 +375,7 @@
 - **search.md** — Search
   - ● Use Postgres full-text and trigram search before adding a search engine
   - ● Enforce tenant and permission filters inside every search query
-  - ◐ Choose a search engine by data size, features and operating burden
+  - ◐ Choose embedded tantivy or a search server by data size and operating burden
   - ◐ Keep a search index in sync with the database and rebuild it without downtime
   - ◐ Build autocomplete, facets and filters that stay fast
   - ◐ Store and query embeddings with pgvector and HNSW indexes
@@ -410,24 +410,24 @@
 
 ## 4 · Backend — What does the server do with a request, and what does it promise other systems?
 
-### backend-architecture — Structure the server side of a product: runtime choice, monolith and service boundaries, consistency under concurrency, multi-tenancy, background jobs, realtime features, file uploads and resilient third-party integrations.
-- **runtime-language.md** — Language, runtime and process model
-  - ● Choose a backend language and runtime by workload and team skill
-  - ● Choose and pin a JavaScript runtime: Node.js, Bun or Deno
-  - ● Keep the event loop unblocked under load
-  - ● Prefer runtime built-ins (fetch, crypto, watch mode, env files) over extra dependencies
+### backend-architecture — Structure the Rust server side of a product: the Tokio runtime and process model, workspace layout, monolith and service boundaries, consistency under concurrency, multi-tenancy, background jobs, realtime features, file uploads and resilient third-party integrations.
+- **runtime-language.md** — Rust, Tokio and the process model
+  - ● Keep the Tokio runtime unblocked: spawn_blocking for CPU-heavy or blocking calls
+  - ● Never hold a std mutex guard across an await; choose the lock deliberately
+  - ● Supervise spawned tasks with JoinSet so panics and errors surface
   - ● Finish in-flight requests and jobs on SIGTERM before exiting
-  - ◐ Size workers, threads and pools to CPU, memory and downstream limits
-  - ◐ Move CPU-heavy work to worker threads, a job or another runtime
-  - ◐ Run TypeScript natively in Node with type stripping and ESM-only modules
-  - ○ Propagate deadlines and cancel work when the client disconnects
-  - ○ Tune garbage collection and memory limits to stop latency spikes
+  - ● Lay out the Cargo workspace: domain, data, web and binary crates
+  - ◐ Bound concurrency with semaphores and bounded channels, never unbounded spawns
+  - ◐ Size Tokio worker threads, the blocking pool and connection pools to the machine
+  - ◐ Cut compile times with crate splits, a faster linker and fewer heavy macros
+  - ○ Propagate deadlines and keep work cancel-safe when the client disconnects
+  - ○ Find and stop memory growth: unbounded buffers, caches and allocator fragmentation
 - **architecture-shape.md** — Monolith, modules, services and events
   - ● Start as a modular monolith and extract services only on proven need
-  - ● Choose between the meta-framework's server and a separate API service with its own framework
+  - ● Serve UI and API from one Axum binary or split out a separate API service
   - ● Draw module boundaries around business capabilities with explicit interfaces
   - ● Keep business logic out of transport code so API, jobs and CLI share it
-  - ● Handle errors by kind: expected failures, bugs and what the user sees
+  - ● Type errors with thiserror, keep anyhow at the edges, map to responses once
   - ◐ Scale horizontally with stateless app servers and external session state
   - ○ Decouple modules with events without creating a distributed monolith
   - ○ Decide when to extract a service and define its contract and owner
@@ -500,11 +500,11 @@
   - ● Choose REST, typed RPC, GraphQL or server functions for each consumer
   - ● Design resources, names and URL structure consistently
   - ● Agree the API contract before implementing either side
-  - ● Describe REST APIs in OpenAPI and generate typed clients
+  - ● Derive the OpenAPI document from Rust types and generate typed clients
   - ○ Design a GraphQL schema with complexity limits, batching and persisted queries
-  - ○ Use gRPC or Connect between internal services where it pays
+  - ○ Use gRPC with tonic between internal services where it pays
 - **requests-responses.md** — Validation, errors, pagination and payloads
-  - ● Validate every input at the boundary against a schema
+  - ● Parse every input at the boundary into validated types with serde and garde
   - ● Return consistent RFC 9457 problem-details errors
   - ● Paginate every list endpoint with opaque cursors and stable ordering
   - ● Represent dates, money, IDs and enums unambiguously in JSON
@@ -551,10 +551,10 @@
 ### email-notifications — Send transactional email, SMS, push and in-app notifications that arrive, render and are wanted: provider setup, SPF, DKIM and DMARC, sender reputation, templates, channel choice and user preferences.
 - **transactional-email.md** — Sending transactional email
   - ● Choose an email provider and separate transactional from marketing streams
-  - ● Send transactional email through a provider API with versioned templates
+  - ● Send through a provider's HTTP API, or lettre for SMTP, with versioned templates
   - ● Send from a background job, idempotently, so retries never double-send
   - ● Write emails with a plain-text part, a clear subject and one action
-  - ● Build templates that render across mail clients and dark mode
+  - ● Build askama or MJML templates that render across mail clients and dark mode
   - ● Preview and test emails locally and in CI without mailing real users
   - ◐ Log every send and its delivery status for support lookups
   - ○ Receive inbound email and replies through provider webhooks
@@ -593,8 +593,8 @@
   - ● Use hosted checkout or provider-hosted fields so card data never touches your servers
   - ● Create the payment server-side from item IDs, never client-computed amounts
   - ● Treat the provider webhook, not the browser redirect, as the source of truth
-  - ● Generate an idempotency key per payment attempt so retries never double-charge
-  - ● Block reload, back button and second tabs from resubmitting a payment
+  - ● Use one idempotency key per attempt so retries, reloads and second tabs never double-charge
+  - ● Call Stripe from Rust with a pinned async-stripe or typed reqwest, verifying webhooks
   - ● Handle 3-D Secure and asynchronous payment states correctly
   - ◐ Resolve an unknown outcome after a timeout by querying, never re-charging
   - ◐ Offer Apple Pay, Google Pay and local payment methods per market
@@ -614,7 +614,7 @@
   - ◐ Gate features through an entitlements layer separate from billing
   - ◐ Recover failed renewals with smart retries, card updater and dunning emails
   - ◐ Support seats, add-ons and annual plans in the subscription model
-  - ◐ Test billing lifecycles with the provider's simulated clocks
+  - ◐ Test billing lifecycles with test clocks and webhooks with the Stripe CLI
   - ○ Migrate subscribers between plans or price versions safely
 - **usage-billing.md** — Usage-based and credit billing
   - ◐ Meter usage with accurate, idempotent events
@@ -668,12 +668,12 @@
   - ● Decide which product problems need an LLM versus deterministic code
   - ● Choose a model tier for each task by quality, latency and cost
   - ● Write prompts with a clear role, examples, constraints and output format
-  - ● Define an LLM call's contract: inputs, structured output schema and failure handling
+  - ● Define an LLM call's contract: typed inputs, a serde-parsed output schema, failure handling
   - ● Engineer context: decide what enters the window and in what order
   - ◐ Diagnose a quality gap as a prompt, context, retrieval or model problem first
   - ◐ Version prompts as code and test them like code
   - ○ Decide when to fine-tune or self-host models instead of calling APIs
-  - ○ Run open-weight models locally or in-browser when privacy or cost demands
+  - ○ Run open-weight models in Rust or in the browser when privacy or cost demands
 - **retrieval.md** — Retrieval over your own data
   - ● Decide whether a feature needs retrieval, long context or a tool call
   - ● Build retrieval with chunking, embeddings and source citations
@@ -722,7 +722,7 @@
   - ◐ Cache or precompute responses where inputs repeat
 - **ai-ux.md** — AI interaction and streaming UX
   - ● Choose chat, inline assist or background automation as the interaction pattern
-  - ● Stream output to the UI with cancel, retry and partial-result handling
+  - ● Stream model output from Axum to the UI with cancel, retry and partial results
   - ● Design the failure states: refusal, timeout, low confidence and empty retrieval
   - ◐ Show sources so users can verify an answer
   - ◐ Let users edit, regenerate and steer output rather than only accept it
@@ -741,7 +741,7 @@
 
 ### auth-identity — Build sign-in and access control that resist takeover: auth architecture, sessions and tokens, passwords, MFA and passkeys, OAuth and OIDC, enterprise SSO, authorization models, account recovery and abuse defense.
 - **auth-architecture.md** — Auth architecture and signup
-  - ● Decide between a managed auth provider and a vetted library; never hand-roll crypto
+  - ● Decide between a hosted OIDC provider and self-hosting with vetted crates; never hand-roll crypto
   - ● Choose sign-in methods for the audience: passkeys, social, magic links, passwords
   - ● Model users, linked identities, credentials and sessions in the schema
   - ● Design signup and email verification that resist typos and abuse
@@ -750,7 +750,7 @@
   - ○ Migrate users between auth systems without forcing password resets
 - **sessions-tokens.md** — Sessions, cookies and tokens
   - ● Keep sessions in HttpOnly, Secure, SameSite cookies, not tokens in localStorage
-  - ● Implement sessions with rotation, expiry and revocation
+  - ● Implement server-side sessions with tower-sessions: rotation, expiry and revocation
   - ● Protect state-changing requests against CSRF
   - ● Choose server-side sessions or JWTs and accept the revocation trade-off
   - ◐ Scope cookies correctly across subdomains and environments
@@ -759,9 +759,9 @@
   - ◐ Authenticate native and mobile clients with tokens in secure storage
   - ○ Require step-up authentication for sensitive actions
 - **passwords-mfa-passkeys.md** — Passwords, MFA and passkeys
-  - ● Hash passwords with Argon2id and reject known-breached passwords
+  - ● Hash passwords with Argon2id off the async runtime and reject breached passwords
   - ● Implement email magic links and one-time codes that resist interception and replay
-  - ◐ Offer passkeys via WebAuthn as primary sign-in with a safe fallback
+  - ◐ Offer passkeys with webauthn-rs as primary sign-in with a safe fallback
   - ◐ Offer TOTP or passkey MFA and never rely on SMS alone
   - ◐ Generate, store and consume MFA recovery codes safely
   - ◐ Enforce MFA by policy for admins and organizations
@@ -771,7 +771,7 @@
   - ● Add social login with Google, GitHub, Apple or Microsoft
   - ● Debug an OAuth flow failing on redirect, state or cookie errors
   - ● Link a provider login to an existing account without enabling takeover
-  - ◐ Implement OAuth 2.1 with PKCE and strict redirect URI validation
+  - ◐ Implement OIDC login with PKCE and exact redirect URIs using the openidconnect crate
   - ◐ Validate ID tokens: issuer, audience, nonce, signature and expiry
   - ◐ Request minimal scopes at login and discard provider tokens you do not need
   - ○ Issue scoped, short-lived credentials to AI agents acting for users
@@ -831,20 +831,20 @@
   - ◐ Block SSRF by allow-listing outbound destinations and guarding metadata endpoints
   - ◐ Prevent open redirects and unsafe URL handling
   - ◐ Close business-logic flaws: coupon reuse, negative amounts, race-condition double spends
-  - ◐ Bound attacker-sized inputs to prevent ReDoS and resource exhaustion
+  - ◐ Bound attacker-sized inputs, allocations and backtracking regexes to prevent resource exhaustion
   - ○ Sandbox user-supplied code, HTML and custom domains
 - **browser-security.md** — CSP, CORS and browser security headers
   - ● Configure CORS precisely, without wildcard origins on credentialed requests
   - ● Block clickjacking with frame-ancestors
   - ● Set Referrer-Policy, Permissions-Policy and nosniff headers
-  - ◐ Deploy a strict nonce-based Content Security Policy
+  - ◐ Deploy a strict nonce-based Content Security Policy that allows WASM via wasm-unsafe-eval
   - ◐ Roll out CSP in report-only mode and fix violations before enforcing
   - ◐ Inventory third-party scripts and pin them with Subresource Integrity
   - ◐ Validate postMessage origins and sandbox embedded iframes
   - ○ Enforce Trusted Types to remove DOM XSS sinks
   - ○ Apply cross-origin isolation headers (COOP, COEP, CORP) where needed
 - **secrets.md** — Secrets, key management and cryptographic primitives
-  - ● Keep secrets in a secrets manager, never in repositories, images or client bundles
+  - ● Keep secrets in a secrets manager, never in repositories, images, binaries or WASM
   - ● Enable secret scanning with push protection on all repositories
   - ● Rotate a leaked key, audit its use and purge it from history
   - ● Share credentials through a team password manager with role-based access
@@ -854,15 +854,15 @@
   - ◐ Rotate secrets on a schedule without downtime
   - ◐ Store recovery codes and break-glass credentials where a second person can reach them
 - **supply-chain.md** — Dependencies and software supply chain
-  - ● Commit lockfiles and install in frozen mode everywhere
-  - ● Evaluate a library's maintenance, license and bus factor before depending on it
-  - ● Scan dependencies and images in CI and patch within a deadline
+  - ● Commit Cargo.lock and build with --locked everywhere
+  - ● Evaluate a crate's maintenance, dependents, license and unsafe use before depending on it
+  - ● Run cargo deny and cargo audit in CI and patch advisories within a deadline
   - ◐ Automate dependency updates with a release cooldown window
-  - ◐ Disable install scripts and vet packages against typosquatting and slopsquatting
-  - ◐ Upgrade dependencies and runtimes on a cadence, ahead of end-of-life dates
-  - ○ Generate an SBOM for each release
+  - ◐ Vet crates for typosquatting and slopsquatting; build scripts and proc macros run code
+  - ◐ Update crates, the toolchain and base images on a cadence, ahead of end-of-life dates
+  - ○ Generate an SBOM for each release and embed dependency data with cargo-auditable
   - ○ Establish a compromised package's blast radius and rotate everything exposed
-  - ○ Fork, vendor or replace an abandoned dependency
+  - ○ Fork, patch or vendor an abandoned crate with [patch] and cargo vendor
 - **accounts-admin-hardening.md** — Hardening company accounts, staff access and admin tools
   - ● Enforce MFA and least privilege on registrar, repository, payment and SaaS accounts
   - ● Hold domains, cloud, code and payment accounts in company-owned identities
@@ -965,7 +965,7 @@
 
 ## 6 · Frontend — What runs in the user's browser, on any device?
 
-### frontend-foundations — Build on the web platform itself: semantic HTML, CSS layout and responsive design, JavaScript and TypeScript, the browser's rendering and events, forms, animation, internationalization, and PWA and mobile packaging.
+### frontend-foundations — Build on the web platform itself: semantic HTML, CSS layout and responsive design, the browser runtime and Rust-to-WASM interop, the browser's rendering and events, forms, animation, internationalization, and PWA and mobile packaging.
 - **html-semantics.md** — HTML semantics and document structure
   - ● Write semantic HTML with correct landmarks, headings and lists
   - ● Choose native elements (button, a, details, dialog) before custom widgets
@@ -973,12 +973,12 @@
   - ● Mark up tables, figures and code for structure, not layout
   - ● Target Baseline feature availability instead of browser-version lists
   - ● Build overlays with native dialog, popover and anchor positioning
-  - ◐ Use progressive enhancement so core content works before JavaScript loads
+  - ◐ Use progressive enhancement so core content works before scripts and WASM load
   - ◐ Embed media and iframes with dimensions, lazy loading and sandboxing
 - **css-layout.md** — CSS layout and responsive design
   - ● Lay out responsive pages mobile-first with grid, flexbox and container queries
   - ● Debug layout using the cascade, specificity and box model
-  - ● Style with Tailwind or CSS modules driven by design tokens
+  - ● Style with Tailwind's standalone CLI or plain CSS driven by design tokens
   - ● Handle safe areas, the virtual keyboard and dynamic viewport units
   - ● Prevent overflow, stacking-context and z-index bugs systematically
   - ◐ Use native nesting, cascade layers and :has() without a preprocessor
@@ -986,16 +986,16 @@
   - ◐ Align nested components with subgrid and intrinsic sizing
   - ◐ Implement themes with color-scheme, light-dark() and OKLCH custom properties, without a load flash
   - ◐ Keep a growing stylesheet maintainable: scoping, naming and dead-style removal
-- **javascript-typescript.md** — JavaScript and TypeScript
-  - ● Fix async ordering bugs by reasoning about the event loop and microtasks
-  - ● Start every project in strict TypeScript, including config and scripts
-  - ● Model states with discriminated unions so invalid states cannot compile
-  - ● Narrow unknown data at boundaries instead of casting with as or any
-  - ● Handle errors, cancellation and timeouts in async code with AbortController
-  - ● Use generics, inference and utility types without unreadable type gymnastics
-  - ◐ Use ES modules, package exports and CommonJS interop correctly
-  - ◐ Use Baseline built-ins (structuredClone, Intl, iterator helpers, Temporal when Baseline) instead of libraries
-  - ◐ Find and fix leaks from listeners, timers and detached DOM nodes
+- **browser-runtime-wasm.md** — The browser runtime and Rust-to-WASM interop
+  - ● Fix async ordering bugs by reasoning about the event loop wasm futures run on
+  - ● Call browser APIs through web-sys and js-sys, enabling only the features you use
+  - ● Convert values at the JavaScript boundary with dyn_into and serde-wasm-bindgen, not unchecked casts
+  - ● Handle JavaScript errors, timeouts and cancellation from Rust with Result and AbortController
+  - ● Report WASM panics with a panic hook, knowing a panic leaves the app unusable
+  - ● Decide when a few lines of plain JavaScript beat a WASM round trip
+  - ◐ Bind a JavaScript library to Rust with wasm-bindgen extern blocks
+  - ◐ Prevent leaks from forgotten closures, listeners and timers held across the boundary
+  - ◐ Use Baseline built-ins such as Intl through js-sys instead of crates that bloat WASM
 - **browser-dom.md** — The browser: rendering pipeline, DOM, events and DevTools
   - ● Inspect and live-edit DOM, computed styles and layout in DevTools to find a bug
   - ● Debug a real phone remotely with Chrome DevTools or Safari Web Inspector
@@ -1003,33 +1003,33 @@
   - ● Choose client storage: cookies, localStorage, IndexedDB, Cache API or OPFS
   - ◐ Predict whether a change triggers layout, paint or only compositing before making it
   - ◐ Use Intersection, Resize and Mutation observers instead of polling
-  - ◐ Move heavy work off the main thread with web workers
+  - ◐ Move heavy work off the main thread into web workers running WASM
   - ◐ Use platform APIs (clipboard, share, file, fullscreen) with permission and fallback
   - ○ Build framework-free widgets with custom elements where they fit
 - **forms.md** — Forms
-  - ● Write semantic HTML forms that work before JavaScript loads
+  - ● Write semantic HTML forms that work before scripts and WASM load
   - ● Set input types, autocomplete and inputmode for autofill and the right keyboard
   - ● Validate inline and on the server, showing each error beside its field
   - ● Block double submits and show pending state on submit
-  - ● Share one validation schema between client and server
+  - ● Share one garde-validated Rust type between client and server
   - ◐ Preserve form state across reload, back navigation and app switch
   - ◐ Prevent lost work with autosave, drafts and unsaved-changes warnings
   - ◐ Build multi-step forms with per-step validation and resumable progress
   - ◐ Build date, combobox and file-drop inputs from accessible primitives
 - **animation.md** — Animation on the web
   - ● Animate transform and opacity so motion stays on the compositor
-  - ● Choose CSS transitions, the Web Animations API or a library for an effect
+  - ● Choose CSS transitions or the Web Animations API through web-sys for an effect
   - ● Honor prefers-reduced-motion with meaningful alternatives
   - ◐ Animate navigations with View Transitions
   - ◐ Build scroll-driven animations with CSS timelines instead of scroll listeners
   - ◐ Animate elements entering and leaving, including display and auto height
-  - ◐ Animate layout changes with FLIP or a layout-animation library
+  - ◐ Animate layout changes with the FLIP technique and the Web Animations API
   - ◐ Profile janky animation and fix dropped frames
   - ○ Sequence complex timelines and decide when to move to canvas or WebGL
 - **internationalization.md** — Internationalization
-  - ● Format dates, numbers and currencies with Intl for the user's locale
+  - ● Format dates, numbers and currencies per locale, identically on server and client
   - ● Design layouts that survive text expansion and long words
-  - ● Externalize strings as ICU messages with plurals and interpolation
+  - ● Externalize strings as Fluent or ICU messages with plurals and interpolation
   - ◐ Route and detect locales with URLs and a user override
   - ◐ Support right-to-left layouts with logical CSS properties
   - ◐ Run a translation workflow: extraction, context, AI drafts and human review
@@ -1040,69 +1040,69 @@
   - ● Detect offline state and queue or block actions honestly
   - ◐ Ship an installable PWA with manifest, service worker and offline shell
   - ◐ Version and update a service worker without serving stale or private responses
-  - ◐ Wrap the web app with Capacitor or build with Expo, reusing the API
+  - ◐ Wrap the web app with Tauri or build with Dioxus, reusing the API
   - ◐ Open emailed and shared URLs in the installed app with universal and app links
   - ◐ Fix in-app webviews that break cookies, redirects and wallets
   - ◐ Pass App Store and Play review (privacy labels, account deletion) and appeal rejections
   - ○ Implement in-app purchases and follow store billing rules per region
   - ○ Run staged rollouts, crash reporting and forced upgrades of old app versions
 
-### react-nextjs — Build the application layer of the frontend with React and a meta-framework: rendering strategy per route, where editable content lives, server components and server functions, data and state, routing, component architecture and build tooling.
-- **rendering-strategies.md** — Framework, rendering strategy and content sources
-  - ● Choose per route between static, server-rendered, streamed and client rendering
-  - ● Choose a meta-framework: Next.js, React Router, TanStack Start, Astro, SvelteKit or Nuxt
+### rust-frontend — Build the application layer of the frontend in Rust with Leptos full-stack: rendering mode per route, or server templates with htmx when they are enough, components and fine-grained reactivity, server functions and forms, routing, data and state, hydration, build tooling and deployment.
+- **rendering-strategies.md** — Rendering modes, framework choice and content sources
+  - ● Choose per route between SSR with hydration, islands, client-side only and static
+  - ● Choose server-rendered templates with htmx over a WASM UI for form-and-content products
   - ● Render useful HTML for crawlers and link previews
-  - ● Control framework caching with explicit tags and revalidation
-  - ● Choose where content lives: repo MDX, a headless CMS or a site builder
-  - ◐ Ship static shells with dynamic holes via partial prerendering or islands
-  - ◐ Decide when HTML-over-the-wire (htmx, Hotwire) beats a JavaScript framework
+  - ● Choose where content lives: repo markdown, a headless CMS or a site builder
+  - ◐ Choose an SSR mode per route: out-of-order streaming, in-order, async or partially blocked
+  - ◐ Hydrate only interactive islands on mostly static pages
+  - ◐ Prerender static routes and regenerate them when content changes
   - ◐ Model content types and wire draft preview and publish-time revalidation
-  - ○ Self-host Next.js and know what a managed platform was doing for you
-- **server-components.md** — Server components, server functions and hydration
-  - ● Build with React Server Components, keeping client components at the leaves
-  - ● Mutate data with server functions that validate and authorize every call
-  - ● Mark server-only modules so importing them from client code fails the build
-  - ● Stream HTML through Suspense boundaries with designed loading states
-  - ● Avoid request waterfalls by fetching in parallel and preloading
-  - ● Diagnose and fix a hydration mismatch
-  - ◐ Cut hydration cost by shrinking client boundaries and serialized props
-- **data-state.md** — Data fetching and state
-  - ● Keep server data in a query cache, not a global store
-  - ● Put view state in the URL so pages are shareable
-  - ● Choose local state, context or an external store for client state
-  - ● Fetch data where it is used and deduplicate requests across components
-  - ● Invalidate and optimistically update cached server data after mutations
-  - ● Wire forms to mutations with pending, error and optimistic states
-  - ◐ Compute derived values during render instead of syncing state in effects
-  - ◐ Merge realtime updates into cached data without flicker or duplicates
-  - ◐ Let the React Compiler memoize instead of hand-written useMemo
-- **routing-navigation.md** — Routing and navigation
-  - ● Structure routes, layouts and nested segments around the product's navigation
-  - ● Protect routes with server-side checks, not client redirects
-  - ● Add loading, error and not-found boundaries to each route segment
-  - ◐ Restore scroll, focus and state on back and forward navigation
-  - ◐ Build modal and parallel routes that deep-link correctly
-  - ◐ Handle redirects, rewrites and locale or tenant routing in middleware
-  - ◐ Type links and route params so broken routes fail at compile time
-  - ○ Migrate routes incrementally between routers or frameworks
-- **components.md** — Component architecture
-  - ● Compose accessible headless primitives with owned styles, shadcn-style
-  - ● Write custom hooks that encapsulate one concern and are testable
+  - ◐ Choose Dioxus instead when the same code must ship to desktop or mobile
+- **components-reactivity.md** — Components and fine-grained reactivity
+  - ● Build Leptos components with typed props, children and the view macro
+  - ● Hold changing state in signals and derive values with closures or memos
+  - ● Load async data with resources inside Suspense and Transition boundaries
+  - ● Build a small owned component library on accessible primitives and Tailwind tokens
+  - ◐ Use effects only to sync with the outside world, avoiding loops and untracked reads
   - ◐ Design component APIs: composition over configuration, controlled versus uncontrolled
-  - ◐ Split components at server, client and data boundaries, not by file size
-  - ◐ Build typed component variants from design tokens
-  - ◐ Develop and document components in isolation with a component workshop
-  - ◐ Render long lists with virtualization and stable keys
-  - ◐ Review a frontend pull request for component boundaries and render cost
-- **build-tooling.md** — Build tooling
-  - ● Bundle with Vite or Turbopack instead of hand-written Webpack config
-  - ● Configure TypeScript, path aliases and module resolution for the framework
-  - ● Manage environment variables and their public or private exposure at build time
-  - ● Process fonts, images, SVG and CSS through the build pipeline
-  - ◐ Debug build failures from module resolution and ESM or CommonJS mismatches
-  - ◐ Set browser targets, polyfills and transpilation from Baseline data
-  - ◐ Speed up dev-server startup, hot reload and production builds
-  - ◐ Pin toolchain versions so builds are identical on laptops and CI
+  - ◐ Render long lists with keyed For and virtualization
+  - ◐ Review a frontend pull request for component boundaries, reactivity and WASM cost
+- **server-functions.md** — Server functions, actions and forms
+  - ● Mutate data through server functions that validate input and authorize every call
+  - ● Treat each server function as a public endpoint: limits, CSRF and safe errors
+  - ● Keep server-only code and secrets out of the WASM with ssr feature gates
+  - ● Build forms with ActionForm that submit and work before WASM loads
+  - ● Show pending, error and optimistic states for actions and multi-actions
+  - ● Refetch or update resources after an action so the page never shows stale data
+  - ◐ Read cookies, headers and Axum extractors and set responses inside server functions
+  - ◐ Choose server function encodings and streaming for large or binary payloads
+  - ○ Share Rust types between client and server without exposing server-only fields
+- **routing-data.md** — Routing, data loading and state
+  - ● Structure nested routes and layouts with leptos_router around the product's navigation
+  - ● Protect routes with server-side checks, not client redirects
+  - ● Add loading, error and not-found states to each route with Suspense and ErrorBoundary
+  - ● Start route data loads in parallel to avoid request waterfalls
+  - ● Put view state in the URL with query params so pages are shareable
+  - ● Choose local signals, context or a global store for client state
+  - ◐ Restore scroll, focus and state on back and forward navigation
+  - ◐ Merge realtime updates into reactive state without flicker or duplicates
+  - ◐ Parse route params into typed structs and handle invalid params
+  - ○ Migrate a React or template-rendered app to Leptos route by route
+- **hydration.md** — Hydration and server-client consistency
+  - ● Diagnose and fix a hydration mismatch, including invalid HTML nesting
+  - ● Render identical output on server and client: no clocks, randomness or browser reads
+  - ● Run browser-only code after hydration in effects, never in the component body
+  - ◐ Debug hydration panics with debug builds, a panic hook and browser-side tracing
+  - ◐ Pass server-loaded data to the client through resources instead of fetching twice
+- **build-deploy.md** — Build tooling, WASM size and deployment
+  - ● Set up a cargo-leptos project with ssr and hydrate features over a shared app crate
+  - ● Manage environment variables at build time and runtime for server and WASM targets
+  - ● Build CSS with the Tailwind standalone CLI through cargo-leptos, without Node
+  - ● Deploy the single Axum binary and its site directory in one minimal image
+  - ◐ Configure a size-optimized WASM release profile and wasm-opt in the build
+  - ◐ Fix wasm-bindgen version mismatches and feature-unification build failures
+  - ◐ Speed up dev rebuilds and hot reload for the server and WASM targets
+  - ◐ Pin the toolchain, wasm32 target and cargo-leptos version across laptops and CI
 
 ### 3dui — Build live 3D product websites with three.js and Next.js: the object is code, lit like a photo studio and directed by the scroll.
 - **SKILL.md** — Live 3D product sites
@@ -1132,7 +1132,7 @@
   - ◐ Choose one icon set and imagery style and write the rules for using them
 - **design-systems.md** — Design tokens and component systems
   - ● Define design tokens for color, type, space, radius and shadow
-  - ● Decide when to adopt an existing component kit versus designing custom
+  - ● Decide between a maintained Leptos component crate and building your own primitives
   - ● Specify every component state: hover, focus, active, disabled, loading, error
   - ● Inventory the components a product needs before designing screens
   - ◐ Structure tokens in primitive, semantic and component tiers
@@ -1192,7 +1192,7 @@
   - ● Give every control an accessible name, role and state
   - ● Write alt text that conveys purpose, and hide decorative images
   - ● Remove redundant, conflicting or invalid ARIA from existing markup
-  - ◐ Apply ARIA patterns correctly for tabs, menus, comboboxes and dialogs
+  - ● Build tabs, menus, comboboxes and dialogs in Leptos to the WAI-ARIA Authoring Practices
   - ◐ Announce dynamic changes with live regions
   - ◐ Replace an inaccessible custom widget with a tested primitive
   - ◐ Make data tables understandable without sight: headers, scope and captions
@@ -1220,7 +1220,7 @@
   - ◐ Write content in plain language with clear structure
   - ◐ Reduce cognitive load with consistent navigation and no time pressure
 - **testing-audits.md** — Accessibility testing and audits
-  - ● Run automated accessibility checks with axe in CI
+  - ● Run axe accessibility checks in CI through the WebDriver end-to-end suite
   - ● Test key flows with a screen reader (VoiceOver, NVDA)
   - ● Run a keyboard-only, zoom and high-contrast pass on every feature
   - ◐ Run a manual WCAG 2.2 AA audit and prioritize findings
@@ -1260,10 +1260,10 @@
   - ◐ Decide what needs human review and what automated checks can cover
 - **monorepos.md** — Monorepos and shared code
   - ● Decide between one repository and many
-  - ◐ Manage a monorepo with pnpm workspaces and Turborepo remote caching
-  - ◐ Share code through internal packages with clear boundaries
-  - ◐ Build and test only what a change affects
-  - ○ Version and publish packages from a monorepo
+  - ◐ Run a monorepo as one Cargo workspace with shared dependency versions and lints
+  - ◐ Share code through internal crates with clear boundaries
+  - ◐ Build and test only affected crates, sharing a compile cache with sccache
+  - ○ Version and publish crates from a workspace with release tooling
   - ○ Split or merge repositories while preserving history
 - **versioning-releases.md** — Versioning, changelogs and release notes
   - ● Tag releases and tie every deploy to a commit
@@ -1273,7 +1273,7 @@
   - ◐ Communicate breaking changes with migration guides
   - ○ Publish a supported-versions policy with end-of-life dates
 
-### code-quality — Keep code correct and changeable: test strategy, unit, integration, end-to-end, contract and visual tests, test data and flaky tests, debugging method, refactoring, static analysis and types, and technical documentation.
+### code-quality — Keep code correct and changeable: test strategy, unit, integration, end-to-end, contract and visual tests, test data and flaky tests, debugging method, refactoring, clippy, the type system and unsafe policy, and technical documentation.
 - **test-strategy.md** — Test strategy
   - ● Decide what to test at each layer and what to skip
   - ● Test the riskiest behavior first: money, auth and data loss
@@ -1284,30 +1284,31 @@
   - ◐ Judge the suite by escaped defects and change failures, not coverage alone
 - **unit-integration-tests.md** — Unit and integration tests
   - ● Write fast, deterministic unit tests for business logic
-  - ● Write integration tests against a real database instead of mocks
-  - ● Test API routes through the HTTP layer, including auth and errors
+  - ● Write integration tests against a throwaway database with sqlx::test, not mocks
+  - ● Test Axum routes through the router as a tower service, including auth and errors
   - ● Mock only at system boundaries and fake third parties from recorded responses
-  - ● Test UI components through user-visible behavior, not implementation details
+  - ● Test Leptos components through rendered output and wasm-bindgen-test in a headless browser
   - ◐ Test failure paths: timeouts, retries, partial writes and concurrency
-  - ◐ Keep the suite fast enough to run on every change
+  - ◐ Keep the suite fast enough with cargo-nextest to run on every change
   - ○ Use property-based tests for parsers, money and invariants
   - ○ Run mutation testing on critical modules to check test strength
 - **e2e-contract-visual.md** — End-to-end, contract and visual tests
-  - ● Cover critical journeys end to end with Playwright
-  - ● Select elements by role and label, not CSS paths
+  - ● Cover critical journeys end to end through WebDriver with thirtyfour
+  - ● Select elements by stable test IDs, labels and text, not CSS paths
   - ◐ Decide how few end-to-end tests are enough
   - ◐ Run cross-browser and mobile-viewport end-to-end tests in CI
   - ◐ Test sign-in, payment and email flows with test modes and test inboxes
-  - ◐ Debug a failing end-to-end test from its trace, video and network log
+  - ◐ Debug a failing end-to-end test from screenshots, browser logs and server traces
   - ◐ Catch visual regressions with screenshot diffing
   - ○ Contract-test API consumers and providers so changes cannot silently break clients
+  - ◐ Decide whether Playwright's tooling justifies a non-Rust end-to-end suite
 - **test-data-flaky.md** — Test data and flaky tests
   - ● Build test data with factories and builders, not shared fixtures
   - ● Seed realistic local and preview data with scripts
   - ● Isolate tests with per-test transactions or databases
   - ◐ Freeze clocks and seed randomness so tests are repeatable
   - ◐ Quarantine and fix flaky tests so CI stays trusted
-  - ◐ Find the root cause of flakiness: time, order, network or shared state
+  - ◐ Find the root cause of flakiness: time, order, hydration, network or shared state
   - ○ Parallelize and shard tests without cross-test interference
   - ○ Use anonymized production-shaped data for performance and migration tests
 - **debugging.md** — Debugging method
@@ -1319,27 +1320,28 @@
   - ● Write the regression test that fails before the fix
   - ● Reproduce a production bug locally from its trace and logs
   - ◐ Debug safely in production with read-only access, flags and sampled logs
-  - ◐ Find a server-side memory leak by comparing heap snapshots under load
-  - ○ Debug intermittent concurrency failures with targeted logging and stress loops
+  - ◐ Find a server memory leak with a heap profiler under load
+  - ○ Debug intermittent concurrency failures and async stalls with tokio-console and stress loops
 - **refactoring.md** — Refactoring and rewrites
   - ● Refactor in small behavior-preserving steps under tests
   - ● Separate refactoring commits from behavior changes
   - ● Delete dead code as soon as it is unreachable, not in a cleanup project
   - ◐ Add characterization tests before changing legacy code
   - ◐ Spot the smells worth fixing: duplicated knowledge, long functions, wide interfaces
-  - ◐ Apply codemods for mechanical large-scale changes
-  - ◐ Upgrade a language or framework major version incrementally
+  - ◐ Apply mechanical large-scale changes with rust-analyzer, cargo fix or ast-grep
+  - ◐ Migrate to a new Rust edition or major crate version incrementally
   - ○ Decide when to rewrite, refactor or leave a system alone
   - ○ Migrate incrementally with a strangler pattern instead of a big-bang rewrite
-- **static-analysis-types.md** — Static analysis, linting and types
-  - ● Gate CI on type checking as the first test
-  - ● Lint and format with Biome or ESLint flat config, enforced not debated
+- **static-analysis-types.md** — Static analysis, lints, types and unsafe policy
+  - ● Gate CI on clippy with warnings denied and rustfmt --check, from workspace lints
   - ● Run pre-commit hooks that are fast enough to keep on
-  - ● Ban unsafe patterns with lint rules: any, floating promises, unchecked access
-  - ◐ Tighten TypeScript strictness incrementally in a legacy codebase
-  - ◐ Find dead exports, unused dependencies and circular imports with tooling
-  - ◐ Generate types from database and API schemas so drift fails the build
-  - ○ Enforce architecture boundaries with import rules
+  - ● Model domain states with enums and newtypes so invalid states cannot compile
+  - ● Forbid unsafe code in application crates and review every exception
+  - ● Deny unwrap, panicking indexing and lossy casts in request paths with clippy
+  - ◐ Tighten clippy lint levels incrementally in a legacy codebase
+  - ◐ Find unused dependencies, features and dead code with tooling
+  - ◐ Check queries and API schemas at compile time so drift fails the build
+  - ○ Enforce architecture boundaries with crate dependencies and visibility
 - **technical-docs.md** — Technical documentation
   - ● Write a README and quickstart that gets someone running in minutes
   - ● Keep docs in the repository and update them in the same pull request
@@ -1360,7 +1362,7 @@
   - ● Break a large feature into agent-sized tasks with checkpoints
   - ◐ Ask for options and trade-offs before code on design decisions
 - **context-setup.md** — Context and project setup
-  - ● Maintain AGENTS.md or CLAUDE.md with conventions and commands
+  - ● Maintain AGENTS.md or CLAUDE.md with conventions and the exact cargo commands
   - ● Provide one-command setup so an agent can run the app and tests
   - ● Give agents the files, examples and constraints they need, not everything
   - ● Keep the codebase agent-legible: small modules, strong types, documented commands
@@ -1368,16 +1370,16 @@
   - ◐ Extend agents with MCP servers, skills and hooks for your stack
   - ◐ Write reusable commands and skills for recurring tasks
 - **verification-review.md** — Verifying and reviewing agent work
-  - ● Give agents fast feedback: types, tests, linters and a runnable app
+  - ● Give agents fast compile-error loops: cargo check, clippy, nextest, a runnable app
   - ● Make the agent prove its work with test output and screenshots
   - ● Review every agent diff like a junior's pull request
-  - ● Catch agent failure modes: invented APIs, weakened tests, over-broad changes
+  - ● Catch agent failure modes: invented crate APIs, silenced lints, weakened tests, sprawling diffs
   - ● Apply extra scrutiny to agent changes in auth, payments and migrations
   - ◐ Have agents write failing tests first and reject tests that assert nothing
   - ◐ Add AI code review in CI while keeping human merge approval
   - ◐ Keep your own understanding of the architecture as agents write more
 - **parallel-automation.md** — Parallel and automated agents
-  - ◐ Run parallel agents in git worktrees or cloud sandboxes
+  - ◐ Run parallel agents in git worktrees or cloud sandboxes with a shared build cache
   - ◐ Partition work so parallel agents do not touch the same files
   - ◐ Schedule recurring agent tasks: dependency bumps, flaky-test fixes, doc sync
   - ○ Measure whether agents speed delivery: cycle time, rework and defects
@@ -1445,8 +1447,8 @@
 
 ### site-reliability — Know what production is doing and keep it up: logs, errors, metrics and traces, dashboards and alerts, SLOs, incident response, postmortems and runbooks, capacity and scaling, and disaster recovery.
 - **logging-errors.md** — Logs and error tracking
-  - ● Emit structured JSON logs carrying request and trace IDs
-  - ● Capture frontend and backend errors with source maps and release tags
+  - ● Emit JSON logs with tracing-subscriber carrying request and trace IDs
+  - ● Capture server and WASM errors and panics in the tracker with release tags
   - ● Scrub card data, tokens and personal data from logs and traces
   - ● Choose log levels and what belongs at each
   - ● Search and correlate logs to follow one request
@@ -1456,12 +1458,13 @@
 - **metrics-tracing.md** — Metrics and distributed tracing
   - ● Record business metrics (signups, checkouts, jobs) beside technical ones
   - ● Choose a hosted observability backend that fits a small team's budget
-  - ◐ Instrument services with OpenTelemetry traces, metrics and logs
-  - ◐ Instrument rate, errors and duration for each service and dependency
+  - ◐ Export tracing spans and metrics over OTLP with tracing-opentelemetry
+  - ◐ Instrument rate, errors and duration per route and dependency with tower-http and spans
   - ◐ Propagate W3C trace context across browser, services and queues
   - ◐ Follow one failed request across CDN, load balancer, app, database and provider
   - ○ Choose metric types and keep label cardinality bounded
   - ○ Route telemetry through an OpenTelemetry Collector to stay vendor-neutral
+  - ◐ Carry span context across await points and spawned tasks
 - **dashboards-alerting.md** — Dashboards and alerting
   - ● Set up external uptime checks that alert your phone
   - ● Monitor scheduled jobs with heartbeat checks
@@ -1517,7 +1520,7 @@
   - ○ Rebuild the whole stack in a new account or region from code and backups
   - ○ Inject failures and run game days against critical paths
 
-### web-performance — Make pages and endpoints fast and keep them fast: Core Web Vitals, loading and delivery, JavaScript bundles, images and fonts, rendering and runtime, backend latency and profiling, load testing, and performance budgets.
+### web-performance — Make pages and endpoints fast and keep them fast: Core Web Vitals, loading and delivery, the client payload of WASM and hydration, images and fonts, rendering and runtime, backend latency and profiling, load testing, and performance budgets.
 - **core-web-vitals.md** — Core Web Vitals
   - ● Measure LCP, INP and CLS from real users, not only Lighthouse
   - ● Prevent layout shift by reserving space for media, fonts and embeds
@@ -1535,19 +1538,20 @@
   - ◐ Use preconnect and resource hints for critical third-party origins
   - ◐ Cut request count and bytes for slow radios and battery
   - ○ Make navigations instant with bfcache eligibility and speculation-rules prerendering
-- **javascript-bundles.md** — JavaScript bundles
-  - ● Analyze the bundle and remove duplicate or oversized dependencies
-  - ● Ship less JavaScript by rendering on the server and using platform features
-  - ● Code-split by route and lazy-load heavy components
-  - ◐ Enforce a JavaScript bundle budget in CI
-  - ◐ Make tree-shaking work: ES modules, side-effect flags, no barrel-file traps
+- **client-payload.md** — Client payload: WASM, code splitting and hydration
+  - ● Find what bloats the WASM binary with twiggy and cut oversized dependencies
+  - ● Ship less code by rendering on the server and using platform features before WASM
+  - ● Code-split the WASM by route and lazy-load heavy components
+  - ◐ Measure hydration cost and shrink the state serialized into the page
+  - ◐ Enforce a WASM and JavaScript payload budget in CI
+  - ◐ Serve WASM precompressed, immutably cached and as application/wasm for streaming compilation
   - ○ Load third-party widgets through facades or workers
 - **images-fonts.md** — Images, video and fonts
   - ● Serve responsive AVIF or WebP images with srcset, sizes and lazy loading
   - ● Set explicit dimensions and high priority on the LCP image
   - ● Choose system or variable fonts to cut font weight
   - ● Load web fonts with subsetting, preload and font-display without layout shift
-  - ◐ Resize and optimize images on demand through an image CDN or framework loader
+  - ◐ Resize and optimize images on demand through an image CDN or a build step
   - ◐ Deliver video with posters, streaming formats and lazy loading
   - ◐ Replace icon fonts and heavy SVG with optimized sprites or inline SVG
 - **rendering-runtime.md** — Rendering and runtime performance
@@ -1559,16 +1563,16 @@
   - ◐ Keep typing and scrolling responsive by debouncing, deferring and batching updates
 - **backend-latency.md** — Backend latency and profiling
   - ● Profile a slow endpoint and find the slow query, lock or downstream call
-  - ● Run independent I/O in parallel instead of sequential awaits
+  - ● Run independent I/O concurrently with join or JoinSet instead of sequential awaits
   - ◐ Track p95 and p99 latency per endpoint and log slow queries
   - ◐ Set a latency budget for each hop of a critical request
   - ◐ Profile CPU with a flame graph and fix the hot path
   - ◐ Precompute expensive results in materialized tables or background jobs
   - ◐ Reduce payload size and serialization cost
-  - ○ Find tail-latency causes: garbage collection, cold starts, pool waits, lock contention
+  - ○ Find tail-latency causes: runtime starvation, cold starts, pool waits, lock contention
 - **load-testing.md** — Load testing
   - ● Decide whether a load test is worth running at this stage
-  - ◐ Load-test critical endpoints with k6 and find the saturation point
+  - ◐ Load-test critical endpoints with oha, goose or k6 and find the saturation point
   - ◐ Model realistic traffic: request mix, think time, data variety and ramp
   - ◐ Identify the first bottleneck from metrics during a test
   - ○ Run soak, spike and stress tests and read what each reveals

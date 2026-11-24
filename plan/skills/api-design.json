@@ -6,7 +6,7 @@
   "summary": "Design, document and evolve HTTP APIs and webhooks: style choice, request and response contracts, errors, pagination, idempotency, rate limits, versioning and a public developer platform.",
   "useWhen": [
     "Design the API for this feature, or review my endpoint design",
-    "Should this be REST, GraphQL, tRPC or server functions?",
+    "Should this be REST, GraphQL, gRPC or Leptos server functions?",
     "Add pagination, filtering and a consistent error format",
     "Make this POST safe to retry without creating duplicates",
     "Add rate limiting and quotas per API key or tenant",
@@ -60,7 +60,7 @@
           "level": "core"
         },
         {
-          "topic": "Describe REST APIs in OpenAPI and generate typed clients",
+          "topic": "Derive the OpenAPI document from Rust types and generate typed clients",
           "level": "core"
         },
         {
@@ -68,7 +68,7 @@
           "level": "expert"
         },
         {
-          "topic": "Use gRPC or Connect between internal services where it pays",
+          "topic": "Use gRPC with tonic between internal services where it pays",
           "level": "expert"
         }
       ]
@@ -79,7 +79,7 @@
       "purpose": "Read when defining what an endpoint accepts and returns: input validation, error shape, lists, filtering and data formats.",
       "leaves": [
         {
-          "topic": "Validate every input at the boundary against a schema",
+          "topic": "Parse every input at the boundary into validated types with serde and garde",
           "level": "core"
         },
         {

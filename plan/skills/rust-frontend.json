@@ -1,0 +1,285 @@
+{
+  "name": "rust-frontend",
+  "layer": 6,
+  "order": 2,
+  "title": "Rust frontend with Leptos full-stack",
+  "summary": "Build the application layer of the frontend in Rust with Leptos full-stack: rendering mode per route, or server templates with htmx when they are enough, components and fine-grained reactivity, server functions and forms, routing, data and state, hydration, build tooling and deployment.",
+  "useWhen": [
+    "Should this page be server-rendered with hydration, an island, client-side only or static?",
+    "Do we need a WASM frontend at all, or would server templates with htmx do?",
+    "Leptos or Dioxus: which Rust UI framework fits this product?",
+    "Add a blog, docs or CMS so non-developers can edit pages",
+    "Should this be a signal, a memo, a resource, context or URL state?",
+    "Write a server function or a form that still works before the WASM loads",
+    "Fix a hydration mismatch or a panic in the browser console",
+    "Structure routes, layouts, loading and error states",
+    "cargo leptos build fails, rebuilds slowly or produces a huge WASM file",
+    "Deploy the Leptos app: the server binary and its site assets"
+  ],
+  "notFor": [
+    {
+      "topic": "Plain HTML, CSS, browser APIs, Rust-to-WASM interop, forms and animation",
+      "use": "frontend-foundations"
+    },
+    {
+      "topic": "WASM payload budgets, Core Web Vitals and image and font loading",
+      "use": "web-performance"
+    },
+    {
+      "topic": "Design tokens, visual design and UX flows",
+      "use": "ui-ux-design"
+    },
+    {
+      "topic": "three.js scenes and 3D product pages",
+      "use": "3dui"
+    },
+    {
+      "topic": "API contracts the frontend consumes",
+      "use": "api-design"
+    },
+    {
+      "topic": "Search rankings, metadata strategy and AI-search visibility",
+      "use": "seo-aeo-geo-ultimate"
+    }
+  ],
+  "references": [
+    {
+      "file": "rendering-strategies.md",
+      "title": "Rendering modes, framework choice and content sources",
+      "purpose": "Read when choosing between Leptos, server templates with htmx and Dioxus, deciding how each route is rendered and regenerated, or where editable content lives.",
+      "leaves": [
+        {
+          "topic": "Choose per route between SSR with hydration, islands, client-side only and static",
+          "level": "core"
+        },
+        {
+          "topic": "Choose server-rendered templates with htmx over a WASM UI for form-and-content products",
+          "level": "core"
+        },
+        {
+          "topic": "Render useful HTML for crawlers and link previews",
+          "level": "core"
+        },
+        {
+          "topic": "Choose where content lives: repo markdown, a headless CMS or a site builder",
+          "level": "core"
+        },
+        {
+          "topic": "Choose an SSR mode per route: out-of-order streaming, in-order, async or partially blocked",
+          "level": "pro"
+        },
+        {
+          "topic": "Hydrate only interactive islands on mostly static pages",
+          "level": "pro"
+        },
+        {
+          "topic": "Prerender static routes and regenerate them when content changes",
+          "level": "pro"
+        },
+        {
+          "topic": "Model content types and wire draft preview and publish-time revalidation",
+          "level": "pro"
+        },
+        {
+          "topic": "Choose Dioxus instead when the same code must ship to desktop or mobile",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "components-reactivity.md",
+      "title": "Components and fine-grained reactivity",
+      "purpose": "Read when designing, splitting or reviewing Leptos components, or deciding how state flows through signals, memos, effects, resources and Suspense.",
+      "leaves": [
+        {
+          "topic": "Build Leptos components with typed props, children and the view macro",
+          "level": "core"
+        },
+        {
+          "topic": "Hold changing state in signals and derive values with closures or memos",
+          "level": "core"
+        },
+        {
+          "topic": "Load async data with resources inside Suspense and Transition boundaries",
+          "level": "core"
+        },
+        {
+          "topic": "Build a small owned component library on accessible primitives and Tailwind tokens",
+          "level": "core"
+        },
+        {
+          "topic": "Use effects only to sync with the outside world, avoiding loops and untracked reads",
+          "level": "pro"
+        },
+        {
+          "topic": "Design component APIs: composition over configuration, controlled versus uncontrolled",
+          "level": "pro"
+        },
+        {
+          "topic": "Render long lists with keyed For and virtualization",
+          "level": "pro"
+        },
+        {
+          "topic": "Review a frontend pull request for component boundaries, reactivity and WASM cost",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "server-functions.md",
+      "title": "Server functions, actions and forms",
+      "purpose": "Read when the client must call the server or change data: writing server functions, wiring actions and forms with progressive enhancement, and securing each server function as a public endpoint.",
+      "leaves": [
+        {
+          "topic": "Mutate data through server functions that validate input and authorize every call",
+          "level": "core"
+        },
+        {
+          "topic": "Treat each server function as a public endpoint: limits, CSRF and safe errors",
+          "level": "core"
+        },
+        {
+          "topic": "Keep server-only code and secrets out of the WASM with ssr feature gates",
+          "level": "core"
+        },
+        {
+          "topic": "Build forms with ActionForm that submit and work before WASM loads",
+          "level": "core"
+        },
+        {
+          "topic": "Show pending, error and optimistic states for actions and multi-actions",
+          "level": "core"
+        },
+        {
+          "topic": "Refetch or update resources after an action so the page never shows stale data",
+          "level": "core"
+        },
+        {
+          "topic": "Read cookies, headers and Axum extractors and set responses inside server functions",
+          "level": "pro"
+        },
+        {
+          "topic": "Choose server function encodings and streaming for large or binary payloads",
+          "level": "pro"
+        },
+        {
+          "topic": "Share Rust types between client and server without exposing server-only fields",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "routing-data.md",
+      "title": "Routing, data loading and state",
+      "purpose": "Read when structuring routes and layouts, protecting pages, loading data per route, deciding where client state lives, or fixing back-button and deep-link behavior.",
+      "leaves": [
+        {
+          "topic": "Structure nested routes and layouts with leptos_router around the product's navigation",
+          "level": "core"
+        },
+        {
+          "topic": "Protect routes with server-side checks, not client redirects",
+          "level": "core"
+        },
+        {
+          "topic": "Add loading, error and not-found states to each route with Suspense and ErrorBoundary",
+          "level": "core"
+        },
+        {
+          "topic": "Start route data loads in parallel to avoid request waterfalls",
+          "level": "core"
+        },
+        {
+          "topic": "Put view state in the URL with query params so pages are shareable",
+          "level": "core"
+        },
+        {
+          "topic": "Choose local signals, context or a global store for client state",
+          "level": "core"
+        },
+        {
+          "topic": "Restore scroll, focus and state on back and forward navigation",
+          "level": "pro"
+        },
+        {
+          "topic": "Merge realtime updates into reactive state without flicker or duplicates",
+          "level": "pro"
+        },
+        {
+          "topic": "Parse route params into typed structs and handle invalid params",
+          "level": "pro"
+        },
+        {
+          "topic": "Migrate a React or template-rendered app to Leptos route by route",
+          "level": "expert"
+        }
+      ]
+    },
+    {
+      "file": "hydration.md",
+      "title": "Hydration and server-client consistency",
+      "purpose": "Read when the browser console shows a hydration error or panic, the server and client render differently, or browser-only code breaks server rendering.",
+      "leaves": [
+        {
+          "topic": "Diagnose and fix a hydration mismatch, including invalid HTML nesting",
+          "level": "core"
+        },
+        {
+          "topic": "Render identical output on server and client: no clocks, randomness or browser reads",
+          "level": "core"
+        },
+        {
+          "topic": "Run browser-only code after hydration in effects, never in the component body",
+          "level": "core"
+        },
+        {
+          "topic": "Debug hydration panics with debug builds, a panic hook and browser-side tracing",
+          "level": "pro"
+        },
+        {
+          "topic": "Pass server-loaded data to the client through resources instead of fetching twice",
+          "level": "pro"
+        }
+      ]
+    },
+    {
+      "file": "build-deploy.md",
+      "title": "Build tooling, WASM size and deployment",
+      "purpose": "Read when setting up or debugging cargo-leptos, wasm-bindgen, wasm-opt or the Tailwind CLI, when the WASM is too big or builds are slow, or when deploying the server binary and site assets.",
+      "leaves": [
+        {
+          "topic": "Set up a cargo-leptos project with ssr and hydrate features over a shared app crate",
+          "level": "core"
+        },
+        {
+          "topic": "Manage environment variables at build time and runtime for server and WASM targets",
+          "level": "core"
+        },
+        {
+          "topic": "Build CSS with the Tailwind standalone CLI through cargo-leptos, without Node",
+          "level": "core"
+        },
+        {
+          "topic": "Deploy the single Axum binary and its site directory in one minimal image",
+          "level": "core"
+        },
+        {
+          "topic": "Configure a size-optimized WASM release profile and wasm-opt in the build",
+          "level": "pro"
+        },
+        {
+          "topic": "Fix wasm-bindgen version mismatches and feature-unification build failures",
+          "level": "pro"
+        },
+        {
+          "topic": "Speed up dev rebuilds and hot reload for the server and WASM targets",
+          "level": "pro"
+        },
+        {
+          "topic": "Pin the toolchain, wasm32 target and cargo-leptos version across laptops and CI",
+          "level": "pro"
+        }
+      ]
+    }
+  ]
+}

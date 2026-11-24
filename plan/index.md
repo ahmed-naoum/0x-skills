@@ -22,7 +22,7 @@
   - network-debugging.md — Network debugging tools and method
 
 ## 2 · Cloud & delivery
-- **cloud-infrastructure** — Choose where the product runs and build it: hosting model, container images, Kubernetes, serverless and edge runtimes, cloud networking, IAM, infrastructure as code and cost control.
+- **cloud-infrastructure** — Choose where the product runs and build it: hosting model, container images for a Rust binary, Kubernetes, serverless and WASM edge runtimes, cloud networking, IAM, infrastructure as code and cost control.
   - platform-choice.md — Choosing where to run
   - docker-images.md — Docker images, Compose and single-server deploys
   - kubernetes.md — Kubernetes operations
@@ -50,15 +50,15 @@
   - replication-scaling.md — Replication and scaling
 - **data-stores** — Decide when a product needs more than Postgres and run what it adds: Redis caching, search, object storage, event streams, an analytics warehouse and pipelines, and the data lifecycle across all of them.
   - choosing-datastores.md — Choosing a datastore
-  - caching-redis.md — Application caching with Redis
+  - caching-redis.md — Application caching with moka and Redis
   - search.md — Search
   - object-storage.md — Object storage and files
   - streams-pipelines.md — Warehouse, pipelines and event streams
   - data-lifecycle.md — Data lifecycle, retention and deletion
 
 ## 4 · Backend
-- **backend-architecture** — Structure the server side of a product: runtime choice, monolith and service boundaries, consistency under concurrency, multi-tenancy, background jobs, realtime features, file uploads and resilient third-party integrations.
-  - runtime-language.md — Language, runtime and process model
+- **backend-architecture** — Structure the Rust server side of a product: the Tokio runtime and process model, workspace layout, monolith and service boundaries, consistency under concurrency, multi-tenancy, background jobs, realtime features, file uploads and resilient third-party integrations.
+  - runtime-language.md — Rust, Tokio and the process model
   - architecture-shape.md — Monolith, modules, services and events
   - consistency-concurrency.md — Consistency and concurrency across systems
   - multi-tenancy.md — Multi-tenancy
@@ -127,22 +127,22 @@
   - licenses-ip.md — Open-source licenses and third-party IP
 
 ## 6 · Frontend
-- **frontend-foundations** — Build on the web platform itself: semantic HTML, CSS layout and responsive design, JavaScript and TypeScript, the browser's rendering and events, forms, animation, internationalization, and PWA and mobile packaging.
+- **frontend-foundations** — Build on the web platform itself: semantic HTML, CSS layout and responsive design, the browser runtime and Rust-to-WASM interop, the browser's rendering and events, forms, animation, internationalization, and PWA and mobile packaging.
   - html-semantics.md — HTML semantics and document structure
   - css-layout.md — CSS layout and responsive design
-  - javascript-typescript.md — JavaScript and TypeScript
+  - browser-runtime-wasm.md — The browser runtime and Rust-to-WASM interop
   - browser-dom.md — The browser: rendering pipeline, DOM, events and DevTools
   - forms.md — Forms
   - animation.md — Animation on the web
   - internationalization.md — Internationalization
   - pwa-mobile.md — PWA, offline and the native boundary
-- **react-nextjs** — Build the application layer of the frontend with React and a meta-framework: rendering strategy per route, where editable content lives, server components and server functions, data and state, routing, component architecture and build tooling.
-  - rendering-strategies.md — Framework, rendering strategy and content sources
-  - server-components.md — Server components, server functions and hydration
-  - data-state.md — Data fetching and state
-  - routing-navigation.md — Routing and navigation
-  - components.md — Component architecture
-  - build-tooling.md — Build tooling
+- **rust-frontend** — Build the application layer of the frontend in Rust with Leptos full-stack: rendering mode per route, or server templates with htmx when they are enough, components and fine-grained reactivity, server functions and forms, routing, data and state, hydration, build tooling and deployment.
+  - rendering-strategies.md — Rendering modes, framework choice and content sources
+  - components-reactivity.md — Components and fine-grained reactivity
+  - server-functions.md — Server functions, actions and forms
+  - routing-data.md — Routing, data loading and state
+  - hydration.md — Hydration and server-client consistency
+  - build-deploy.md — Build tooling, WASM size and deployment
 - **3dui** — Build live 3D product websites with three.js and Next.js: the object is code, lit like a photo studio and directed by the scroll.
 
 ## 7 · Design & accessibility
@@ -169,14 +169,14 @@
   - pull-requests-review.md — Pull requests and code-review practice
   - monorepos.md — Monorepos and shared code
   - versioning-releases.md — Versioning, changelogs and release notes
-- **code-quality** — Keep code correct and changeable: test strategy, unit, integration, end-to-end, contract and visual tests, test data and flaky tests, debugging method, refactoring, static analysis and types, and technical documentation.
+- **code-quality** — Keep code correct and changeable: test strategy, unit, integration, end-to-end, contract and visual tests, test data and flaky tests, debugging method, refactoring, clippy, the type system and unsafe policy, and technical documentation.
   - test-strategy.md — Test strategy
   - unit-integration-tests.md — Unit and integration tests
   - e2e-contract-visual.md — End-to-end, contract and visual tests
   - test-data-flaky.md — Test data and flaky tests
   - debugging.md — Debugging method
   - refactoring.md — Refactoring and rewrites
-  - static-analysis-types.md — Static analysis, linting and types
+  - static-analysis-types.md — Static analysis, lints, types and unsafe policy
   - technical-docs.md — Technical documentation
 - **ai-coding-agents** — Get reliable work out of coding agents such as Claude Code: scoping and specs, context and project setup, verification and review, parallel and automated runs, and permissions and governance.
   - delegation-specs.md — Scoping and delegating work
@@ -202,10 +202,10 @@
   - postmortems-runbooks.md — Postmortems, runbooks and launch readiness
   - capacity-scaling.md — Capacity and scaling
   - disaster-recovery.md — Disaster recovery and resilience testing
-- **web-performance** — Make pages and endpoints fast and keep them fast: Core Web Vitals, loading and delivery, JavaScript bundles, images and fonts, rendering and runtime, backend latency and profiling, load testing, and performance budgets.
+- **web-performance** — Make pages and endpoints fast and keep them fast: Core Web Vitals, loading and delivery, the client payload of WASM and hydration, images and fonts, rendering and runtime, backend latency and profiling, load testing, and performance budgets.
   - core-web-vitals.md — Core Web Vitals
   - loading-delivery.md — Loading and delivery
-  - javascript-bundles.md — JavaScript bundles
+  - client-payload.md — Client payload: WASM, code splitting and hydration
   - images-fonts.md — Images, video and fonts
   - rendering-runtime.md — Rendering and runtime performance
   - backend-latency.md — Backend latency and profiling

@@ -21,7 +21,7 @@
     },
     {
       "topic": "Next.js routing, data and rendering around the scene",
-      "use": "react-nextjs"
+      "use": "rust-frontend"
     },
     {
       "topic": "Core Web Vitals and loading performance of the page as a whole",

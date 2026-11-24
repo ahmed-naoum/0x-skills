@@ -6,7 +6,7 @@
   "summary": "Get a change from a merged pull request to production safely: CI pipelines, pipeline security, environments and config, zero-downtime deploys, rollback and feature flags.",
   "useWhen": [
     "Set up GitHub Actions to test and deploy this project",
-    "CI takes too long; make the pipeline faster",
+    "Rust builds make CI take too long; make the pipeline faster",
     "Deploys cause downtime or I cannot roll back quickly",
     "Set up staging and preview environments with their own config",
     "The app crashed in production because an environment variable was missing",
@@ -49,7 +49,7 @@
       "purpose": "Read when creating or speeding up the pipeline that checks every change and builds the deployable artifact, including mobile app builds and store submission.",
       "leaves": [
         {
-          "topic": "Build a pipeline that type-checks, lints, tests and builds every pull request",
+          "topic": "Run fmt, clippy, nextest, cargo deny and a release build on every pull request",
           "level": "core"
         },
         {
@@ -65,7 +65,7 @@
           "level": "core"
         },
         {
-          "topic": "Keep CI fast with caching, parallelism and affected-only runs",
+          "topic": "Keep Rust CI fast with dependency caching, split jobs and affected-only runs",
           "level": "pro"
         },
         {
@@ -77,7 +77,7 @@
           "level": "expert"
         },
         {
-          "topic": "Automate mobile builds, code signing, store submission and over-the-air updates",
+          "topic": "Automate mobile builds, code signing and store submission",
           "level": "expert"
         }
       ]
@@ -123,7 +123,7 @@
           "level": "core"
         },
         {
-          "topic": "Validate configuration and environment variables at startup and fail fast",
+          "topic": "Parse environment variables once at startup into a typed config and fail fast",
           "level": "core"
         },
         {
@@ -166,7 +166,7 @@
           "level": "core"
         },
         {
-          "topic": "Keep stale cached frontends and old clients working across a deploy",
+          "topic": "Keep already-loaded WASM clients and their server function calls working across a deploy",
           "level": "pro"
         },
         {

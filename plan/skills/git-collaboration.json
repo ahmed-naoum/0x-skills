@@ -10,7 +10,7 @@
     "Should we squash, merge or rebase? What branching model should we use?",
     "Write the pull request description, or split this change into reviewable parts",
     "Set up review rules, CODEOWNERS and a pull request template",
-    "Should this be a monorepo? Set up workspaces and shared packages",
+    "Should this be a monorepo? Set up a Cargo workspace and shared crates",
     "How should we version releases and write the changelog?",
     "Find out when and why this line of code changed"
   ],
@@ -157,26 +157,26 @@
     {
       "file": "monorepos.md",
       "title": "Monorepos and shared code",
-      "purpose": "Read when deciding between one repository and several, or setting up workspaces, shared packages and affected-only builds.",
+      "purpose": "Read when deciding between one repository and several, or setting up a Cargo workspace, shared crates, build caching and affected-only builds.",
       "leaves": [
         {
           "topic": "Decide between one repository and many",
           "level": "core"
         },
         {
-          "topic": "Manage a monorepo with pnpm workspaces and Turborepo remote caching",
+          "topic": "Run a monorepo as one Cargo workspace with shared dependency versions and lints",
           "level": "pro"
         },
         {
-          "topic": "Share code through internal packages with clear boundaries",
+          "topic": "Share code through internal crates with clear boundaries",
           "level": "pro"
         },
         {
-          "topic": "Build and test only what a change affects",
+          "topic": "Build and test only affected crates, sharing a compile cache with sccache",
           "level": "pro"
         },
         {
-          "topic": "Version and publish packages from a monorepo",
+          "topic": "Version and publish crates from a workspace with release tooling",
           "level": "expert"
         },
         {

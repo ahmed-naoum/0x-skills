@@ -52,7 +52,7 @@
           "level": "core"
         },
         {
-          "topic": "Send transactional email through a provider API with versioned templates",
+          "topic": "Send through a provider's HTTP API, or lettre for SMTP, with versioned templates",
           "level": "core"
         },
         {
@@ -64,7 +64,7 @@
           "level": "core"
         },
         {
-          "topic": "Build templates that render across mail clients and dark mode",
+          "topic": "Build askama or MJML templates that render across mail clients and dark mode",
           "level": "core"
         },
         {

@@ -82,15 +82,15 @@
     },
     {
       "file": "caching-redis.md",
-      "title": "Application caching with Redis",
-      "purpose": "Read when adding, debugging or removing an application-level cache, or using Redis for locks, counters and rate limits.",
+      "title": "Application caching with moka and Redis",
+      "purpose": "Read when adding, debugging or removing an application-level cache in process or in Redis, or using Redis for locks, counters and rate limits.",
       "leaves": [
         {
           "topic": "Decide what must never be cached: balances, entitlements, payment state",
           "level": "core"
         },
         {
-          "topic": "Cache hot reads in Redis or Valkey with TTLs and explicit invalidation",
+          "topic": "Cache hot reads in moka or Redis with TTLs and explicit invalidation",
           "level": "pro"
         },
         {
@@ -133,7 +133,7 @@
           "level": "core"
         },
         {
-          "topic": "Choose a search engine by data size, features and operating burden",
+          "topic": "Choose embedded tantivy or a search server by data size and operating burden",
           "level": "pro"
         },
         {

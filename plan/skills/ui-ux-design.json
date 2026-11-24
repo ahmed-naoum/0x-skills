@@ -21,8 +21,8 @@
       "use": "frontend-foundations"
     },
     {
-      "topic": "Building the React component library",
-      "use": "react-nextjs"
+      "topic": "Building the Leptos component library",
+      "use": "rust-frontend"
     },
     {
       "topic": "WCAG conformance, screen readers and keyboard access",
@@ -95,7 +95,7 @@
           "level": "core"
         },
         {
-          "topic": "Decide when to adopt an existing component kit versus designing custom",
+          "topic": "Decide between a maintained Leptos component crate and building your own primitives",
           "level": "core"
         },
         {

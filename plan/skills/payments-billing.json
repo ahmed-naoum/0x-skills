@@ -65,11 +65,11 @@
           "level": "core"
         },
         {
-          "topic": "Generate an idempotency key per payment attempt so retries never double-charge",
+          "topic": "Use one idempotency key per attempt so retries, reloads and second tabs never double-charge",
           "level": "core"
         },
         {
-          "topic": "Block reload, back button and second tabs from resubmitting a payment",
+          "topic": "Call Stripe from Rust with a pinned async-stripe or typed reqwest, verifying webhooks",
           "level": "core"
         },
         {
@@ -155,7 +155,7 @@
           "level": "pro"
         },
         {
-          "topic": "Test billing lifecycles with the provider's simulated clocks",
+          "topic": "Test billing lifecycles with test clocks and webhooks with the Stripe CLI",
           "level": "pro"
         },
         {

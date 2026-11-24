@@ -116,7 +116,7 @@
           "level": "pro"
         },
         {
-          "topic": "Bound attacker-sized inputs to prevent ReDoS and resource exhaustion",
+          "topic": "Bound attacker-sized inputs, allocations and backtracking regexes to prevent resource exhaustion",
           "level": "pro"
         },
         {
@@ -143,7 +143,7 @@
           "level": "core"
         },
         {
-          "topic": "Deploy a strict nonce-based Content Security Policy",
+          "topic": "Deploy a strict nonce-based Content Security Policy that allows WASM via wasm-unsafe-eval",
           "level": "pro"
         },
         {
@@ -174,7 +174,7 @@
       "purpose": "Read when storing, sharing, rotating or recovering credentials and keys, responding to a leaked secret, or choosing a cryptographic primitive.",
       "leaves": [
         {
-          "topic": "Keep secrets in a secrets manager, never in repositories, images or client bundles",
+          "topic": "Keep secrets in a secrets manager, never in repositories, images, binaries or WASM",
           "level": "core"
         },
         {
@@ -214,18 +214,18 @@
     {
       "file": "supply-chain.md",
       "title": "Dependencies and software supply chain",
-      "purpose": "Read when adding, updating or auditing dependencies, or responding to a compromised or abandoned package.",
+      "purpose": "Read when adding, updating or auditing crates, or responding to a compromised or abandoned dependency.",
       "leaves": [
         {
-          "topic": "Commit lockfiles and install in frozen mode everywhere",
+          "topic": "Commit Cargo.lock and build with --locked everywhere",
           "level": "core"
         },
         {
-          "topic": "Evaluate a library's maintenance, license and bus factor before depending on it",
+          "topic": "Evaluate a crate's maintenance, dependents, license and unsafe use before depending on it",
           "level": "core"
         },
         {
-          "topic": "Scan dependencies and images in CI and patch within a deadline",
+          "topic": "Run cargo deny and cargo audit in CI and patch advisories within a deadline",
           "level": "core"
         },
         {
@@ -233,15 +233,15 @@
           "level": "pro"
         },
         {
-          "topic": "Disable install scripts and vet packages against typosquatting and slopsquatting",
+          "topic": "Vet crates for typosquatting and slopsquatting; build scripts and proc macros run code",
           "level": "pro"
         },
         {
-          "topic": "Upgrade dependencies and runtimes on a cadence, ahead of end-of-life dates",
+          "topic": "Update crates, the toolchain and base images on a cadence, ahead of end-of-life dates",
           "level": "pro"
         },
         {
-          "topic": "Generate an SBOM for each release",
+          "topic": "Generate an SBOM for each release and embed dependency data with cargo-auditable",
           "level": "expert"
         },
         {
@@ -249,7 +249,7 @@
           "level": "expert"
         },
         {
-          "topic": "Fork, vendor or replace an abandoned dependency",
+          "topic": "Fork, patch or vendor an abandoned crate with [patch] and cargo vendor",
           "level": "expert"
         }
       ]

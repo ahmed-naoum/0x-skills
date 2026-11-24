@@ -3,10 +3,10 @@
   "layer": 4,
   "order": 1,
   "title": "Backend architecture and server-side patterns",
-  "summary": "Structure the server side of a product: runtime choice, monolith and service boundaries, consistency under concurrency, multi-tenancy, background jobs, realtime features, file uploads and resilient third-party integrations.",
+  "summary": "Structure the Rust server side of a product: the Tokio runtime and process model, workspace layout, monolith and service boundaries, consistency under concurrency, multi-tenancy, background jobs, realtime features, file uploads and resilient third-party integrations.",
   "useWhen": [
     "How should I structure the backend: monolith, modules or services?",
-    "Which backend language or runtime should I use: Node, Bun, Deno, Go or Python?",
+    "Spawned Tokio tasks die silently, leak, or never stop on shutdown",
     "Move this slow work to a background job, or add a scheduled job",
     "Jobs are running twice, getting stuck or piling up in the queue",
     "Make this app multi-tenant and keep tenants' data apart",
@@ -45,23 +45,19 @@
   "references": [
     {
       "file": "runtime-language.md",
-      "title": "Language, runtime and process model",
-      "purpose": "Read when choosing a backend language or runtime, or when a server process blocks, pauses under load, or shuts down badly.",
+      "title": "Rust, Tokio and the process model",
+      "purpose": "Read when the server stalls under load, tasks leak or die silently, shutdown drops work, memory keeps growing, or compile times and the Cargo workspace layout slow the team down.",
       "leaves": [
         {
-          "topic": "Choose a backend language and runtime by workload and team skill",
+          "topic": "Keep the Tokio runtime unblocked: spawn_blocking for CPU-heavy or blocking calls",
           "level": "core"
         },
         {
-          "topic": "Choose and pin a JavaScript runtime: Node.js, Bun or Deno",
+          "topic": "Never hold a std mutex guard across an await; choose the lock deliberately",
           "level": "core"
         },
         {
-          "topic": "Keep the event loop unblocked under load",
-          "level": "core"
-        },
-        {
-          "topic": "Prefer runtime built-ins (fetch, crypto, watch mode, env files) over extra dependencies",
+          "topic": "Supervise spawned tasks with JoinSet so panics and errors surface",
           "level": "core"
         },
         {
@@ -69,23 +65,27 @@
           "level": "core"
         },
         {
-          "topic": "Size workers, threads and pools to CPU, memory and downstream limits",
+          "topic": "Lay out the Cargo workspace: domain, data, web and binary crates",
+          "level": "core"
+        },
+        {
+          "topic": "Bound concurrency with semaphores and bounded channels, never unbounded spawns",
           "level": "pro"
         },
         {
-          "topic": "Move CPU-heavy work to worker threads, a job or another runtime",
+          "topic": "Size Tokio worker threads, the blocking pool and connection pools to the machine",
           "level": "pro"
         },
         {
-          "topic": "Run TypeScript natively in Node with type stripping and ESM-only modules",
+          "topic": "Cut compile times with crate splits, a faster linker and fewer heavy macros",
           "level": "pro"
         },
         {
-          "topic": "Propagate deadlines and cancel work when the client disconnects",
+          "topic": "Propagate deadlines and keep work cancel-safe when the client disconnects",
           "level": "expert"
         },
         {
-          "topic": "Tune garbage collection and memory limits to stop latency spikes",
+          "topic": "Find and stop memory growth: unbounded buffers, caches and allocator fragmentation",
           "level": "expert"
         }
       ]
@@ -93,14 +93,14 @@
     {
       "file": "architecture-shape.md",
       "title": "Monolith, modules, services and events",
-      "purpose": "Read when laying out a new backend, choosing between the framework's server and a separate API service, drawing module boundaries, or deciding whether to extract a service or introduce events.",
+      "purpose": "Read when laying out a new backend, choosing between one Axum binary for UI and API and a separate API service, drawing module boundaries, or deciding whether to extract a service or introduce events.",
       "leaves": [
         {
           "topic": "Start as a modular monolith and extract services only on proven need",
           "level": "core"
         },
         {
-          "topic": "Choose between the meta-framework's server and a separate API service with its own framework",
+          "topic": "Serve UI and API from one Axum binary or split out a separate API service",
           "level": "core"
         },
         {
@@ -112,7 +112,7 @@
           "level": "core"
         },
         {
-          "topic": "Handle errors by kind: expected failures, bugs and what the user sees",
+          "topic": "Type errors with thiserror, keep anyhow at the edges, map to responses once",
           "level": "core"
         },
         {

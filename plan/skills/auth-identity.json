@@ -6,7 +6,7 @@
   "summary": "Build sign-in and access control that resist takeover: auth architecture, sessions and tokens, passwords, MFA and passkeys, OAuth and OIDC, enterprise SSO, authorization models, account recovery and abuse defense.",
   "useWhen": [
     "Add login and signup to the app",
-    "Should I use Clerk, Auth0 or Supabase Auth, or a library in my own database?",
+    "Should I use a hosted identity provider over OIDC, or self-host auth in our database?",
     "Add Sign in with Google, passkeys, magic links or two-factor",
     "Sessions or JWTs? Where do I store the token?",
     "Add roles, permissions, organizations and team invitations",
@@ -46,10 +46,10 @@
     {
       "file": "auth-architecture.md",
       "title": "Auth architecture and signup",
-      "purpose": "Read when starting auth in a product or replacing it: provider versus library, sign-in methods, account model and signup flow.",
+      "purpose": "Read when starting auth in a product or replacing it: hosted provider versus self-hosted crates, sign-in methods, account model and signup flow.",
       "leaves": [
         {
-          "topic": "Decide between a managed auth provider and a vetted library; never hand-roll crypto",
+          "topic": "Decide between a hosted OIDC provider and self-hosting with vetted crates; never hand-roll crypto",
           "level": "core"
         },
         {
@@ -88,7 +88,7 @@
           "level": "core"
         },
         {
-          "topic": "Implement sessions with rotation, expiry and revocation",
+          "topic": "Implement server-side sessions with tower-sessions: rotation, expiry and revocation",
           "level": "core"
         },
         {
@@ -127,7 +127,7 @@
       "purpose": "Read when implementing a first or second authentication factor: password storage, one-time codes, TOTP and WebAuthn.",
       "leaves": [
         {
-          "topic": "Hash passwords with Argon2id and reject known-breached passwords",
+          "topic": "Hash passwords with Argon2id off the async runtime and reject breached passwords",
           "level": "core"
         },
         {
@@ -135,7 +135,7 @@
           "level": "core"
         },
         {
-          "topic": "Offer passkeys via WebAuthn as primary sign-in with a safe fallback",
+          "topic": "Offer passkeys with webauthn-rs as primary sign-in with a safe fallback",
           "level": "pro"
         },
         {
@@ -178,7 +178,7 @@
           "level": "core"
         },
         {
-          "topic": "Implement OAuth 2.1 with PKCE and strict redirect URI validation",
+          "topic": "Implement OIDC login with PKCE and exact redirect URIs using the openidconnect crate",
           "level": "pro"
         },
         {

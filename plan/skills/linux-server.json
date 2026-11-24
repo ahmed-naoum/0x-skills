@@ -176,7 +176,7 @@
       "purpose": "Read when installing software on a host, keeping it patched, or making server setup repeatable.",
       "leaves": [
         {
-          "topic": "Install language runtimes with version managers, not distro packages",
+          "topic": "Install build toolchains with rustup, not distro packages; servers run only the binary",
           "level": "core"
         },
         {

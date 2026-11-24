@@ -2,12 +2,12 @@
   "name": "frontend-foundations",
   "layer": 6,
   "order": 1,
-  "title": "Frontend foundations: HTML, CSS, TypeScript and the browser",
-  "summary": "Build on the web platform itself: semantic HTML, CSS layout and responsive design, JavaScript and TypeScript, the browser's rendering and events, forms, animation, internationalization, and PWA and mobile packaging.",
+  "title": "Frontend foundations: HTML, CSS, the browser and Rust to WASM",
+  "summary": "Build on the web platform itself: semantic HTML, CSS layout and responsive design, the browser runtime and Rust-to-WASM interop, the browser's rendering and events, forms, animation, internationalization, and PWA and mobile packaging.",
   "useWhen": [
     "The layout breaks on mobile, overflows or will not center",
     "Fix this CSS: specificity, z-index or stacking problems",
-    "This async code has a race condition, or TypeScript will not accept my types",
+    "Call a browser API from Rust, or this async WASM code runs in the wrong order",
     "Build a form with validation that works well on phones",
     "Add an animation, page transition or scroll effect",
     "Translate the app and support right-to-left languages",
@@ -17,8 +17,8 @@
   ],
   "notFor": [
     {
-      "topic": "React components, server components, Next.js routing and data fetching",
-      "use": "react-nextjs"
+      "topic": "Leptos components, server functions, routing and data loading",
+      "use": "rust-frontend"
     },
     {
       "topic": "Visual design choices, flows and design tokens",
@@ -29,7 +29,7 @@
       "use": "accessibility"
     },
     {
-      "topic": "Core Web Vitals, bundle size, image and font loading",
+      "topic": "Core Web Vitals, WASM size, image and font loading",
       "use": "web-performance"
     },
     {
@@ -37,7 +37,7 @@
       "use": "3dui"
     },
     {
-      "topic": "Linting, type-check policy and test setup",
+      "topic": "clippy, rustfmt, type and unsafe policy, and test setup",
       "use": "code-quality"
     }
   ],
@@ -72,7 +72,7 @@
           "level": "core"
         },
         {
-          "topic": "Use progressive enhancement so core content works before JavaScript loads",
+          "topic": "Use progressive enhancement so core content works before scripts and WASM load",
           "level": "pro"
         },
         {
@@ -95,7 +95,7 @@
           "level": "core"
         },
         {
-          "topic": "Style with Tailwind or CSS modules driven by design tokens",
+          "topic": "Style with Tailwind's standalone CLI or plain CSS driven by design tokens",
           "level": "core"
         },
         {
@@ -129,44 +129,44 @@
       ]
     },
     {
-      "file": "javascript-typescript.md",
-      "title": "JavaScript and TypeScript",
-      "purpose": "Read when a problem is about the language: async behavior, types, modules, errors or memory.",
+      "file": "browser-runtime-wasm.md",
+      "title": "The browser runtime and Rust-to-WASM interop",
+      "purpose": "Read when Rust compiled to WASM must talk to the browser: wasm-bindgen, web-sys and js-sys calls, async on the browser event loop, panics and memory at the boundary, or when a few lines of JavaScript are the better tool.",
       "leaves": [
         {
-          "topic": "Fix async ordering bugs by reasoning about the event loop and microtasks",
+          "topic": "Fix async ordering bugs by reasoning about the event loop wasm futures run on",
           "level": "core"
         },
         {
-          "topic": "Start every project in strict TypeScript, including config and scripts",
+          "topic": "Call browser APIs through web-sys and js-sys, enabling only the features you use",
           "level": "core"
         },
         {
-          "topic": "Model states with discriminated unions so invalid states cannot compile",
+          "topic": "Convert values at the JavaScript boundary with dyn_into and serde-wasm-bindgen, not unchecked casts",
           "level": "core"
         },
         {
-          "topic": "Narrow unknown data at boundaries instead of casting with as or any",
+          "topic": "Handle JavaScript errors, timeouts and cancellation from Rust with Result and AbortController",
           "level": "core"
         },
         {
-          "topic": "Handle errors, cancellation and timeouts in async code with AbortController",
+          "topic": "Report WASM panics with a panic hook, knowing a panic leaves the app unusable",
           "level": "core"
         },
         {
-          "topic": "Use generics, inference and utility types without unreadable type gymnastics",
+          "topic": "Decide when a few lines of plain JavaScript beat a WASM round trip",
           "level": "core"
         },
         {
-          "topic": "Use ES modules, package exports and CommonJS interop correctly",
+          "topic": "Bind a JavaScript library to Rust with wasm-bindgen extern blocks",
           "level": "pro"
         },
         {
-          "topic": "Use Baseline built-ins (structuredClone, Intl, iterator helpers, Temporal when Baseline) instead of libraries",
+          "topic": "Prevent leaks from forgotten closures, listeners and timers held across the boundary",
           "level": "pro"
         },
         {
-          "topic": "Find and fix leaks from listeners, timers and detached DOM nodes",
+          "topic": "Use Baseline built-ins such as Intl through js-sys instead of crates that bloat WASM",
           "level": "pro"
         }
       ]
@@ -201,7 +201,7 @@
           "level": "pro"
         },
         {
-          "topic": "Move heavy work off the main thread with web workers",
+          "topic": "Move heavy work off the main thread into web workers running WASM",
           "level": "pro"
         },
         {
@@ -220,7 +220,7 @@
       "purpose": "Read when building or fixing any form: fields, validation, submission, autofill, multi-step flows and lost-work protection.",
       "leaves": [
         {
-          "topic": "Write semantic HTML forms that work before JavaScript loads",
+          "topic": "Write semantic HTML forms that work before scripts and WASM load",
           "level": "core"
         },
         {
@@ -236,7 +236,7 @@
           "level": "core"
         },
         {
-          "topic": "Share one validation schema between client and server",
+          "topic": "Share one garde-validated Rust type between client and server",
           "level": "core"
         },
         {
@@ -260,14 +260,14 @@
     {
       "file": "animation.md",
       "title": "Animation on the web",
-      "purpose": "Read when implementing motion in CSS or JavaScript: transitions, page transitions, scroll effects and fixing jank.",
+      "purpose": "Read when implementing motion in CSS or through the Web Animations API from Rust: transitions, page transitions, scroll effects and fixing jank.",
       "leaves": [
         {
           "topic": "Animate transform and opacity so motion stays on the compositor",
           "level": "core"
         },
         {
-          "topic": "Choose CSS transitions, the Web Animations API or a library for an effect",
+          "topic": "Choose CSS transitions or the Web Animations API through web-sys for an effect",
           "level": "core"
         },
         {
@@ -287,7 +287,7 @@
           "level": "pro"
         },
         {
-          "topic": "Animate layout changes with FLIP or a layout-animation library",
+          "topic": "Animate layout changes with the FLIP technique and the Web Animations API",
           "level": "pro"
         },
         {
@@ -306,7 +306,7 @@
       "purpose": "Read when adding a second language or locale, formatting dates, numbers and money, or supporting right-to-left scripts.",
       "leaves": [
         {
-          "topic": "Format dates, numbers and currencies with Intl for the user's locale",
+          "topic": "Format dates, numbers and currencies per locale, identically on server and client",
           "level": "core"
         },
         {
@@ -314,7 +314,7 @@
           "level": "core"
         },
         {
-          "topic": "Externalize strings as ICU messages with plurals and interpolation",
+          "topic": "Externalize strings as Fluent or ICU messages with plurals and interpolation",
           "level": "core"
         },
         {
@@ -361,7 +361,7 @@
           "level": "pro"
         },
         {
-          "topic": "Wrap the web app with Capacitor or build with Expo, reusing the API",
+          "topic": "Wrap the web app with Tauri or build with Dioxus, reusing the API",
           "level": "pro"
         },
         {

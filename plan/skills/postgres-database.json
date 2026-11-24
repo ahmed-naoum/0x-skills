@@ -12,7 +12,7 @@
     "We ran out of database connections",
     "Set up backups and prove we can restore",
     "Someone deleted production data and I need it back",
-    "Should I use an ORM or raw SQL, UUIDs or integer IDs?",
+    "Should I use SQLx, SeaORM, Diesel or raw SQL? UUIDs or integer IDs?",
     "When do I need a read replica, partitioning or a bigger instance?"
   ],
   "notFor": [
@@ -64,7 +64,7 @@
           "level": "core"
         },
         {
-          "topic": "Choose between a typed ORM (Drizzle, Prisma) and raw SQL",
+          "topic": "Choose SQLx checked queries, SeaORM or Diesel, or raw SQL for data access",
           "level": "core"
         },
         {
@@ -99,7 +99,7 @@
           "level": "core"
         },
         {
-          "topic": "Eliminate N+1 queries in the ORM",
+          "topic": "Eliminate N+1 queries from loops with joins or batched ANY lookups",
           "level": "core"
         },
         {
@@ -111,7 +111,7 @@
           "level": "core"
         },
         {
-          "topic": "Read the SQL an ORM generates and override it when it is wrong",
+          "topic": "Write SQLx checked queries, map nullability and types, commit the offline data",
           "level": "core"
         },
         {
@@ -212,7 +212,7 @@
       "purpose": "Read before writing any schema change that will run against a database with live traffic or large tables.",
       "leaves": [
         {
-          "topic": "Run schema migrations as versioned, reviewed code",
+          "topic": "Run schema migrations with sqlx-cli as versioned, reviewed code",
           "level": "core"
         },
         {

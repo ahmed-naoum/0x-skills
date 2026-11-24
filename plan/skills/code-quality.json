@@ -3,18 +3,18 @@
   "layer": 8,
   "order": 2,
   "title": "Testing, debugging, refactoring and documentation",
-  "summary": "Keep code correct and changeable: test strategy, unit, integration, end-to-end, contract and visual tests, test data and flaky tests, debugging method, refactoring, static analysis and types, and technical documentation.",
+  "summary": "Keep code correct and changeable: test strategy, unit, integration, end-to-end, contract and visual tests, test data and flaky tests, debugging method, refactoring, clippy, the type system and unsafe policy, and technical documentation.",
   "useWhen": [
     "Write tests for this code, or tell me what is worth testing",
-    "Set up Vitest or Playwright for this project",
+    "Set up cargo-nextest, database tests or browser end-to-end tests for this project",
     "This test is flaky, or the suite is too slow",
     "I cannot figure out why this bug happens",
     "Refactor this code without breaking it",
     "Should we rewrite this or fix it in place?",
-    "Set up linting, formatting and stricter TypeScript",
+    "Set up clippy, rustfmt, workspace lints and an unsafe policy",
     "Write the README, architecture notes or developer docs",
     "A bug only happens in production and I cannot reproduce it",
-    "Find which code is leaking memory in the server process using heap snapshots"
+    "Find what keeps growing the server's memory using a heap profiler"
   ],
   "notFor": [
     {
@@ -88,11 +88,11 @@
           "level": "core"
         },
         {
-          "topic": "Write integration tests against a real database instead of mocks",
+          "topic": "Write integration tests against a throwaway database with sqlx::test, not mocks",
           "level": "core"
         },
         {
-          "topic": "Test API routes through the HTTP layer, including auth and errors",
+          "topic": "Test Axum routes through the router as a tower service, including auth and errors",
           "level": "core"
         },
         {
@@ -100,7 +100,7 @@
           "level": "core"
         },
         {
-          "topic": "Test UI components through user-visible behavior, not implementation details",
+          "topic": "Test Leptos components through rendered output and wasm-bindgen-test in a headless browser",
           "level": "core"
         },
         {
@@ -108,7 +108,7 @@
           "level": "pro"
         },
         {
-          "topic": "Keep the suite fast enough to run on every change",
+          "topic": "Keep the suite fast enough with cargo-nextest to run on every change",
           "level": "pro"
         },
         {
@@ -127,11 +127,11 @@
       "purpose": "Read when testing whole user journeys in a browser, guarding API contracts between systems, or catching visual regressions.",
       "leaves": [
         {
-          "topic": "Cover critical journeys end to end with Playwright",
+          "topic": "Cover critical journeys end to end through WebDriver with thirtyfour",
           "level": "core"
         },
         {
-          "topic": "Select elements by role and label, not CSS paths",
+          "topic": "Select elements by stable test IDs, labels and text, not CSS paths",
           "level": "core"
         },
         {
@@ -147,7 +147,7 @@
           "level": "pro"
         },
         {
-          "topic": "Debug a failing end-to-end test from its trace, video and network log",
+          "topic": "Debug a failing end-to-end test from screenshots, browser logs and server traces",
           "level": "pro"
         },
         {
@@ -157,6 +157,10 @@
         {
           "topic": "Contract-test API consumers and providers so changes cannot silently break clients",
           "level": "expert"
+        },
+        {
+          "topic": "Decide whether Playwright's tooling justifies a non-Rust end-to-end suite",
+          "level": "pro"
         }
       ]
     },
@@ -186,7 +190,7 @@
           "level": "pro"
         },
         {
-          "topic": "Find the root cause of flakiness: time, order, network or shared state",
+          "topic": "Find the root cause of flakiness: time, order, hydration, network or shared state",
           "level": "pro"
         },
         {
@@ -237,11 +241,11 @@
           "level": "pro"
         },
         {
-          "topic": "Find a server-side memory leak by comparing heap snapshots under load",
+          "topic": "Find a server memory leak with a heap profiler under load",
           "level": "pro"
         },
         {
-          "topic": "Debug intermittent concurrency failures with targeted logging and stress loops",
+          "topic": "Debug intermittent concurrency failures and async stalls with tokio-console and stress loops",
           "level": "expert"
         }
       ]
@@ -272,11 +276,11 @@
           "level": "pro"
         },
         {
-          "topic": "Apply codemods for mechanical large-scale changes",
+          "topic": "Apply mechanical large-scale changes with rust-analyzer, cargo fix or ast-grep",
           "level": "pro"
         },
         {
-          "topic": "Upgrade a language or framework major version incrementally",
+          "topic": "Migrate to a new Rust edition or major crate version incrementally",
           "level": "pro"
         },
         {
@@ -291,15 +295,11 @@
     },
     {
       "file": "static-analysis-types.md",
-      "title": "Static analysis, linting and types",
-      "purpose": "Read when configuring type checking, linters, formatters and other automated checks that catch defects before tests run.",
+      "title": "Static analysis, lints, types and unsafe policy",
+      "purpose": "Read when configuring compiler and clippy lints, rustfmt and other automated checks, designing types so invalid states do not compile, or setting the unsafe policy.",
       "leaves": [
         {
-          "topic": "Gate CI on type checking as the first test",
-          "level": "core"
-        },
-        {
-          "topic": "Lint and format with Biome or ESLint flat config, enforced not debated",
+          "topic": "Gate CI on clippy with warnings denied and rustfmt --check, from workspace lints",
           "level": "core"
         },
         {
@@ -307,23 +307,31 @@
           "level": "core"
         },
         {
-          "topic": "Ban unsafe patterns with lint rules: any, floating promises, unchecked access",
+          "topic": "Model domain states with enums and newtypes so invalid states cannot compile",
           "level": "core"
         },
         {
-          "topic": "Tighten TypeScript strictness incrementally in a legacy codebase",
+          "topic": "Forbid unsafe code in application crates and review every exception",
+          "level": "core"
+        },
+        {
+          "topic": "Deny unwrap, panicking indexing and lossy casts in request paths with clippy",
+          "level": "core"
+        },
+        {
+          "topic": "Tighten clippy lint levels incrementally in a legacy codebase",
           "level": "pro"
         },
         {
-          "topic": "Find dead exports, unused dependencies and circular imports with tooling",
+          "topic": "Find unused dependencies, features and dead code with tooling",
           "level": "pro"
         },
         {
-          "topic": "Generate types from database and API schemas so drift fails the build",
+          "topic": "Check queries and API schemas at compile time so drift fails the build",
           "level": "pro"
         },
         {
-          "topic": "Enforce architecture boundaries with import rules",
+          "topic": "Enforce architecture boundaries with crate dependencies and visibility",
           "level": "expert"
         }
       ]

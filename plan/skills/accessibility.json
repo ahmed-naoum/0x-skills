@@ -55,8 +55,8 @@
           "level": "core"
         },
         {
-          "topic": "Apply ARIA patterns correctly for tabs, menus, comboboxes and dialogs",
-          "level": "pro"
+          "topic": "Build tabs, menus, comboboxes and dialogs in Leptos to the WAI-ARIA Authoring Practices",
+          "level": "core"
         },
         {
           "topic": "Announce dynamic changes with live regions",
@@ -179,7 +179,7 @@
       "purpose": "Read when checking accessibility: automated checks, screen-reader and keyboard passes, a full audit, or a conformance report.",
       "leaves": [
         {
-          "topic": "Run automated accessibility checks with axe in CI",
+          "topic": "Run axe accessibility checks in CI through the WebDriver end-to-end suite",
           "level": "core"
         },
         {

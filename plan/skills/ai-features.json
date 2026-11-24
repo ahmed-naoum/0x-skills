@@ -60,7 +60,7 @@
           "level": "core"
         },
         {
-          "topic": "Define an LLM call's contract: inputs, structured output schema and failure handling",
+          "topic": "Define an LLM call's contract: typed inputs, a serde-parsed output schema, failure handling",
           "level": "core"
         },
         {
@@ -80,7 +80,7 @@
           "level": "expert"
         },
         {
-          "topic": "Run open-weight models locally or in-browser when privacy or cost demands",
+          "topic": "Run open-weight models in Rust or in the browser when privacy or cost demands",
           "level": "expert"
         }
       ]
@@ -294,7 +294,7 @@
           "level": "core"
         },
         {
-          "topic": "Stream output to the UI with cancel, retry and partial-result handling",
+          "topic": "Stream model output from Axum to the UI with cancel, retry and partial results",
           "level": "core"
         },
         {

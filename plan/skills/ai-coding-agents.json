@@ -83,7 +83,7 @@
       "purpose": "Read when preparing a repository so agents work well in it: instructions, commands, context, skills, hooks and MCP servers.",
       "leaves": [
         {
-          "topic": "Maintain AGENTS.md or CLAUDE.md with conventions and commands",
+          "topic": "Maintain AGENTS.md or CLAUDE.md with conventions and the exact cargo commands",
           "level": "core"
         },
         {
@@ -118,7 +118,7 @@
       "purpose": "Read when deciding how agent output is checked before it merges: feedback loops, proof, review depth and failure modes.",
       "leaves": [
         {
-          "topic": "Give agents fast feedback: types, tests, linters and a runnable app",
+          "topic": "Give agents fast compile-error loops: cargo check, clippy, nextest, a runnable app",
           "level": "core"
         },
         {
@@ -130,7 +130,7 @@
           "level": "core"
         },
         {
-          "topic": "Catch agent failure modes: invented APIs, weakened tests, over-broad changes",
+          "topic": "Catch agent failure modes: invented crate APIs, silenced lints, weakened tests, sprawling diffs",
           "level": "core"
         },
         {
@@ -157,7 +157,7 @@
       "purpose": "Read when running more than one agent at once, or running agents unattended in CI, in the cloud or on a schedule.",
       "leaves": [
         {
-          "topic": "Run parallel agents in git worktrees or cloud sandboxes",
+          "topic": "Run parallel agents in git worktrees or cloud sandboxes with a shared build cache",
           "level": "pro"
         },
         {

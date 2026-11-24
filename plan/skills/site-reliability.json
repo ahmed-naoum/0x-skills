@@ -49,11 +49,11 @@
       "purpose": "Read when adding or cleaning up application logging and error reporting, or when logs are noisy, costly or leaking data.",
       "leaves": [
         {
-          "topic": "Emit structured JSON logs carrying request and trace IDs",
+          "topic": "Emit JSON logs with tracing-subscriber carrying request and trace IDs",
           "level": "core"
         },
         {
-          "topic": "Capture frontend and backend errors with source maps and release tags",
+          "topic": "Capture server and WASM errors and panics in the tracker with release tags",
           "level": "core"
         },
         {
@@ -96,11 +96,11 @@
           "level": "core"
         },
         {
-          "topic": "Instrument services with OpenTelemetry traces, metrics and logs",
+          "topic": "Export tracing spans and metrics over OTLP with tracing-opentelemetry",
           "level": "pro"
         },
         {
-          "topic": "Instrument rate, errors and duration for each service and dependency",
+          "topic": "Instrument rate, errors and duration per route and dependency with tower-http and spans",
           "level": "pro"
         },
         {
@@ -118,6 +118,10 @@
         {
           "topic": "Route telemetry through an OpenTelemetry Collector to stay vendor-neutral",
           "level": "expert"
+        },
+        {
+          "topic": "Carry span context across await points and spawned tasks",
+          "level": "pro"
         }
       ]
     },

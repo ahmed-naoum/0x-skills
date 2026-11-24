@@ -3,12 +3,12 @@
   "layer": 9,
   "order": 2,
   "title": "Web performance",
-  "summary": "Make pages and endpoints fast and keep them fast: Core Web Vitals, loading and delivery, JavaScript bundles, images and fonts, rendering and runtime, backend latency and profiling, load testing, and performance budgets.",
+  "summary": "Make pages and endpoints fast and keep them fast: Core Web Vitals, loading and delivery, the client payload of WASM and hydration, images and fonts, rendering and runtime, backend latency and profiling, load testing, and performance budgets.",
   "useWhen": [
     "The site feels slow; find out why and fix it",
     "Our Lighthouse or Core Web Vitals scores are bad",
     "LCP, INP or CLS is failing in the field data",
-    "The JavaScript bundle is too big",
+    "The WASM file is too big or the page is slow to become interactive",
     "Images or fonts load slowly or make the page jump",
     "This endpoint or page takes seconds to respond",
     "Load-test the app before launch",
@@ -29,8 +29,8 @@
       "use": "data-stores"
     },
     {
-      "topic": "Rendering strategy, server components and hydration design",
-      "use": "react-nextjs"
+      "topic": "Rendering modes, server functions and hydration design",
+      "use": "rust-frontend"
     },
     {
       "topic": "Capacity planning, autoscaling and SLOs",
@@ -117,28 +117,32 @@
       ]
     },
     {
-      "file": "javascript-bundles.md",
-      "title": "JavaScript bundles",
-      "purpose": "Read when shipping too much JavaScript: analyzing, splitting, trimming and budgeting bundles.",
+      "file": "client-payload.md",
+      "title": "Client payload: WASM, code splitting and hydration",
+      "purpose": "Read when the page ships too many bytes or takes too long to become interactive: WASM size, code splitting, hydration cost and payload budgets.",
       "leaves": [
         {
-          "topic": "Analyze the bundle and remove duplicate or oversized dependencies",
+          "topic": "Find what bloats the WASM binary with twiggy and cut oversized dependencies",
           "level": "core"
         },
         {
-          "topic": "Ship less JavaScript by rendering on the server and using platform features",
+          "topic": "Ship less code by rendering on the server and using platform features before WASM",
           "level": "core"
         },
         {
-          "topic": "Code-split by route and lazy-load heavy components",
+          "topic": "Code-split the WASM by route and lazy-load heavy components",
           "level": "core"
         },
         {
-          "topic": "Enforce a JavaScript bundle budget in CI",
+          "topic": "Measure hydration cost and shrink the state serialized into the page",
           "level": "pro"
         },
         {
-          "topic": "Make tree-shaking work: ES modules, side-effect flags, no barrel-file traps",
+          "topic": "Enforce a WASM and JavaScript payload budget in CI",
+          "level": "pro"
+        },
+        {
+          "topic": "Serve WASM precompressed, immutably cached and as application/wasm for streaming compilation",
           "level": "pro"
         },
         {
@@ -169,7 +173,7 @@
           "level": "core"
         },
         {
-          "topic": "Resize and optimize images on demand through an image CDN or framework loader",
+          "topic": "Resize and optimize images on demand through an image CDN or a build step",
           "level": "pro"
         },
         {
@@ -223,7 +227,7 @@
           "level": "core"
         },
         {
-          "topic": "Run independent I/O in parallel instead of sequential awaits",
+          "topic": "Run independent I/O concurrently with join or JoinSet instead of sequential awaits",
           "level": "core"
         },
         {
@@ -247,7 +251,7 @@
           "level": "pro"
         },
         {
-          "topic": "Find tail-latency causes: garbage collection, cold starts, pool waits, lock contention",
+          "topic": "Find tail-latency causes: runtime starvation, cold starts, pool waits, lock contention",
           "level": "expert"
         }
       ]
@@ -262,7 +266,7 @@
           "level": "core"
         },
         {
-          "topic": "Load-test critical endpoints with k6 and find the saturation point",
+          "topic": "Load-test critical endpoints with oha, goose or k6 and find the saturation point",
           "level": "pro"
         },
         {
